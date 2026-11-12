@@ -8,7 +8,8 @@ export type ArtKind =
   | 'diningTable' | 'counter' | 'menuboard'
   | 'treadmill' | 'rack' | 'mat'
   | 'ladder' | 'lounger' | 'parasol' | 'ring'
-  | 'net' | 'balls';
+  | 'net' | 'balls'
+  | 'clothesRack' | 'fittingRoom' | 'mirror';
 
 const WOOD = '#c58f63';
 const WAX = '#fff4e6';
@@ -496,6 +497,54 @@ export const ART: Record<ArtKind, Art> = {
       for (const [x, y] of [[4, 3], [7, 2], [10, 3], [5, 5], [9, 5]]) p.put(x, y, 2, 2, '#e6f27a');
       p.put(2, 6, 12, 5, '#c58f63');
       for (let x = 3; x < 14; x += 3) p.put(x, 6, 1, 5, shade('#c58f63', -0.2));
+    },
+  },
+  clothesRack: {
+    w: 34,
+    h: 30,
+    draw(p) {
+      const steel = '#c4c9cf';
+      const clothes = ['#ffb3c6', '#a9cdfc', '#ffd38a', '#cbb8ff', '#b5e8c9'];
+      clothes.forEach((c, i) => {
+        const x = 6 + i * 5;
+        p.put(x + 2, 4, 1, 2, steel);
+        p.put(x, 6, 5, 2, c);
+        p.put(x + 1, 8, 3, 10 - (i % 2) * 3, c);
+        p.put(x + 1, 8, 1, 10 - (i % 2) * 3, shade(c, 0.25));
+      });
+      p.put(2, 3, 30, 1, steel);
+      for (const x of [2, 30]) p.put(x, 4, 2, 23, shade(steel, -0.15));
+      p.put(1, 27, 32, 2, shade(steel, -0.25));
+    },
+  },
+  fittingRoom: {
+    w: 34,
+    h: 44,
+    draw(p) {
+      const curtain = '#cbb8ff';
+      p.put(1, 1, 32, 5, '#ff9fc0');
+      p.put(12, 2, 10, 3, '#fffaf0');
+      p.put(14, 3, 6, 1, '#ff9fc0');
+      p.put(3, 6, 28, 1, '#c4c9cf');
+      p.put(4, 7, 26, 34, curtain);
+      for (let x = 6; x < 30; x += 4) p.put(x, 7, 1, 34, shade(curtain, -0.12));
+      p.put(4, 7, 26, 2, shade(curtain, 0.25));
+      for (const x of [1, 31]) p.put(x, 6, 2, 36, '#ff9fc0');
+      p.put(2, 41, 30, 2, shade('#ff9fc0', -0.2));
+    },
+  },
+  mirror: {
+    w: 18,
+    h: 40,
+    draw(p) {
+      const gold = '#e0b84f';
+      p.put(3, 1, 12, 1, gold);
+      p.put(2, 2, 14, 32, gold);
+      p.put(3, 34, 12, 1, gold);
+      p.put(4, 3, 10, 30, '#e6f5ff');
+      for (let i = 0; i < 6; i++) p.put(6 + i, 10 - i, 1, 1, '#ffffff');
+      for (let i = 0; i < 4; i++) p.put(9 + i, 16 - i, 1, 1, '#ffffff');
+      for (const x of [4, 12]) p.put(x, 35, 2, 4, shade(gold, -0.2));
     },
   },
 };

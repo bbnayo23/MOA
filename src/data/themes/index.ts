@@ -3,6 +3,7 @@ import { camping } from './camping';
 import { church } from './church';
 import { gym } from './gym';
 import { library } from './library';
+import { mall } from './mall';
 import { makePlaza } from './plaza';
 import { pool } from './pool';
 import { restaurant } from './restaurant';
@@ -12,7 +13,7 @@ import type { ThemeConfig, ThemeId, ThemeMeta } from './types';
 export * from './types';
 
 /** Themes you can enter from the plaza. The rest are preview-only until their config lands here. */
-const PLAYABLE: Partial<Record<ThemeId, ThemeConfig>> = { camping, church, library, restaurant, gym, pool, tennis };
+const PLAYABLE: Partial<Record<ThemeId, ThemeConfig>> = { camping, church, library, restaurant, gym, pool, tennis, mall };
 
 /** The eight theme buildings around the plaza, in this order. */
 export const THEMES: ThemeMeta[] = [
@@ -22,7 +23,7 @@ export const THEMES: ThemeMeta[] = [
   tennis,
   gym,
   library,
-  { themeId: 'mall', name: '쇼핑몰', emoji: '🛍️', tagline: '오늘의 코디 쇼핑', activities: ['옷 구경', '피팅룸', '의상 변경', '코디 공유'], color: '#ff9fc0' },
+  mall,
   restaurant,
 ];
 

@@ -15,7 +15,8 @@ export interface Pose {
     | 'stick' | 'spatula' | 'spatulaUp' | 'candle' | 'pen' | 'book' | 'bookFlip' | 'fork' | 'forkUp' | 'cup'
     | 'dumbbells' | 'sweat'
     | 'tube' | 'splash' | 'splashB'
-    | 'racketUp' | 'racketFwd' | 'racketServe' | 'racketBall';
+    | 'racketUp' | 'racketFwd' | 'racketServe' | 'racketBall'
+    | 'sparkle';
   /** Mirror this frame (on top of the avatar's facing). */
   flip?: boolean;
 }
@@ -25,8 +26,7 @@ export interface Anim {
   frames: Pose[];
 }
 
-// ponytail: anims land with the theme that needs them. Still to come:
-// try_on.
+// Grouped by the theme that introduced them; new themes add theirs here.
 export type AnimKey =
   | 'idle' | 'walk' | 'sit' | 'wave' | 'dance'
   | 'campfire' | 'cook'
@@ -35,7 +35,8 @@ export type AnimKey =
   | 'eat' | 'drink' | 'talk'
   | 'workout' | 'run' | 'stretch' | 'squat'
   | 'swim' | 'tube' | 'splash'
-  | 'swing' | 'serve' | 'rally';
+  | 'swing' | 'serve' | 'rally'
+  | 'browse' | 'tryOn' | 'pose';
 
 const SIT = { legs: 'sit' } as const;
 const ROAST = { legs: 'sit', arms: 'front', prop: 'stick' } as const;
@@ -94,6 +95,29 @@ export const ANIMS: Record<AnimKey, Anim> = {
     ],
   },
   squat: { fps: 2, frames: [{ arms: 'pray' }, { legs: 'sit', arms: 'pray', eyes: 'closed' }] },
+  browse: {
+    fps: 2,
+    frames: [{ arms: 'front' }, { arms: 'front', eyes: 'happy' }, {}, { arms: 'front', lean: 1 }],
+  },
+  // try_on: a little twirl in the new outfit
+  tryOn: {
+    fps: 3,
+    frames: [
+      { arms: 'up', eyes: 'happy' },
+      { arms: 'up', eyes: 'happy', flip: true },
+      { arms: 'waveA', prop: 'sparkle', eyes: 'happy' },
+      { prop: 'sparkle' },
+    ],
+  },
+  pose: {
+    fps: 3,
+    frames: [
+      { arms: 'waveA', eyes: 'happy', prop: 'sparkle' },
+      { arms: 'waveB', eyes: 'happy' },
+      { arms: 'up', mouth: 'open', prop: 'sparkle' },
+      { eyes: 'happy', lean: 1 },
+    ],
+  },
   // tennis_swing: wind up behind, swing through, follow-through
   swing: {
     fps: 5,

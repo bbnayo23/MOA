@@ -4,9 +4,44 @@ import { useCheerBoard } from '../hooks/useCheerBoard';
 import { useFocusTimer } from '../hooks/useFocusTimer';
 import { useMenu } from '../hooks/useMenu';
 import { useRallyGame } from '../hooks/useRallyGame';
+import { useWardrobe } from '../hooks/useWardrobe';
 import { useMoa } from '../store';
 import c from '../styles/common.module.scss';
 import s from '../styles/Panels.module.scss';
+import { AvatarCanvas } from './AvatarCanvas';
+
+/** Opens in the fitting room (action `opens: 'wardrobe'`). Each card previews the look on you. */
+export function Wardrobe() {
+  const w = useWardrobe();
+  return (
+    <section className={`${c.card} ${s.panel}`} aria-label="피팅룸">
+      <header>
+        <h2>👗 피팅룸</h2>
+        <button aria-label="닫기" onClick={w.close}>
+          ×
+        </button>
+      </header>
+      <ul className={s.outfits}>
+        {w.outfits.map((o) => (
+          <li key={o.name}>
+            <button aria-pressed={o.wearing} onClick={() => w.wear(o.look)}>
+              <AvatarCanvas look={o.preview} scale={2} />
+              <span>{o.name}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      <div className={s.row}>
+        <button className={c.primary} onClick={w.share}>
+          ✨ 코디 공유하기
+        </button>
+        <button className={c.btn} onClick={w.customize}>
+          🎨 직접 꾸미기
+        </button>
+      </div>
+    </section>
+  );
+}
 
 /** Opens for the tennis mini-game (action `opens: 'rally'`). */
 export function RallyGame() {

@@ -299,6 +299,12 @@ export function renderAvatar(look: CharacterLook, pose: Pose = {}): Pix {
       head(22, 14);
       if (pose.prop === 'racketBall') q(26, 11, 2, 2, BALL);
     }
+  } else if (pose.prop === 'sparkle') {
+    // little stars around the head
+    for (const [x, y] of [[0, 5], [20, 9], [19, 2]]) {
+      q(x, y - 1, 1, 3, STAR);
+      q(x - 1, y, 3, 1, STAR);
+    }
   } else if (pose.prop === 'pen') {
     dots('#5b4a6b', [20, 16, 21, 15, 22, 14]);
     dots('#ff8fab', [23, 13]);

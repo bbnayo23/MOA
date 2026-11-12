@@ -248,3 +248,33 @@
     color: var(--c-primary-deep);
   }
 }
+
+// fitting room: outfit cards, each previewing the look on you
+.outfits {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-2);
+  overflow-y: auto;
+
+  button {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--sp-1) 0 var(--sp-2);
+    border: 1.5px solid var(--c-line);
+    border-radius: var(--r-m);
+    background: var(--c-surface);
+    font-size: 11px;
+    font-weight: 600;
+
+    &:hover {
+      border-color: var(--c-primary);
+    }
+
+    &[aria-pressed='true'] {
+      border-color: var(--c-primary-deep);
+      background: #fff0f4;
+    }
+  }
+}
