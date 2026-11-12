@@ -59,4 +59,7 @@ export const LIGHT = { radius: 90, core: 0.45, alpha: { from: 0.55, to: 0.85 }, 
 /** Drifting fireflies / dust motes. */
 export const MOTES = { count: 12, alpha: 0.9 };
 
+/** Ring left on the floor where you clicked / tapped to walk. */
+export const TAP_MARK = { w: 30, line: 3, color: 0xffffff, grow: 1.6, ms: 450 };
+
 export const FADE_IN_MS = 350;

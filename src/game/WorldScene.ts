@@ -5,9 +5,9 @@ import { fromGame, toGame } from '../bridge';
 import { ACTIONS, type ActionId } from '../data/actions';
 import type { Player } from '../data/character';
 import type { InteractionObject, ThemeConfig } from '../data/themes';
-import { FADE_IN_MS, LIGHT, MOTES, lockedTint, objectLabelStyle } from '../styles/game';
+import { FADE_IN_MS, LIGHT, MOTES, TAP_MARK, lockedTint, objectLabelStyle } from '../styles/game';
 import { Avatar } from './Avatar';
-import { S, VIEW, isWalkable, tileToWorld, type Tile } from './iso';
+import { S, VIEW, artToTile, isWalkable, tileToWorld, type Tile } from './iso';
 
 /** Smallest on-screen size (CSS px per world px): below this, the camera follows you instead of shrinking. */
 const MIN_ZOOM = 0.8;
@@ -55,6 +55,13 @@ export class WorldScene extends Phaser.Scene {
     this.fit();
     this.follow(Infinity);
     this.scale.on(Phaser.Scale.Events.RESIZE, this.fit, this);
+
+    // click / tap on open ground: walk there (objects handle their own clicks)
+    this.input.on(Phaser.Input.Events.POINTER_DOWN, (p: Phaser.Input.Pointer, over: unknown[]) => {
+      // Phaser swallows the touch, so let go of the chat input (and the phone keyboard) ourselves
+      if (document.activeElement instanceof HTMLInputElement) document.activeElement.blur();
+      if (!over.length) this.walkMeTo(p.worldX, p.worldY);
+    });
 
     const keyboard = this.input.keyboard!;
     this.keys = keyboard.createCursorKeys();
@@ -143,6 +150,17 @@ export class WorldScene extends Phaser.Scene {
     av.spot = freeSpot(obj) ?? obj.spots[0];
     const p = tileToWorld(av.spot);
     av.walkTo(p.x, p.y, start);
+  }
+
+  /** Walk to a point on the floor, pulled inside the map's edge if it lies outside. */
+  private walkMeTo(x: number, y: number) {
+    const n = this.theme.background.size, m = 0.3;
+    const t = artToTile(x / S, y / S);
+    const p = tileToWorld({ tx: Phaser.Math.Clamp(t.tx, m, n - m), ty: Phaser.Math.Clamp(t.ty, m, n - m) });
+    this.stop(this.me);
+    this.me.walkTo(p.x, p.y);
+    const mark = this.add.ellipse(p.x, p.y, TAP_MARK.w, TAP_MARK.w / 2).setStrokeStyle(TAP_MARK.line, TAP_MARK.color).setDepth(1);
+    this.tweens.add({ targets: mark, scale: TAP_MARK.grow, alpha: 0, duration: TAP_MARK.ms, onComplete: () => mark.destroy() });
   }
 
   private stop(av: Avatar) {

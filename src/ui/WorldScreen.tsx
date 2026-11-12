@@ -35,7 +35,7 @@ export function WorldScreen() {
         <ChatPanel />
         <ActionBar theme={theme} />
         <p className={s.hint}>
-          <span className={s.keys}>방향키 이동 · Enter 채팅 · </span>
+          <span className={s.keys}>클릭·방향키 이동 · Enter 채팅 · </span>
           {hub ? '건물을 눌러 입장' : '오브젝트를 눌러 행동'}
         </p>
       </div>
