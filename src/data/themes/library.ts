@@ -1,8 +1,6 @@
 import type { Tile } from '../../game/iso';
+import { behind } from './seats';
 import type { InteractionObject, ThemeConfig } from './types';
-
-/** Seats sit *behind* the furniture (smaller y), so the table hides the legs and you see the reader. */
-const behind = (at: Tile, side = 0): Tile => ({ tx: at.tx - 0.35 + side, ty: at.ty - 0.35 - side });
 
 const table = (id: string, at: Tile): InteractionObject => ({
   id, kind: 'table', label: '열람 테이블', icon: '📖', at,

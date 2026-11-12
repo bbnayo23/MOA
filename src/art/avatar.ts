@@ -114,9 +114,10 @@ export function renderAvatar(look: CharacterLook, pose: Pose = {}): Pix {
   }
   q(5, 12, 2, 1, BLUSH);
   q(15, 12, 2, 1, BLUSH);
-  if (look.mouth === 'smile') dots(MOUTH, [9, 12, 10, 13, 11, 13, 12, 12]);
-  else if (look.mouth === 'cat') dots(MOUTH, [8, 13, 9, 14, 10, 13, 11, 13, 12, 14, 13, 13]);
-  else if (look.mouth === 'open') q(10, 13, 2, 2, MOUTH);
+  const mouth = pose.mouth ?? look.mouth;
+  if (mouth === 'smile') dots(MOUTH, [9, 12, 10, 13, 11, 13, 12, 12]);
+  else if (mouth === 'cat') dots(MOUTH, [8, 13, 9, 14, 10, 13, 11, 13, 12, 14, 13, 13]);
+  else if (mouth === 'open') q(10, 13, 2, 2, MOUTH);
   else q(10, 13, 2, 1, MOUTH);
 
   // front hair
@@ -225,6 +226,14 @@ export function renderAvatar(look: CharacterLook, pose: Pose = {}): Pix {
     q(11, 16, 3, 3, '#f6ecd9');
     dots('#c9bba5', [8, 17, 9, 17, 11, 17, 12, 17]);
     if (pose.prop === 'bookFlip') q(11, 15, 3, 1, '#fffaf0');
+  } else if (pose.prop === 'fork' || pose.prop === 'forkUp') {
+    const o = pose.prop === 'forkUp' ? -2 : 0;
+    dots('#c4c9cf', [20, 16 + o, 21, 15 + o, 22, 14 + o]);
+    q(22, 12 + o, 2, 2, '#f2cc8f');
+  } else if (pose.prop === 'cup') {
+    q(18, 14, 3, 3, '#fffdf8');
+    q(18, 14, 3, 1, '#c98f6a');
+    q(21, 15, 1, 1, '#fffdf8');
   } else if (pose.prop === 'pen') {
     dots('#5b4a6b', [20, 16, 21, 15, 22, 14]);
     dots('#ff8fab', [23, 13]);

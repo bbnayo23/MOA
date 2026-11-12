@@ -2,9 +2,38 @@ import type { CSSProperties } from 'react';
 import { THEMES, type ThemeId } from '../data/themes';
 import { useCheerBoard } from '../hooks/useCheerBoard';
 import { useFocusTimer } from '../hooks/useFocusTimer';
+import { useMenu } from '../hooks/useMenu';
 import { useMoa } from '../store';
 import c from '../styles/common.module.scss';
 import s from '../styles/Panels.module.scss';
+
+/** Opens while I'm at the restaurant counter (action `opens: 'menu'`). */
+export function MenuPanel() {
+  const { menu, ordered, order, close } = useMenu();
+  return (
+    <section className={`${c.card} ${s.panel}`} aria-label="메뉴">
+      <header>
+        <h2>🧾 오늘의 메뉴</h2>
+        <button aria-label="닫기" onClick={close}>
+          ×
+        </button>
+      </header>
+      <ul className={s.menu}>
+        {menu.map((m) => (
+          <li key={m.name}>
+            <button onClick={() => order(m)} aria-pressed={ordered.includes(m.name)}>
+              <span className={s.dish} aria-hidden>
+                {m.emoji}
+              </span>
+              <strong>{m.name}</strong>
+              <small>{ordered.includes(m.name) ? '주문 완료 ✓' : m.desc}</small>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
 
 /** Opens while I'm studying at a desk (action `opens: 'timer'`). */
 export function FocusTimer() {

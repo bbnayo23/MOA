@@ -145,3 +145,49 @@
     flex: 1;
   }
 }
+
+// restaurant menu: two columns of dish cards
+.menu {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-2);
+  overflow-y: auto;
+
+  button {
+    width: 100%;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    column-gap: var(--sp-2);
+    align-items: center;
+    padding: var(--sp-2);
+    border: 1.5px solid var(--c-line);
+    border-radius: var(--r-m);
+    background: var(--c-surface);
+    text-align: left;
+
+    &:hover {
+      border-color: var(--c-primary);
+    }
+
+    &[aria-pressed='true'] {
+      border-color: var(--c-primary-deep);
+      background: #fff0f4;
+    }
+
+    strong {
+      font-size: var(--fs-s);
+    }
+
+    small {
+      grid-column: 2;
+      font-size: 11px;
+      color: var(--c-ink-soft);
+    }
+  }
+}
+
+.dish {
+  grid-row: span 2;
+  font-size: 26px;
+}

@@ -4,7 +4,8 @@ export type ArtKind =
   | 'pine' | 'bush' | 'rock' | 'log' | 'tent' | 'campfire' | 'grill' | 'lantern'
   | 'pew' | 'altar' | 'candles' | 'board' | 'plant'
   | 'building' | 'fountain'
-  | 'bookshelf' | 'table' | 'desk';
+  | 'bookshelf' | 'table' | 'desk'
+  | 'diningTable' | 'counter' | 'menuboard';
 
 const WOOD = '#c58f63';
 const WAX = '#fff4e6';
@@ -330,6 +331,52 @@ export const ART: Record<ArtKind, Art> = {
       p.put(2, 17, 28, 2, shade(wood, -0.15));
       p.put(23, 17, 2, 1, '#e0b84f');
       for (const x of [3, 27]) p.put(x, 19, 2, 6, shade(wood, -0.28));
+    },
+  },
+  diningTable: {
+    w: 34,
+    h: 22,
+    draw(p) {
+      p.put(16, 1, 2, 4, '#7cc39a');
+      p.put(15, 1, 4, 2, '#ffb3c6');
+      p.put(15, 4, 4, 2, '#a9d3f5');
+      p.put(1, 6, 32, 4, '#fffaf2');
+      p.put(1, 6, 32, 1, '#ffffff');
+      for (let x = 2; x < 32; x += 2) {
+        const odd = (x / 2) % 2 === 1;
+        p.put(x, 10, 2, 2, odd ? '#ff9a8a' : '#fffaf2');
+        p.put(x, 12, 2, 2, odd ? '#fffaf2' : '#ff9a8a');
+      }
+      for (const x of [4, 28]) p.put(x, 14, 2, 7, shade(WOOD, -0.25));
+    },
+  },
+  counter: {
+    w: 40,
+    h: 30,
+    draw(p) {
+      p.put(5, 6, 9, 6, '#7c7590');
+      p.put(6, 7, 6, 2, '#a9d8ff');
+      p.put(26, 6, 10, 6, '#e6f5ff');
+      p.put(28, 9, 6, 3, '#ffd6e0');
+      p.put(30, 8, 1, 1, '#ff6b81');
+      p.put(1, 12, 38, 3, '#f6f0fa');
+      p.put(1, 12, 38, 1, '#ffffff');
+      p.put(2, 15, 36, 12, '#f2a7a0');
+      for (let x = 4; x < 36; x += 4) p.put(x, 15, 1, 12, '#f7c1bb');
+      p.put(2, 27, 36, 1, shade('#f2a7a0', -0.2));
+    },
+  },
+  menuboard: {
+    w: 22,
+    h: 31,
+    draw(p) {
+      for (const x of [4, 16]) p.put(x, 20, 2, 10, shade(WOOD, -0.2));
+      p.put(1, 1, 20, 20, '#9c7a5a');
+      p.put(2, 2, 18, 18, '#4a5a4f');
+      p.put(5, 5, 12, 1, '#fffaf0');
+      p.put(5, 9, 8, 1, '#ffd6e0');
+      p.put(5, 12, 10, 1, '#fff1b8');
+      p.put(5, 15, 7, 1, '#d4e7ff');
     },
   },
 };

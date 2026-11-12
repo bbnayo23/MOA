@@ -8,7 +8,8 @@ export interface Pose {
   legs?: 'stand' | 'stepA' | 'stepB' | 'sit';
   arms?: 'down' | 'waveA' | 'waveB' | 'up' | 'front' | 'pray';
   eyes?: 'closed' | 'happy';
-  prop?: 'stick' | 'spatula' | 'spatulaUp' | 'candle' | 'pen' | 'book' | 'bookFlip';
+  mouth?: 'open';
+  prop?: 'stick' | 'spatula' | 'spatulaUp' | 'candle' | 'pen' | 'book' | 'bookFlip' | 'fork' | 'forkUp' | 'cup';
   /** Mirror this frame (on top of the avatar's facing). */
   flip?: boolean;
 }
@@ -19,12 +20,13 @@ export interface Anim {
 }
 
 // ponytail: anims land with the theme that needs them. Still to come:
-// swim, tennis_swing, workout, try_on, eat.
+// swim, tennis_swing, workout, try_on.
 export type AnimKey =
   | 'idle' | 'walk' | 'sit' | 'wave' | 'dance'
   | 'campfire' | 'cook'
   | 'pray' | 'candle' | 'write'
-  | 'read' | 'study';
+  | 'read' | 'study'
+  | 'eat' | 'drink' | 'talk';
 
 const SIT = { legs: 'sit' } as const;
 const ROAST = { legs: 'sit', arms: 'front', prop: 'stick' } as const;
@@ -34,6 +36,8 @@ const CANDLE = { arms: 'front', prop: 'candle' } as const;
 const WRITE = { arms: 'front', prop: 'pen' } as const;
 const READ = { legs: 'sit', arms: 'pray', prop: 'book' } as const;
 const STUDY = { legs: 'sit', arms: 'front', prop: 'pen' } as const;
+const EAT = { legs: 'sit', arms: 'front', prop: 'fork' } as const;
+const DRINK = { legs: 'sit', arms: 'front', prop: 'cup' } as const;
 
 export const ANIMS: Record<AnimKey, Anim> = {
   idle: { fps: 3, frames: [{}, {}, {}, { bob: 1 }, { bob: 1 }, {}, {}, { eyes: 'closed' }] },
@@ -56,4 +60,17 @@ export const ANIMS: Record<AnimKey, Anim> = {
   write: { fps: 4, frames: [WRITE, { ...WRITE, bob: 1 }, WRITE, { ...WRITE, bob: -1 }] },
   read: { fps: 2, frames: [READ, READ, READ, { ...READ, prop: 'bookFlip' }, READ, { ...READ, eyes: 'closed' }] },
   study: { fps: 3, frames: [STUDY, { ...STUDY, bob: 1 }, STUDY, STUDY, { ...STUDY, eyes: 'closed' }] },
+  eat: { fps: 3, frames: [EAT, EAT, { ...EAT, prop: 'forkUp', mouth: 'open', bob: -1 }, EAT, { ...EAT, eyes: 'happy' }] },
+  drink: { fps: 2, frames: [DRINK, DRINK, { ...DRINK, mouth: 'open', eyes: 'closed', bob: -1 }, DRINK] },
+  talk: {
+    fps: 3,
+    frames: [
+      SIT,
+      { ...SIT, mouth: 'open' },
+      SIT,
+      { ...SIT, mouth: 'open', arms: 'waveA' },
+      { ...SIT, eyes: 'happy' },
+      { ...SIT, mouth: 'open' },
+    ],
+  },
 };
