@@ -5,7 +5,8 @@ export type ArtKind =
   | 'pew' | 'altar' | 'candles' | 'board' | 'plant'
   | 'building' | 'fountain'
   | 'bookshelf' | 'table' | 'desk'
-  | 'diningTable' | 'counter' | 'menuboard';
+  | 'diningTable' | 'counter' | 'menuboard'
+  | 'treadmill' | 'rack' | 'mat';
 
 const WOOD = '#c58f63';
 const WAX = '#fff4e6';
@@ -377,6 +378,51 @@ export const ART: Record<ArtKind, Art> = {
       p.put(5, 9, 8, 1, '#ffd6e0');
       p.put(5, 12, 10, 1, '#fff1b8');
       p.put(5, 15, 7, 1, '#d4e7ff');
+    },
+  },
+  treadmill: {
+    w: 30,
+    h: 29,
+    frames: 3,
+    draw(p, f) {
+      const metal = '#7c7590';
+      p.put(3, 3, 24, 5, '#5f5870');
+      p.put(8, 4, 10, 2, '#9fe3c4');
+      p.put(20, 5, 1, 1, '#ff9fb2');
+      p.put(22, 5, 1, 1, '#ffe08a');
+      p.put(3, 9, 24, 2, metal);
+      for (const x of [4, 24]) p.put(x, 8, 2, 14, metal);
+      p.put(1, 22, 28, 6, '#4e4860');
+      p.put(3, 23, 24, 4, '#3b3150');
+      // belt stripes slide toward the viewer
+      for (let x = 4 + f * 2; x < 26; x += 6) p.put(x, 24, 2, 2, '#5c5568');
+    },
+  },
+  rack: {
+    w: 34,
+    h: 22,
+    draw(p) {
+      const metal = '#7c7590';
+      const colors = ['#ff9fb2', '#9cc9ff', '#ffd38a', '#b5e8c9'];
+      for (const [row, y] of [[0, 4], [1, 11]]) {
+        colors.forEach((c, i) => {
+          const x = 4 + i * 7;
+          p.put(x, y, 2, 4, (row + i) % 2 ? c : shade(c, -0.1));
+          p.put(x + 4, y, 2, 4, (row + i) % 2 ? c : shade(c, -0.1));
+          p.put(x + 2, y + 1, 2, 2, '#c4c9cf');
+        });
+        p.put(2, y + 4, 30, 2, metal);
+      }
+      for (const x of [3, 29]) p.put(x, 10, 2, 11, shade(metal, -0.15));
+    },
+  },
+  mat: {
+    w: 34,
+    h: 8,
+    draw(p) {
+      p.put(2, 3, 28, 3, '#ffb3c6');
+      p.put(2, 3, 28, 1, '#ffd6e0');
+      p.put(29, 2, 3, 4, '#f29bb3');
     },
   },
 };

@@ -26,7 +26,8 @@ export function renderAvatar(look: CharacterLook, pose: Pose = {}): Pix {
   const u = (sit ? 2 : 0) + (pose.bob ?? 0);
   // p: planted on the ground (legs, shoes); q: moves with the upper body
   const p = (x: number, y: number, w: number, h: number, c: string) => pix.put(x + OX, y + OY, w, h, c);
-  const q = (x: number, y: number, w: number, h: number, c: string) => p(x, y + u, w, h, c);
+  const lean = pose.lean ?? 0;
+  const q = (x: number, y: number, w: number, h: number, c: string) => p(x + lean, y + u, w, h, c);
   const dots = (c: string, xy: number[]) => {
     for (let i = 0; i < xy.length; i += 2) q(xy[i], xy[i + 1], 1, 1, c);
   };
@@ -234,6 +235,25 @@ export function renderAvatar(look: CharacterLook, pose: Pose = {}): Pix {
     q(18, 14, 3, 3, '#fffdf8');
     q(18, 14, 3, 1, '#c98f6a');
     q(21, 15, 1, 1, '#fffdf8');
+  } else if (pose.prop === 'dumbbells') {
+    const bar = '#c4c9cf', plate = '#5f5870';
+    if (arms === 'up') {
+      // held upright in the raised hands
+      for (const x of [2, 16]) {
+        q(x, 10, 4, 1, plate);
+        q(x, 13, 4, 1, plate);
+      }
+    } else {
+      // hanging at the sides
+      for (const x of [3, 13]) {
+        q(x + 1, 19, 4, 1, bar);
+        q(x, 18, 1, 3, plate);
+        q(x + 5, 18, 1, 3, plate);
+      }
+    }
+  } else if (pose.prop === 'sweat') {
+    q(19, 7, 1, 2, '#a9d8ff');
+    dots('#e6f5ff', [19, 7]);
   } else if (pose.prop === 'pen') {
     dots('#5b4a6b', [20, 16, 21, 15, 22, 14]);
     dots('#ff8fab', [23, 13]);

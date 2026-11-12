@@ -16,7 +16,8 @@ export type ActionId =
   | 'fireGaze' | 'roast' | 'bbq' | 'rest'
   | 'pray' | 'lightCandle' | 'cheer'
   | 'read' | 'study' | 'focus'
-  | 'order' | 'eat' | 'drink' | 'talk';
+  | 'order' | 'eat' | 'drink' | 'talk'
+  | 'dumbbell' | 'treadmill' | 'stretch' | 'squat';
 
 export const ACTIONS: Record<ActionId, ActionDef> = {
   sit: { label: '앉기', icon: '🪑', anim: 'sit' },
@@ -36,4 +37,8 @@ export const ACTIONS: Record<ActionId, ActionDef> = {
   eat: { label: '식사하기', icon: '🍝', anim: 'eat' },
   drink: { label: '음료 마시기', icon: '🧋', anim: 'drink' },
   talk: { label: '대화하기', icon: '💬', anim: 'talk' },
+  dumbbell: { label: '덤벨 들기', icon: '🏋️', anim: 'workout' },
+  treadmill: { label: '러닝머신', icon: '🏃', anim: 'run' },
+  stretch: { label: '스트레칭', icon: '🧘', anim: 'stretch' },
+  squat: { label: '스쿼트', icon: '🦵', anim: 'squat' },
 };

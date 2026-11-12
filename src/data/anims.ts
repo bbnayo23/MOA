@@ -5,11 +5,15 @@
 export interface Pose {
   /** Upper-body vertical offset in art pixels (negative = up). */
   bob?: number;
+  /** Upper-body sideways offset in art pixels (side bends). */
+  lean?: number;
   legs?: 'stand' | 'stepA' | 'stepB' | 'sit';
   arms?: 'down' | 'waveA' | 'waveB' | 'up' | 'front' | 'pray';
   eyes?: 'closed' | 'happy';
   mouth?: 'open';
-  prop?: 'stick' | 'spatula' | 'spatulaUp' | 'candle' | 'pen' | 'book' | 'bookFlip' | 'fork' | 'forkUp' | 'cup';
+  prop?:
+    | 'stick' | 'spatula' | 'spatulaUp' | 'candle' | 'pen' | 'book' | 'bookFlip' | 'fork' | 'forkUp' | 'cup'
+    | 'dumbbells' | 'sweat';
   /** Mirror this frame (on top of the avatar's facing). */
   flip?: boolean;
 }
@@ -20,13 +24,14 @@ export interface Anim {
 }
 
 // ponytail: anims land with the theme that needs them. Still to come:
-// swim, tennis_swing, workout, try_on.
+// swim, tennis_swing, try_on.
 export type AnimKey =
   | 'idle' | 'walk' | 'sit' | 'wave' | 'dance'
   | 'campfire' | 'cook'
   | 'pray' | 'candle' | 'write'
   | 'read' | 'study'
-  | 'eat' | 'drink' | 'talk';
+  | 'eat' | 'drink' | 'talk'
+  | 'workout' | 'run' | 'stretch' | 'squat';
 
 const SIT = { legs: 'sit' } as const;
 const ROAST = { legs: 'sit', arms: 'front', prop: 'stick' } as const;
@@ -62,6 +67,29 @@ export const ANIMS: Record<AnimKey, Anim> = {
   study: { fps: 3, frames: [STUDY, { ...STUDY, bob: 1 }, STUDY, STUDY, { ...STUDY, eyes: 'closed' }] },
   eat: { fps: 3, frames: [EAT, EAT, { ...EAT, prop: 'forkUp', mouth: 'open', bob: -1 }, EAT, { ...EAT, eyes: 'happy' }] },
   drink: { fps: 2, frames: [DRINK, DRINK, { ...DRINK, mouth: 'open', eyes: 'closed', bob: -1 }, DRINK] },
+  workout: {
+    fps: 3,
+    frames: [
+      { prop: 'dumbbells' },
+      { arms: 'up', prop: 'dumbbells', bob: -1, eyes: 'closed' },
+      { prop: 'dumbbells' },
+      { arms: 'up', prop: 'dumbbells', bob: -1 },
+    ],
+  },
+  run: {
+    fps: 12,
+    frames: [{ legs: 'stepA' }, { bob: -1, prop: 'sweat' }, { legs: 'stepB' }, { bob: -1 }],
+  },
+  stretch: {
+    fps: 2,
+    frames: [
+      { arms: 'up', eyes: 'closed', lean: -1 },
+      { arms: 'up', eyes: 'closed', lean: -1 },
+      { arms: 'up', eyes: 'closed', lean: 1 },
+      { arms: 'up', eyes: 'closed', lean: 1 },
+    ],
+  },
+  squat: { fps: 2, frames: [{ arms: 'pray' }, { legs: 'sit', arms: 'pray', eyes: 'closed' }] },
   talk: {
     fps: 3,
     frames: [
