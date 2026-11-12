@@ -1,0 +1,101 @@
+// Design tokens — the single source for UI *and* game (Phaser reads them via getComputedStyle).
+:root {
+  // color
+  --c-bg: #f4effd;
+  --c-surface: #ffffff;
+  --c-surface-soft: #faf7ff;
+  --c-line: #e6ddf7;
+  --c-ink: #3b3150;
+  --c-ink-soft: #8a80a0;
+  --c-primary: #ff8fab;
+  --c-primary-deep: #f2668b;
+  --c-accent: #8fb8ff;
+  --c-mint: #9fe3c4;
+  --c-butter: #ffe08a;
+  --c-lavender: #c9b6ff;
+  --c-online: #4fcf91;
+
+  // shape
+  --r-s: 8px;
+  --r-m: 14px;
+  --r-l: 20px;
+  --r-pill: 999px;
+
+  // space
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+
+  // elevation
+  --shadow-s: 0 2px 0 rgba(59, 49, 80, 0.08);
+  --shadow-m: 0 10px 30px rgba(120, 96, 180, 0.14);
+
+  // type
+  --font-ui: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
+  --font-pixel: 'Galmuri11', monospace;
+  --fs-xs: 12px;
+  --fs-s: 13px;
+  --fs-m: 15px;
+  --fs-l: 20px;
+  --fs-xl: 28px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background:
+    radial-gradient(circle at 10% 0%, #ffe6f0 0, transparent 40%),
+    radial-gradient(circle at 100% 100%, #e3efff 0, transparent 45%),
+    var(--c-bg);
+  color: var(--c-ink);
+  font: 400 var(--fs-m) / 1.5 var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+p,
+ul,
+ol {
+  margin: 0;
+  padding: 0;
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 3px solid var(--c-accent);
+  outline-offset: 2px;
+}
+
+canvas {
+  image-rendering: pixelated;
+}
