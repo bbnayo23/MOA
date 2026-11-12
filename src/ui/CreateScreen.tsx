@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { AVATAR_H } from '../art/avatar';
 import type { AnimKey } from '../data/anims';
 import { LABELS, LOOK_OPTIONS, PRESETS, randomLook, type CharacterLook } from '../data/character';
+import { HUB } from '../data/themes';
 import { useMoa } from '../store';
 import { AvatarCanvas } from './AvatarCanvas';
 import c from './common.module.scss';
@@ -19,10 +20,11 @@ const PREVIEW: [AnimKey, string][] = [
 export function CreateScreen() {
   const me = useMoa((st) => st.me);
   const returning = useMoa((st) => st.themeId !== null);
-  const { setLook, setNickname, go } = useMoa.getState();
+  const { setLook, setNickname, go, enterTheme } = useMoa.getState();
   const [tab, setTab] = useState<(typeof TABS)[number]>('얼굴');
   const [anim, setAnim] = useState<AnimKey>('idle');
   const ready = me.nickname.trim().length > 0;
+  const done = () => (returning ? go('world') : enterTheme(HUB));
 
   return (
     <div className={s.page}>
@@ -30,7 +32,7 @@ export function CreateScreen() {
         <h1 className={c.logo}>
           MOA <small>우리의 순간이 모이는 곳</small>
         </h1>
-        <span className={s.step}>STEP 1 · 나만의 미니미</span>
+        <span className={s.step}>나만의 미니미 만들기</span>
       </header>
 
       <main className={s.body}>
@@ -52,11 +54,11 @@ export function CreateScreen() {
               maxLength={10}
               placeholder="친구들에게 보일 이름"
               onChange={(e) => setNickname(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && ready && go(returning ? 'world' : 'themes')}
+              onKeyDown={(e) => e.key === 'Enter' && ready && done()}
             />
           </label>
-          <button className={c.primary} disabled={!ready} onClick={() => go(returning ? 'world' : 'themes')}>
-            {returning ? '월드로 돌아가기' : '다음 · 공간 고르기'} →
+          <button className={c.primary} disabled={!ready} onClick={done}>
+            {returning ? '월드로 돌아가기' : '모아 광장으로 입장'} →
           </button>
         </section>
 

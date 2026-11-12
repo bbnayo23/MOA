@@ -37,10 +37,11 @@ export class WorldScene extends Phaser.Scene {
     const center = () => this.cameras.main.centerOn((ART_W * S) / 2, (ART_H * S) / 2);
     center();
     this.scale.on(Phaser.Scale.Events.RESIZE, center);
+    this.cameras.main.fadeIn(350);
 
     theme.decorations.forEach((d) => this.addArt(d.kind, d.at));
     theme.interactionObjects.forEach((o) => this.addObject(o));
-    this.addFireflies();
+    if (theme.background.motes) this.addMotes(theme.background.motes);
 
     const spawn = theme.spawnPosition;
     this.me = this.addAvatar(me, spawn, true);
@@ -54,7 +55,8 @@ export class WorldScene extends Phaser.Scene {
     keyboard.clearCaptures(); // let arrows/space reach the chat input
 
     const offs = [
-      toGame.on('act', (id) => this.perform(this.me, id)),
+      toGame.on('act', ({ actionId, objectId }) => this.perform(this.me, actionId, objectId)),
+      toGame.on('stop', () => this.stop(this.me)),
       toGame.on('chat', ({ playerId, text }) => this.avatars.get(playerId)?.say(text)),
       toGame.on('look', ({ playerId, look }) => this.avatars.get(playerId)?.setLook(look)),
     ];
@@ -82,9 +84,19 @@ export class WorldScene extends Phaser.Scene {
 
   // ── actions ──────────────────────────────────────────────
 
-  private perform(av: Avatar, id: ActionId) {
+  private perform(av: Avatar, id: ActionId, objectId?: string) {
     const def = ACTIONS[id];
-    const obj = this.theme.interactionObjects.find((o) => o.actions.includes(id));
+    const others = [...this.avatars.values()].filter((a) => a !== av);
+    const freeSpot = (o: InteractionObject) => o.spots.find((s) => !others.some((a) => a.spot === s));
+    const dist = (o: InteractionObject) => {
+      const p = tileToWorld(o.at);
+      return Math.hypot(p.x - av.x, p.y - av.y);
+    };
+    // the clicked object, else the nearest one offering this action that still has room
+    const candidates = this.theme.interactionObjects
+      .filter((o) => o.actions.includes(id) && (!objectId || o.id === objectId))
+      .sort((a, b) => dist(a) - dist(b));
+    const obj = candidates.find(freeSpot) ?? candidates[0];
     this.stop(av);
     const start = () => {
       if (obj) av.face(tileToWorld(obj.at).x);
@@ -95,8 +107,7 @@ export class WorldScene extends Phaser.Scene {
       if (def.durationMs) av.actionTimer = this.time.delayedCall(def.durationMs, () => this.stop(av));
     };
     if (!obj) return start();
-    const others = [...this.avatars.values()].filter((a) => a !== av);
-    av.spot = obj.spots.find((s) => !others.some((a) => a.spot === s)) ?? obj.spots[0];
+    av.spot = freeSpot(obj) ?? obj.spots[0];
     const p = tileToWorld(av.spot);
     av.walkTo(p.x, p.y, start);
   }
@@ -134,14 +145,14 @@ export class WorldScene extends Phaser.Scene {
     return av;
   }
 
-  private addArt(kind: ArtKind, at: Tile) {
-    const key = `art-${kind}`;
+  private addArt(kind: ArtKind, at: Tile, color?: string) {
+    const key = `art-${kind}${color ?? ''}`;
     const art = ART[kind];
     if (!this.textures.exists(key)) {
       const tex = this.textures.createCanvas(key, art.w, art.h)!;
       const paint = (f: number) => {
         tex.context.clearRect(0, 0, art.w, art.h);
-        renderArt(kind, f).paint(tex.context);
+        renderArt(kind, f, color).paint(tex.context);
         tex.refresh();
       };
       paint(0);
@@ -151,7 +162,8 @@ export class WorldScene extends Phaser.Scene {
     const { x, y } = tileToWorld(at);
     const img = this.add.image(x, y, key).setOrigin(0.5, 1).setScale(S).setDepth(y);
     if (art.glow) {
-      const glow = this.add.image(x, y - 8 * S, this.glowTexture(art.glow)).setBlendMode(Phaser.BlendModes.ADD).setDepth(5000);
+      // floor-level light: brightens the ground and walls, never washes out characters
+      const glow = this.add.image(x, y - 8 * S, this.glowTexture(art.glow)).setBlendMode(Phaser.BlendModes.ADD).setDepth(0);
       this.tweens.add({ targets: glow, alpha: { from: 0.55, to: 0.85 }, scale: 1.08, duration: 800, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
     }
     return img;
@@ -174,9 +186,10 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private addObject(o: InteractionObject) {
-    const img = this.addArt(o.kind, o.at).setInteractive({ useHandCursor: true });
+    const img = this.addArt(o.kind, o.at, o.color).setInteractive({ useHandCursor: true });
+    if (o.locked) img.setTint(0xcfc8dc);
     const label = this.add
-      .text(img.x, img.y - img.displayHeight - 4, `${o.icon} ${o.label}`, {
+      .text(img.x, img.y - img.displayHeight - 4, `${o.icon} ${o.label}${o.locked ? ' 🔒' : ''}`, {
         fontFamily: 'Galmuri11',
         fontSize: '12px',
         color: '#3b3150',
@@ -184,12 +197,25 @@ export class WorldScene extends Phaser.Scene {
         padding: { x: 6, y: 3 },
       })
       .setOrigin(0.5, 1)
-      .setDepth(9000)
-      .setVisible(false);
-    img.on('pointerover', () => label.setVisible(true));
-    img.on('pointerout', () => label.setVisible(false));
-    img.on('pointerdown', () => fromGame.emit('objectClick', o.id));
+      .setDepth(9000);
+    const click = () => (o.enter ? this.goThrough(o) : fromGame.emit('objectClick', o.id));
+    img.on('pointerdown', click);
+    if (o.enter) {
+      // doors keep their sign up and it's clickable too
+      label.setDepth(img.depth + 1).setInteractive({ useHandCursor: true }).on('pointerdown', click);
+    } else {
+      label.setVisible(false);
+      img.on('pointerover', () => label.setVisible(true));
+      img.on('pointerout', () => label.setVisible(false));
+    }
     this.objects.set(o.id, img);
+  }
+
+  /** Walk up to a door, then let React decide (enter, or preview if locked). */
+  private goThrough(o: InteractionObject) {
+    this.stop(this.me);
+    const p = tileToWorld(o.spots[0]);
+    this.me.walkTo(p.x, p.y, () => fromGame.emit('portal', o.enter!));
   }
 
   private poke(id: string) {
@@ -197,10 +223,11 @@ export class WorldScene extends Phaser.Scene {
     if (img) this.tweens.add({ targets: img, scaleX: S * 1.08, scaleY: S * 0.94, duration: 110, yoyo: true });
   }
 
-  private addFireflies() {
+  /** Drifting light specks: fireflies outdoors, dust in sunbeams indoors. */
+  private addMotes(color: number) {
     for (let i = 0; i < 12; i++) {
       const dot = this.add
-        .rectangle(Phaser.Math.Between(60, 900), Phaser.Math.Between(160, 520), S, S, 0xfff3a0)
+        .rectangle(Phaser.Math.Between(60, 900), Phaser.Math.Between(160, 520), S, S, color)
         .setDepth(6000)
         .setAlpha(0);
       this.tweens.add({

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { fromGame, toGame } from '../bridge';
 import { ACTIONS } from '../data/actions';
-import { THEMES, THEME_CONFIGS, type ThemeConfig } from '../data/themes';
+import { HUB, THEMES, THEME_CONFIGS, type ThemeConfig, type ThemeId } from '../data/themes';
 import { FRIENDS, startMockFriends } from '../mock';
 import { useMoa } from '../store';
 import { AvatarCanvas } from './AvatarCanvas';
@@ -15,10 +15,17 @@ export function WorldScreen() {
   const themeId = useMoa((st) => st.themeId);
   const theme = themeId ? THEME_CONFIGS[themeId] : undefined;
 
-  useEffect(() => startMockFriends(), []);
+  const panel = useMoa((st) => (st.currentAction ? ACTIONS[st.currentAction].opens : undefined));
+  const preview = useMoa((st) => st.preview);
+
+  useEffect(() => (themeId ? startMockFriends(themeId) : undefined), [themeId]);
   useEffect(() => {
     const st = useMoa.getState();
-    const offs = [fromGame.on('objectClick', st.selectObject), fromGame.on('actionChange', st.setCurrentAction)];
+    const offs = [
+      fromGame.on('objectClick', st.selectObject),
+      fromGame.on('actionChange', st.setCurrentAction),
+      fromGame.on('portal', (id) => (THEME_CONFIGS[id] ? st.enterTheme(id) : st.showPreview(id))),
+    ];
     return () => offs.forEach((off) => off());
   }, []);
 
@@ -30,7 +37,11 @@ export function WorldScreen() {
       <main className={s.stage} style={{ background: theme.background.sky[0] }}>
         <GameCanvas theme={theme} className={s.game} />
         <ActionBar theme={theme} />
-        <p className={s.hint}>방향키 이동 · Enter 채팅 · 오브젝트 클릭</p>
+        {panel === 'board' && <CheerBoard />}
+        {preview && <ThemePreview id={preview} />}
+        <p className={s.hint}>
+          방향키 이동 · Enter 채팅 · {theme.themeId === HUB ? '건물을 클릭해 입장' : '오브젝트 클릭'}
+        </p>
       </main>
       <ChatPanel />
     </div>
@@ -39,7 +50,7 @@ export function WorldScreen() {
 
 function TopBar({ theme }: { theme: ThemeConfig }) {
   const me = useMoa((st) => st.me);
-  const go = useMoa((st) => st.go);
+  const { go, enterTheme } = useMoa.getState();
   return (
     <header className={s.top}>
       <h1 className={c.logo}>MOA</h1>
@@ -49,15 +60,16 @@ function TopBar({ theme }: { theme: ThemeConfig }) {
         <span className={s.live}>{FRIENDS.length + 1}명 접속 중</span>
       </div>
       <div className={s.user}>
+        {theme.themeId !== HUB && (
+          <button className={c.btn} onClick={() => enterTheme(HUB)}>
+            ⛲ 광장으로
+          </button>
+        )}
         <AvatarCanvas look={me.look} scale={1} rows={19} />
         <span className={s.nick}>{me.nickname}</span>
-        <details className={s.menu}>
-          <summary className={c.btn} aria-label="설정">⚙ 설정</summary>
-          <div className={c.card}>
-            <button onClick={() => go('create')}>🎨 캐릭터 꾸미기</button>
-            <button onClick={() => go('themes')}>🗺️ 공간 고르기</button>
-          </div>
-        </details>
+        <button className={c.btn} onClick={() => go('create')}>
+          🎨 꾸미기
+        </button>
       </div>
     </header>
   );
@@ -65,20 +77,21 @@ function TopBar({ theme }: { theme: ThemeConfig }) {
 
 function Sidebar({ theme }: { theme: ThemeConfig }) {
   const me = useMoa((st) => st.me);
-  const { go, enterTheme, setLook } = useMoa.getState();
+  const { showPreview, enterTheme, setLook } = useMoa.getState();
+  const hub = THEME_CONFIGS[HUB]!;
   return (
     <aside className={s.side}>
       <section>
         <h2>공간 이동</h2>
         <ul className={s.places}>
-          {THEMES.map((t) => {
+          {[hub, ...THEMES].map((t) => {
             const here = t.themeId === theme.themeId;
             const open = t.themeId in THEME_CONFIGS;
             return (
               <li key={t.themeId}>
                 <button
                   aria-current={here ? 'location' : undefined}
-                  onClick={() => !here && (open ? enterTheme(t.themeId) : go('themes', t.themeId))}
+                  onClick={() => !here && (open ? enterTheme(t.themeId) : showPreview(t.themeId))}
                 >
                   <span aria-hidden>{t.emoji}</span>
                   {t.name}
@@ -106,16 +119,18 @@ function Sidebar({ theme }: { theme: ThemeConfig }) {
         </ul>
       </section>
 
-      <section>
-        <h2>추천 코디</h2>
-        <div className={s.outfits}>
-          {theme.recommendedOutfits.map((o) => (
-            <button key={o.name} className={c.chip} onClick={() => setLook(o.look)}>
-              {o.name}
-            </button>
-          ))}
-        </div>
-      </section>
+      {theme.recommendedOutfits.length > 0 && (
+        <section>
+          <h2>추천 코디</h2>
+          <div className={s.outfits}>
+            {theme.recommendedOutfits.map((o) => (
+              <button key={o.name} className={c.chip} onClick={() => setLook(o.look)}>
+                {o.name}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
     </aside>
   );
 }
@@ -142,7 +157,7 @@ function ActionBar({ theme }: { theme: ThemeConfig }) {
           className={c.chip}
           aria-pressed={current === id}
           onClick={() => {
-            toGame.emit('act', id);
+            toGame.emit('act', { actionId: id, objectId: obj?.id });
             selectObject(null);
           }}
         >
@@ -150,6 +165,86 @@ function ActionBar({ theme }: { theme: ThemeConfig }) {
         </button>
       ))}
     </div>
+  );
+}
+
+/** A building that isn't open yet: what you'll be able to do there. */
+function ThemePreview({ id }: { id: ThemeId }) {
+  const t = THEMES.find((x) => x.themeId === id)!;
+  const showPreview = useMoa((st) => st.showPreview);
+  return (
+    <section className={`${c.card} ${s.panel}`} aria-label={`${t.name} 미리보기`}>
+      <header>
+        <h2>
+          {t.emoji} {t.name}
+        </h2>
+        <button aria-label="닫기" onClick={() => showPreview(null)}>
+          ×
+        </button>
+      </header>
+      <p className={s.tagline}>{t.tagline}</p>
+      <ul className={s.acts}>
+        {t.activities.map((a) => (
+          <li key={a}>{a}</li>
+        ))}
+      </ul>
+      <p className={s.soon}>🔒 아직 공사 중이에요. 곧 열려요!</p>
+    </section>
+  );
+}
+
+const NOTE_COLORS = ['#ffd6e0', '#fff1b8', '#d4e7ff', '#d7f3e3', '#e6dcff'];
+
+/** Opens while I'm at the board (action `opens: 'board'`); moving away closes it. */
+function CheerBoard() {
+  const cheers = useMoa((st) => st.cheers);
+  const me = useMoa((st) => st.me);
+  const addCheer = useMoa((st) => st.addCheer);
+  const [text, setText] = useState('');
+  const list = useRef<HTMLUListElement>(null);
+
+  useEffect(() => {
+    list.current?.scrollTo({ top: list.current.scrollHeight, behavior: 'smooth' });
+  }, [cheers]);
+
+  return (
+    <section className={`${c.card} ${s.panel}`} aria-label="응원 보드">
+      <header>
+        <h2>💌 응원 보드</h2>
+        <button aria-label="닫기" onClick={() => toGame.emit('stop', null)}>
+          ×
+        </button>
+      </header>
+      <ul ref={list} className={s.notes}>
+        {cheers.map((n, i) => (
+          <li key={n.id} style={{ background: NOTE_COLORS[i % NOTE_COLORS.length], rotate: `${(i % 3) - 1}deg` }}>
+            <p>{n.text}</p>
+            <span>— {n.nickname}</span>
+          </li>
+        ))}
+      </ul>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          const v = text.trim();
+          if (!v) return;
+          addCheer(me.nickname, v);
+          setText('');
+        }}
+      >
+        <input
+          autoFocus
+          value={text}
+          maxLength={40}
+          placeholder="친구에게 응원 한마디"
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => e.key === 'Escape' && e.currentTarget.blur()}
+        />
+        <button type="submit" className={c.primary}>
+          붙이기
+        </button>
+      </form>
+    </section>
   );
 }
 
@@ -164,10 +259,10 @@ function ChatPanel() {
     log.current?.scrollTo({ top: log.current.scrollHeight });
   }, [messages]);
 
-  // Enter anywhere opens the chat; Enter again sends and hands the keys back to the game.
+  // Enter (outside any text field) opens the chat; Enter again sends and hands the keys back to the game.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' && document.activeElement !== input.current) {
+      if (e.key === 'Enter' && !(document.activeElement instanceof HTMLInputElement)) {
         e.preventDefault();
         input.current?.focus();
       }

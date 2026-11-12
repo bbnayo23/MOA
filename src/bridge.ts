@@ -1,9 +1,13 @@
 import type { ActionId } from './data/actions';
 import type { CharacterLook } from './data/character';
+import type { ThemeId } from './data/themes';
 
 /** React → Phaser commands. */
 export interface ToGame {
-  act: ActionId;
+  /** Do an action; without objectId the nearest object offering it is used. */
+  act: { actionId: ActionId; objectId?: string };
+  /** Stop whatever my avatar is doing. */
+  stop: null;
   chat: { playerId: string; text: string };
   look: { playerId: string; look: CharacterLook };
 }
@@ -14,6 +18,8 @@ export interface FromGame {
   objectClick: string;
   /** My avatar started / stopped an action. */
   actionChange: ActionId | null;
+  /** My avatar reached a door leading to this theme. */
+  portal: ThemeId;
 }
 
 function channel<M>() {

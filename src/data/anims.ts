@@ -6,9 +6,9 @@ export interface Pose {
   /** Upper-body vertical offset in art pixels (negative = up). */
   bob?: number;
   legs?: 'stand' | 'stepA' | 'stepB' | 'sit';
-  arms?: 'down' | 'waveA' | 'waveB' | 'up' | 'front';
+  arms?: 'down' | 'waveA' | 'waveB' | 'up' | 'front' | 'pray';
   eyes?: 'closed' | 'happy';
-  prop?: 'stick' | 'spatula' | 'spatulaUp';
+  prop?: 'stick' | 'spatula' | 'spatulaUp' | 'candle' | 'pen';
   /** Mirror this frame (on top of the avatar's facing). */
   flip?: boolean;
 }
@@ -18,13 +18,16 @@ export interface Anim {
   frames: Pose[];
 }
 
-// ponytail: only the MVP set. Theme anims (pray, swim, tennis_swing, workout,
-// read, try_on, eat) get added here with their theme.
-export type AnimKey = 'idle' | 'walk' | 'sit' | 'wave' | 'dance' | 'campfire' | 'cook';
+// ponytail: anims land with the theme that needs them. Still to come:
+// swim, tennis_swing, workout, read, try_on, eat.
+export type AnimKey = 'idle' | 'walk' | 'sit' | 'wave' | 'dance' | 'campfire' | 'cook' | 'pray' | 'candle' | 'write';
 
 const SIT = { legs: 'sit' } as const;
 const ROAST = { legs: 'sit', arms: 'front', prop: 'stick' } as const;
 const COOK = { arms: 'front', prop: 'spatula' } as const;
+const PRAY = { legs: 'sit', arms: 'pray', eyes: 'closed' } as const;
+const CANDLE = { arms: 'front', prop: 'candle' } as const;
+const WRITE = { arms: 'front', prop: 'pen' } as const;
 
 export const ANIMS: Record<AnimKey, Anim> = {
   idle: { fps: 3, frames: [{}, {}, {}, { bob: 1 }, { bob: 1 }, {}, {}, { eyes: 'closed' }] },
@@ -42,4 +45,7 @@ export const ANIMS: Record<AnimKey, Anim> = {
   },
   campfire: { fps: 2, frames: [ROAST, ROAST, { ...ROAST, bob: 1 }, ROAST, { ...ROAST, eyes: 'closed' }] },
   cook: { fps: 4, frames: [COOK, COOK, { ...COOK, prop: 'spatulaUp', bob: -1 }, COOK] },
+  pray: { fps: 2, frames: [PRAY, PRAY, PRAY, { ...PRAY, bob: 1 }, { ...PRAY, bob: 1 }, PRAY] },
+  candle: { fps: 3, frames: [CANDLE, CANDLE, { ...CANDLE, bob: 1 }, { ...CANDLE, eyes: 'happy' }] },
+  write: { fps: 4, frames: [WRITE, { ...WRITE, bob: 1 }, WRITE, { ...WRITE, bob: -1 }] },
 };

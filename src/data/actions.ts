@@ -7,9 +7,11 @@ export interface ActionDef {
   anim: AnimKey;
   /** One-shot actions return to idle after this; others loop until you move. */
   durationMs?: number;
+  /** UI panel that opens while *I* am doing this. */
+  opens?: 'board';
 }
 
-export type ActionId = 'sit' | 'wave' | 'dance' | 'fireGaze' | 'roast' | 'bbq' | 'rest';
+export type ActionId = 'sit' | 'wave' | 'dance' | 'fireGaze' | 'roast' | 'bbq' | 'rest' | 'pray' | 'lightCandle' | 'cheer';
 
 export const ACTIONS: Record<ActionId, ActionDef> = {
   sit: { label: '앉기', icon: '🪑', anim: 'sit' },
@@ -19,4 +21,7 @@ export const ACTIONS: Record<ActionId, ActionDef> = {
   roast: { label: '마시멜로 굽기', icon: '🍡', anim: 'campfire' },
   bbq: { label: '바비큐 굽기', icon: '🍖', anim: 'cook' },
   rest: { label: '텐트에서 쉬기', icon: '⛺', anim: 'sit' },
+  pray: { label: '기도하기', icon: '🙏', anim: 'pray' },
+  lightCandle: { label: '촛불 켜기', icon: '🕯️', anim: 'candle', durationMs: 3000 },
+  cheer: { label: '응원 메시지', icon: '💌', anim: 'write', opens: 'board' },
 };

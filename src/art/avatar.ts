@@ -146,23 +146,33 @@ export function renderAvatar(look: CharacterLook, pose: Pose = {}): Pix {
     q(x, 16 + sleeve, 2, 4 - sleeve, skin);
   };
   const arms = pose.arms ?? 'down';
-  if (arms === 'up') {
-    q(4, 15, 2, 2, arm);
-    q(3, 13, 2, 2, arm);
-    q(3, 11, 2, 2, skin);
-  } else armDown(5);
-  if (arms === 'up' || arms === 'waveA') {
-    q(16, 15, 2, 2, arm);
-    q(17, 13, 2, 2, arm);
-    q(17, 11, 2, 2, skin);
-  } else if (arms === 'waveB') {
-    q(16, 15, 2, 2, arm);
-    q(18, 13, 2, 2, arm);
-    q(19, 11, 2, 2, skin);
-  } else if (arms === 'front') {
-    q(15, 17, 3, 2, arm);
-    q(18, 17, 2, 2, skin);
-  } else armDown(15);
+  if (arms === 'pray') {
+    // elbows out, forearms folded across the chest, hands together in the middle
+    const fore = shade(top, -0.22);
+    q(5, 16, 2, 3, arm);
+    q(15, 16, 2, 3, arm);
+    q(7, 18, 3, 1, fore);
+    q(12, 18, 3, 1, fore);
+    q(10, 16, 2, 3, skin);
+  } else {
+    if (arms === 'up') {
+      q(4, 15, 2, 2, arm);
+      q(3, 13, 2, 2, arm);
+      q(3, 11, 2, 2, skin);
+    } else armDown(5);
+    if (arms === 'up' || arms === 'waveA') {
+      q(16, 15, 2, 2, arm);
+      q(17, 13, 2, 2, arm);
+      q(17, 11, 2, 2, skin);
+    } else if (arms === 'waveB') {
+      q(16, 15, 2, 2, arm);
+      q(18, 13, 2, 2, arm);
+      q(19, 11, 2, 2, skin);
+    } else if (arms === 'front') {
+      q(15, 17, 3, 2, arm);
+      q(18, 17, 2, 2, skin);
+    } else armDown(15);
+  }
 
   // hat (matches the top colour)
   if (look.hat === 'cap') {
@@ -204,6 +214,13 @@ export function renderAvatar(look: CharacterLook, pose: Pose = {}): Pix {
     dots('#8b5a3c', [20, 16, 21, 15, 22, 14, 23, 13]);
     q(23, 11, 2, 2, '#fff4e6');
     dots('#e0a96d', [24, 12]);
+  } else if (pose.prop === 'candle') {
+    q(19, 14, 2, 3, '#fff4e6');
+    q(19, 12, 2, 2, '#ffb347');
+    dots('#fff1a8', [19, 13]);
+  } else if (pose.prop === 'pen') {
+    dots('#5b4a6b', [20, 16, 21, 15, 22, 14]);
+    dots('#ff8fab', [23, 13]);
   } else if (pose.prop) {
     const o = pose.prop === 'spatulaUp' ? -2 : 0;
     dots('#9aa0a6', [20, 16 + o, 21, 15 + o, 22, 14 + o]);
