@@ -67,16 +67,31 @@ src/
 │  ├─ avatar.ts           (외형, 포즈) → 캐릭터 픽셀
 │  ├─ props.ts            모닥불·텐트·그릴·나무 등 오브젝트
 │  └─ ground.ts           아이소메트릭 배경
-├─ game/                  ← Phaser 전용
+├─ game/                  ← Phaser 동작 (스타일 값 없음)
 │  ├─ iso.ts              타일 ↔ 화면 좌표, 이동 가능 영역
 │  ├─ Avatar.ts           스프라이트 + 닉네임 + 말풍선 + 애니메이션 재생
 │  └─ WorldScene.ts       ThemeConfig 하나로 어떤 테마든 구성하는 씬
-├─ ui/                    ← React 화면 (SCSS Modules)
-├─ styles/global.scss     디자인 토큰 (CSS 변수, Phaser도 같은 값을 읽음)
+├─ hooks/                 ← 기능: React 쪽 로직 (구독·이펙트·핸들러)
+│  ├─ useWorldSession.ts  게임 이벤트 → 스토어, 더미 친구, 공간 이동 목록
+│  ├─ useActionBar.ts     표시할 행동 목록, 실행
+│  ├─ useChat.ts          채팅 전송, Enter 포커스, 자동 스크롤
+│  └─ useCheerBoard.ts    응원 메모 작성, 보드 닫기
+├─ ui/                    ← 화면: 마크업 + className 만
+├─ styles/                ← 스타일: 보이는 것 전부
+│  ├─ global.scss         디자인 토큰 (CSS 변수) + 리셋
+│  ├─ *.module.scss       화면별 스타일 (common = 버튼·칩·카드·로고)
+│  ├─ game.ts             Phaser 텍스트·말풍선·조명·입자 스타일 (토큰에서 읽음)
+│  └─ fonts.ts            픽셀 폰트 등록
 ├─ bridge.ts              React ↔ Phaser 타입 지정 채널
 ├─ store.ts               Zustand (화면, 내 캐릭터, 채팅, 선택 상태)
 └─ mock.ts                더미 친구 2명 + 자동 채팅 (실시간 서버 자리)
 ```
+
+**기능 / 스타일 분리 규칙**
+- `ui/*.tsx`는 마크업과 `className`만 갖습니다. 상태 구독·이펙트·이벤트 로직은 `hooks/`로.
+- 색·폰트·여백 같은 값은 `styles/`에만 둡니다. 데이터에서 오는 색(테마 하늘색, 색상 옵션)은 `style={{ '--stage-bg': … }}`처럼 CSS 변수로만 넘기고 실제 적용은 SCSS가 합니다.
+- Phaser 코드(`game/`)도 `styles/game.ts`에서 스타일을 가져옵니다. 색은 `global.scss` 토큰을 읽으므로 UI와 게임이 한 팔레트를 씁니다.
+- 예외: `art/`의 픽셀 아트 팔레트는 그림 자체라서 그대로 둡니다.
 
 ## 4. 핵심 설계
 

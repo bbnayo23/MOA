@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { AVATAR_H } from '../art/avatar';
 import type { AnimKey } from '../data/anims';
 import { LABELS, LOOK_OPTIONS, PRESETS, randomLook, type CharacterLook } from '../data/character';
 import { HUB } from '../data/themes';
 import { useMoa } from '../store';
 import { AvatarCanvas } from './AvatarCanvas';
-import c from './common.module.scss';
-import s from './CreateScreen.module.scss';
+import c from '../styles/common.module.scss';
+import s from '../styles/CreateScreen.module.scss';
 
 const TABS = ['얼굴', '헤어', '옷', '소품'] as const;
 const PREVIEW: [AnimKey, string][] = [
@@ -97,7 +97,7 @@ export function CreateScreen() {
                       <button
                         key={v}
                         className={s.swatch}
-                        style={{ background: v }}
+                        style={{ '--swatch': v } as CSSProperties}
                         aria-pressed={pressed}
                         aria-label={`${o.label} ${v}`}
                         onClick={() => setLook(patch)}

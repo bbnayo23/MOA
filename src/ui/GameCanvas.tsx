@@ -5,6 +5,7 @@ import { ART_H, ART_W, S } from '../game/iso';
 import { WorldScene, type WorldData } from '../game/WorldScene';
 import { FRIENDS } from '../mock';
 import { useMoa } from '../store';
+import { pixelFontReady } from '../styles/fonts';
 
 /** Mounts one Phaser game per theme. All further talk goes through bridge.ts. */
 export function GameCanvas({ theme, className }: { theme: ThemeConfig; className?: string }) {
@@ -13,8 +14,7 @@ export function GameCanvas({ theme, className }: { theme: ThemeConfig; className
   useEffect(() => {
     let game: Phaser.Game | undefined;
     let cancelled = false;
-    // Phaser draws text to canvas, so the pixel font must be loaded first.
-    document.fonts.load('12px Galmuri11').finally(() => {
+    pixelFontReady().finally(() => {
       if (cancelled || !host.current) return;
       game = new Phaser.Game({
         type: Phaser.AUTO,

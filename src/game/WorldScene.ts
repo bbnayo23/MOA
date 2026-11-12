@@ -5,6 +5,7 @@ import { fromGame, toGame } from '../bridge';
 import { ACTIONS, type ActionId } from '../data/actions';
 import type { Player } from '../data/character';
 import type { InteractionObject, ThemeConfig } from '../data/themes';
+import { FADE_IN_MS, LIGHT, MOTES, lockedTint, objectLabelStyle } from '../styles/game';
 import { Avatar } from './Avatar';
 import { ART_H, ART_W, S, isWalkable, tileToWorld, type Tile } from './iso';
 
@@ -37,7 +38,7 @@ export class WorldScene extends Phaser.Scene {
     const center = () => this.cameras.main.centerOn((ART_W * S) / 2, (ART_H * S) / 2);
     center();
     this.scale.on(Phaser.Scale.Events.RESIZE, center);
-    this.cameras.main.fadeIn(350);
+    this.cameras.main.fadeIn(FADE_IN_MS);
 
     theme.decorations.forEach((d) => this.addArt(d.kind, d.at));
     theme.interactionObjects.forEach((o) => this.addObject(o));
@@ -164,7 +165,7 @@ export class WorldScene extends Phaser.Scene {
     if (art.glow) {
       // floor-level light: brightens the ground and walls, never washes out characters
       const glow = this.add.image(x, y - 8 * S, this.glowTexture(art.glow)).setBlendMode(Phaser.BlendModes.ADD).setDepth(0);
-      this.tweens.add({ targets: glow, alpha: { from: 0.55, to: 0.85 }, scale: 1.08, duration: 800, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+      this.tweens.add({ targets: glow, alpha: LIGHT.alpha, scale: 1.08, duration: LIGHT.pulseMs, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
     }
     return img;
   }
@@ -173,11 +174,11 @@ export class WorldScene extends Phaser.Scene {
   private glowTexture(color: number) {
     const key = `glow-${color}`;
     if (this.textures.exists(key)) return key;
-    const r = 30 * S;
+    const r = LIGHT.radius;
     const tex = this.textures.createCanvas(key, r * 2, r * 2)!;
     const { r: cr, g: cg, b: cb } = Phaser.Display.Color.IntegerToRGB(color);
     const grad = tex.context.createRadialGradient(r, r, 0, r, r, r);
-    grad.addColorStop(0, `rgba(${cr},${cg},${cb},0.45)`);
+    grad.addColorStop(0, `rgba(${cr},${cg},${cb},${LIGHT.core})`);
     grad.addColorStop(1, `rgba(${cr},${cg},${cb},0)`);
     tex.context.fillStyle = grad;
     tex.context.fillRect(0, 0, r * 2, r * 2);
@@ -187,15 +188,9 @@ export class WorldScene extends Phaser.Scene {
 
   private addObject(o: InteractionObject) {
     const img = this.addArt(o.kind, o.at, o.color).setInteractive({ useHandCursor: true });
-    if (o.locked) img.setTint(0xcfc8dc);
+    if (o.locked) img.setTint(lockedTint());
     const label = this.add
-      .text(img.x, img.y - img.displayHeight - 4, `${o.icon} ${o.label}${o.locked ? ' 🔒' : ''}`, {
-        fontFamily: 'Galmuri11',
-        fontSize: '12px',
-        color: '#3b3150',
-        backgroundColor: '#fffdf8',
-        padding: { x: 6, y: 3 },
-      })
+      .text(img.x, img.y - img.displayHeight - 4, `${o.icon} ${o.label}${o.locked ? ' 🔒' : ''}`, objectLabelStyle())
       .setOrigin(0.5, 1)
       .setDepth(9000);
     const click = () => (o.enter ? this.goThrough(o) : fromGame.emit('objectClick', o.id));
@@ -225,7 +220,7 @@ export class WorldScene extends Phaser.Scene {
 
   /** Drifting light specks: fireflies outdoors, dust in sunbeams indoors. */
   private addMotes(color: number) {
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < MOTES.count; i++) {
       const dot = this.add
         .rectangle(Phaser.Math.Between(60, 900), Phaser.Math.Between(160, 520), S, S, color)
         .setDepth(6000)
@@ -234,7 +229,7 @@ export class WorldScene extends Phaser.Scene {
         targets: dot,
         x: `+=${Phaser.Math.Between(-60, 60)}`,
         y: `+=${Phaser.Math.Between(-40, 40)}`,
-        alpha: { from: 0, to: 0.9 },
+        alpha: { from: 0, to: MOTES.alpha },
         duration: Phaser.Math.Between(1800, 3200),
         delay: Phaser.Math.Between(0, 3000),
         yoyo: true,

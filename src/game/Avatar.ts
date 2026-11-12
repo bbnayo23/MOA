@@ -3,12 +3,11 @@ import { AVATAR_FOOT, AVATAR_H, AVATAR_W, renderAvatar } from '../art/avatar';
 import type { ActionId } from '../data/actions';
 import { ANIMS, type AnimKey } from '../data/anims';
 import type { CharacterLook, Player } from '../data/character';
+import { bubbleBox, bubbleTextStyle, nameTagStyle } from '../styles/game';
 import { S, type Tile } from './iso';
 
 const SPEED = 130; // screen px / s
-const FONT = 'Galmuri11';
 const HEAD_Y = (AVATAR_FOOT - 2) * S; // feet → top of head
-const css = (name: string) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 const isEmoji = (t: string) => /^[\p{Extended_Pictographic}️‍]+$/u.test(t);
 
 /**
@@ -42,15 +41,7 @@ export class Avatar {
     this.look = player.look;
     this.tex = scene.textures.createCanvas(`avatar-${player.id}`, AVATAR_W, AVATAR_H)!;
     this.img = scene.add.image(x, y, this.tex).setOrigin(0.5, AVATAR_FOOT / AVATAR_H).setScale(S);
-    this.name = scene.add
-      .text(x, y, player.nickname, {
-        fontFamily: FONT,
-        fontSize: '12px',
-        color: isMe ? '#ffffff' : css('--c-ink'),
-        backgroundColor: isMe ? css('--c-primary-deep') : 'rgba(255,255,255,0.88)',
-        padding: { x: 5, y: 2 },
-      })
-      .setOrigin(0.5, 0);
+    this.name = scene.add.text(x, y, player.nickname, nameTagStyle(isMe)).setOrigin(0.5, 0);
     this.redraw();
     this.sync();
   }
@@ -98,27 +89,21 @@ export class Avatar {
   say(text: string) {
     this.bubble?.destroy();
     this.bubbleTimer?.remove();
-    const emoji = isEmoji(text);
+    const b = bubbleBox();
     const label = this.scene.add
-      .text(0, -12, text, {
-        fontFamily: emoji ? 'sans-serif' : FONT,
-        fontSize: emoji ? '26px' : '12px',
-        color: css('--c-ink'),
-        align: 'center',
-        wordWrap: { width: 150, useAdvancedWrap: true },
-      })
+      .text(0, -(b.tail + b.padY), text, bubbleTextStyle(isEmoji(text)))
       .setOrigin(0.5, 1);
-    const w = label.width + 18;
-    const h = label.height + 10;
+    const w = label.width + b.padX * 2;
+    const h = label.height + b.padY * 2;
     const g = this.scene.add.graphics();
-    g.fillStyle(0xffffff).lineStyle(2, Phaser.Display.Color.HexStringToColor(css('--c-lavender')).color);
-    g.fillRoundedRect(-w / 2, -h - 7, w, h, 8).strokeRoundedRect(-w / 2, -h - 7, w, h, 8);
-    g.fillTriangle(-5, -8, 5, -8, 0, 0).lineBetween(-5, -7, 0, 0).lineBetween(5, -7, 0, 0);
-    this.bubble = this.scene.add.container(0, 0, [g, label]).setScale(0.6);
-    this.scene.tweens.add({ targets: this.bubble, scale: 1, duration: 180, ease: 'Back.out' });
+    g.fillStyle(b.fill).lineStyle(b.line, b.stroke);
+    g.fillRoundedRect(-w / 2, -h - b.tail, w, h, b.radius).strokeRoundedRect(-w / 2, -h - b.tail, w, h, b.radius);
+    g.fillTriangle(-5, -b.tail - 1, 5, -b.tail - 1, 0, 0).lineBetween(-5, -b.tail, 0, 0).lineBetween(5, -b.tail, 0, 0);
+    this.bubble = this.scene.add.container(0, 0, [g, label]).setScale(b.popFrom);
+    this.scene.tweens.add({ targets: this.bubble, scale: 1, duration: b.popMs, ease: 'Back.out' });
     const bubble = this.bubble;
     this.bubbleTimer = this.scene.time.delayedCall(3500 + text.length * 70, () =>
-      this.scene.tweens.add({ targets: bubble, alpha: 0, duration: 300, onComplete: () => bubble.destroy() }),
+      this.scene.tweens.add({ targets: bubble, alpha: 0, duration: b.fadeMs, onComplete: () => bubble.destroy() }),
     );
     this.sync();
   }

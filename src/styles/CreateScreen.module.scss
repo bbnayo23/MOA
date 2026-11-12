@@ -200,6 +200,7 @@
 .swatch {
   width: 34px;
   height: 34px;
+  background: var(--swatch); // the option's own colour, passed in from the data
   border: 3px solid var(--c-surface);
   border-radius: 50%;
   box-shadow: 0 0 0 1.5px var(--c-line);

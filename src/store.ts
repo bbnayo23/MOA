@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware';
 import { toGame } from './bridge';
 import type { ActionId } from './data/actions';
 import { PRESETS, type CharacterLook, type Player } from './data/character';
-import type { ThemeId } from './data/themes';
+import { THEME_CONFIGS, type ThemeId } from './data/themes';
 
 export type Screen = 'create' | 'world';
 
@@ -39,6 +39,8 @@ interface MoaState {
   setNickname: (nickname: string) => void;
   setLook: (patch: Partial<CharacterLook>) => void;
   enterTheme: (id: ThemeId) => void;
+  /** Enter if the theme is open, otherwise show its preview. */
+  visit: (id: ThemeId) => void;
   say: (from: Pick<Player, 'id' | 'nickname'>, text: string) => void;
   system: (text: string) => void;
   selectObject: (id: string | null) => void;
@@ -71,6 +73,7 @@ export const useMoa = create<MoaState>()(
       },
       enterTheme: (themeId) =>
         set({ themeId, screen: 'world', messages: [], selectedObject: null, currentAction: null, preview: null }),
+      visit: (id) => (THEME_CONFIGS[id] ? get().enterTheme(id) : set({ preview: id })),
       say: (from, text) => {
         set((s) => ({ messages: push(s.messages, { playerId: from.id, nickname: from.nickname, text }) }));
         toGame.emit('chat', { playerId: from.id, text });
