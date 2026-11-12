@@ -2,6 +2,8 @@
 export const S = 3;
 export const ART_W = 320;
 export const ART_H = 200;
+/** What the camera tries to keep on screen: the map and what stands on it (world px). */
+export const VIEW = { x: 60, y: 0, w: 840, h: 600 };
 const TW = 32; // tile width (art px)
 const TH = 16;
 const ORIGIN_X = 160; // top corner of the map (art px)

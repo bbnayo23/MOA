@@ -7,7 +7,10 @@ import type { Player } from '../data/character';
 import type { InteractionObject, ThemeConfig } from '../data/themes';
 import { FADE_IN_MS, LIGHT, MOTES, lockedTint, objectLabelStyle } from '../styles/game';
 import { Avatar } from './Avatar';
-import { ART_H, ART_W, S, isWalkable, tileToWorld, type Tile } from './iso';
+import { S, VIEW, isWalkable, tileToWorld, type Tile } from './iso';
+
+/** Smallest on-screen size (CSS px per world px): below this, the camera follows you instead of shrinking. */
+const MIN_ZOOM = 0.8;
 
 export interface WorldData {
   theme: ThemeConfig;
@@ -22,6 +25,8 @@ export class WorldScene extends Phaser.Scene {
   private avatars = new Map<string, Avatar>();
   private objects = new Map<string, Phaser.GameObjects.Image>();
   private keys!: Phaser.Types.Input.Keyboard.CursorKeys;
+  /** Where the camera is looking (eases toward its target every frame). */
+  private focus = { x: VIEW.x + VIEW.w / 2, y: VIEW.y + VIEW.h / 2 };
 
   constructor() {
     super('world');
@@ -34,10 +39,6 @@ export class WorldScene extends Phaser.Scene {
     paintBackground(bg.context, theme.background);
     bg.refresh();
     this.add.image(-BG_MARGIN.x * S, -BG_MARGIN.y * S, bg).setOrigin(0).setScale(S).setDepth(-1);
-    // Scale.EXPAND grows the viewport past 960×600; keep the stage centred in it.
-    const center = () => this.cameras.main.centerOn((ART_W * S) / 2, (ART_H * S) / 2);
-    center();
-    this.scale.on(Phaser.Scale.Events.RESIZE, center);
     this.cameras.main.fadeIn(FADE_IN_MS);
 
     theme.decorations.forEach((d) => this.addArt(d.kind, d.at));
@@ -51,6 +52,10 @@ export class WorldScene extends Phaser.Scene {
       this.time.delayedCall(1500 + i * 1500, () => this.think(av));
     });
 
+    this.fit();
+    this.follow(Infinity);
+    this.scale.on(Phaser.Scale.Events.RESIZE, this.fit, this);
+
     const keyboard = this.input.keyboard!;
     this.keys = keyboard.createCursorKeys();
     keyboard.clearCaptures(); // let arrows/space reach the chat input
@@ -63,7 +68,7 @@ export class WorldScene extends Phaser.Scene {
     ];
     const cleanup = () => {
       offs.forEach((off) => off());
-      this.scale.off(Phaser.Scale.Events.RESIZE, center);
+      this.scale.off(Phaser.Scale.Events.RESIZE, this.fit, this);
     };
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, cleanup);
     this.events.once(Phaser.Scenes.Events.DESTROY, cleanup);
@@ -81,6 +86,33 @@ export class WorldScene extends Phaser.Scene {
       this.me.play('idle');
     }
     this.avatars.forEach((a) => a.update(dt));
+    this.follow(dt);
+  }
+
+  // ── camera ───────────────────────────────────────────────
+
+  /** Zoom so the map fills the screen, but never past the painted backdrop and never too small to read. */
+  private fit() {
+    const dpr = 1 / this.scale.zoom; // the canvas renders at device pixels, see GameCanvas
+    const w = this.scale.width / dpr, h = this.scale.height / dpr;
+    const zoom = Math.max(MIN_ZOOM, Math.min(w / VIEW.w, h / VIEW.h), w / (BG_W * S), h / (BG_H * S)) * dpr;
+    this.cameras.main.setZoom(zoom);
+    // re-rasterise text at the new scale so it stays crisp
+    this.children.list.forEach((o) => o instanceof Phaser.GameObjects.Text && o.setResolution(zoom));
+  }
+
+  /** Centre the map when it fits; otherwise follow me, without looking past its edges. */
+  private follow(dt: number) {
+    const cam = this.cameras.main;
+    const axis = (me: number, lo: number, size: number, view: number) =>
+      view >= size ? lo + size / 2 : Phaser.Math.Clamp(me, lo + view / 2, lo + size - view / 2);
+    const vw = cam.width / cam.zoom, vh = cam.height / cam.zoom;
+    // tall screens (phones): lift the map, leaving the spare room below it for the chat dock
+    const lift = Math.max(0, vh - VIEW.h) * 0.3;
+    const k = Math.min(1, dt / 250);
+    this.focus.x += (axis(this.me.x, VIEW.x, VIEW.w, vw) - this.focus.x) * k;
+    this.focus.y += (axis(this.me.y, VIEW.y, VIEW.h, vh) + lift - this.focus.y) * k;
+    cam.centerOn(this.focus.x, this.focus.y);
   }
 
   // ── actions ──────────────────────────────────────────────

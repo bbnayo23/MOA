@@ -96,4 +96,9 @@
     background: #ffe4ec;
     color: var(--c-primary-deep);
   }
+
+  // finger-sized on touch screens
+  @media (pointer: coarse) {
+    height: 40px;
+  }
 }

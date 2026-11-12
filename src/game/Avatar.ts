@@ -92,7 +92,8 @@ export class Avatar {
     const b = bubbleBox();
     const label = this.scene.add
       .text(0, -(b.tail + b.padY), text, bubbleTextStyle(isEmoji(text)))
-      .setOrigin(0.5, 1);
+      .setOrigin(0.5, 1)
+      .setResolution(this.scene.cameras.main.zoom);
     const w = label.width + b.padX * 2;
     const h = label.height + b.padY * 2;
     const g = this.scene.add.graphics();

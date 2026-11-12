@@ -33,7 +33,7 @@ function seeded(a: number) {
 }
 
 /** Extra backdrop around the ART_W × ART_H stage, shown when the viewport is wider/taller. */
-export const BG_MARGIN = { x: 160, y: 100 };
+export const BG_MARGIN = { x: 160, y: 140 };
 export const BG_W = ART_W + BG_MARGIN.x * 2;
 export const BG_H = ART_H + BG_MARGIN.y * 2;
 

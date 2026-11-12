@@ -61,6 +61,9 @@ body,
 }
 
 body {
+  overscroll-behavior: none; // no pull-to-refresh / rubber-banding inside the app
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
   background:
     radial-gradient(circle at 10% 0%, #ffe6f0 0, transparent 40%),
     radial-gradient(circle at 100% 100%, #e3efff 0, transparent 45%),
@@ -93,6 +96,14 @@ input {
 
 button {
   cursor: pointer;
+  touch-action: manipulation; // no double-tap zoom delay
+}
+
+// iOS zooms into inputs with text under 16px
+@media (pointer: coarse) {
+  input {
+    font-size: 16px;
+  }
 }
 
 :focus-visible {

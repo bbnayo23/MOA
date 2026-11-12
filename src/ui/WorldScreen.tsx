@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { HUB, type ThemeConfig } from '../data/themes';
 import { useActionBar } from '../hooks/useActionBar';
 import { useChat } from '../hooks/useChat';
@@ -13,71 +13,89 @@ import { CheerBoard, FocusTimer, MenuPanel, RallyGame, ThemePreview, Wardrobe } 
 
 const EMOTES = ['👋', '❤️', '😆', '😮', '✨'];
 
+/** The world fills the screen; every piece of UI floats on top of it. */
 export function WorldScreen() {
   const { theme, panel, preview } = useWorldSession();
+  const [drawer, setDrawer] = useState(false);
   if (!theme) return null;
+  const hub = theme.themeId === HUB;
 
   return (
-    <div className={s.layout}>
-      <TopBar theme={theme} />
-      <Sidebar theme={theme} />
-      <main className={s.stage} style={{ '--stage-bg': theme.background.sky[0] } as CSSProperties}>
-        <GameCanvas theme={theme} className={s.game} />
+    <div className={s.layout} style={{ '--stage-bg': theme.background.sky[0] } as CSSProperties}>
+      <GameCanvas theme={theme} className={s.game} />
+      <TopBar theme={theme} drawer={drawer} toggleDrawer={() => setDrawer(!drawer)} />
+      {drawer && <Sidebar theme={theme} close={() => setDrawer(false)} />}
+      {panel === 'board' && <CheerBoard />}
+      {panel === 'timer' && <FocusTimer />}
+      {panel === 'menu' && <MenuPanel />}
+      {panel === 'rally' && <RallyGame />}
+      {panel === 'wardrobe' && <Wardrobe />}
+      {preview && <ThemePreview id={preview} />}
+      <div className={s.dock}>
+        <ChatPanel />
         <ActionBar theme={theme} />
-        {panel === 'board' && <CheerBoard />}
-        {panel === 'timer' && <FocusTimer />}
-        {panel === 'menu' && <MenuPanel />}
-        {panel === 'rally' && <RallyGame />}
-        {panel === 'wardrobe' && <Wardrobe />}
-        {preview && <ThemePreview id={preview} />}
         <p className={s.hint}>
-          방향키 이동 · Enter 채팅 · {theme.themeId === HUB ? '건물을 클릭해 입장' : '오브젝트 클릭'}
+          <span className={s.keys}>방향키 이동 · Enter 채팅 · </span>
+          {hub ? '건물을 눌러 입장' : '오브젝트를 눌러 행동'}
         </p>
-      </main>
-      <ChatPanel />
+      </div>
     </div>
   );
 }
 
-function TopBar({ theme }: { theme: ThemeConfig }) {
+interface TopBarProps {
+  theme: ThemeConfig;
+  drawer: boolean;
+  toggleDrawer: () => void;
+}
+
+function TopBar({ theme, drawer, toggleDrawer }: TopBarProps) {
   const me = useMoa((st) => st.me);
   const { go, enterTheme } = useMoa.getState();
   return (
     <header className={s.top}>
+      <button className={s.menu} aria-label="공간 · 친구 목록" aria-expanded={drawer} onClick={toggleDrawer}>
+        ☰
+      </button>
       <h1 className={c.logo}>MOA</h1>
       <div className={s.place}>
         <span aria-hidden>{theme.emoji}</span>
         <strong>{theme.name}</strong>
-        <span className={s.live}>{FRIENDS.length + 1}명 접속 중</span>
+        <span className={s.live}>{FRIENDS.length + 1}명</span>
       </div>
       <div className={s.user}>
         {theme.themeId !== HUB && (
-          <button className={c.btn} onClick={() => enterTheme(HUB)}>
-            ⛲ 광장으로
+          <button className={c.btn} aria-label="광장으로" onClick={() => enterTheme(HUB)}>
+            ⛲<span className={s.label}> 광장으로</span>
           </button>
         )}
-        <AvatarCanvas look={me.look} scale={1} rows={19} />
-        <span className={s.nick}>{me.nickname}</span>
-        <button className={c.btn} onClick={() => go('create')}>
-          🎨 꾸미기
+        <button className={c.btn} aria-label="꾸미기" onClick={() => go('create')}>
+          <AvatarCanvas look={me.look} scale={1} rows={19} />
+          <span className={s.label}>{me.nickname} · 꾸미기</span>
         </button>
       </div>
     </header>
   );
 }
 
-function Sidebar({ theme }: { theme: ThemeConfig }) {
+function Sidebar({ theme, close }: { theme: ThemeConfig; close: () => void }) {
   const me = useMoa((st) => st.me);
   const setLook = useMoa((st) => st.setLook);
   const rooms = useRooms(theme.themeId);
   return (
-    <aside className={s.side}>
+    <aside className={`${c.card} ${s.side}`}>
       <section>
         <h2>공간 이동</h2>
         <ul className={s.places}>
           {rooms.map((r) => (
             <li key={r.themeId}>
-              <button aria-current={r.here ? 'location' : undefined} onClick={r.go}>
+              <button
+                aria-current={r.here ? 'location' : undefined}
+                onClick={() => {
+                  r.go();
+                  close();
+                }}
+              >
                 <span aria-hidden>{r.emoji}</span>
                 {r.name}
                 {!r.open && <em>준비 중</em>}
@@ -164,7 +182,8 @@ function ChatPanel() {
           ref={inputRef}
           value={text}
           maxLength={80}
-          placeholder="Enter를 눌러 대화하기"
+          placeholder="친구들에게 한마디"
+          enterKeyHint="send"
           onChange={(e) => setText(e.target.value)}
           onKeyDown={blurOnEscape}
         />
