@@ -8,6 +8,16 @@ pnpm dev         # http://localhost:5173
 pnpm build       # tsc(strict) + vite build
 ```
 
+### 배포 (Vercel)
+
+**https://moa-moa-beta.vercel.app**
+
+- `main`에 push → 자동으로 프로덕션 배포 (GitHub 연동, 1분 안팎)
+- 다른 브랜치 push → 브랜치별 미리보기(Preview) URL 생성. 커밋 옆 Vercel 체크에서 링크 확인
+- 빌드 설정은 Vercel이 자동 감지: `pnpm install` → `pnpm build` → `dist/`
+- `vercel.json`: 해시가 붙은 `/assets/*`는 1년 캐시(immutable), `index.html`은 매번 새로 받음
+- 로컬에서 직접 배포가 필요하면 `npx vercel --prod` (Vercel 로그인 필요)
+
 ## 1. 화면 IA
 
 ```
