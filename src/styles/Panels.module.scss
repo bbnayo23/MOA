@@ -123,3 +123,25 @@
     }
   }
 }
+
+// focus timer: big pixel clock with a progress bar underneath
+.clock {
+  padding: var(--sp-3) 0 var(--sp-4);
+  text-align: center;
+  font-family: var(--font-pixel);
+  font-size: 44px;
+  line-height: 1;
+  letter-spacing: 2px;
+  background:
+    linear-gradient(var(--c-primary), var(--c-primary)) left bottom / calc(var(--progress, 0) * 100%) 6px no-repeat,
+    linear-gradient(var(--c-line), var(--c-line)) left bottom / 100% 6px no-repeat;
+}
+
+.row {
+  display: flex;
+  gap: var(--sp-2);
+
+  > * {
+    flex: 1;
+  }
+}

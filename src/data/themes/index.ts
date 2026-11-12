@@ -1,13 +1,14 @@
 import { isWalkable, tileToWorld, type Tile } from '../../game/iso';
 import { camping } from './camping';
 import { church } from './church';
+import { library } from './library';
 import { makePlaza } from './plaza';
 import type { ThemeConfig, ThemeId, ThemeMeta } from './types';
 
 export * from './types';
 
 /** Themes you can enter from the plaza. The rest are preview-only until their config lands here. */
-const PLAYABLE: Partial<Record<ThemeId, ThemeConfig>> = { camping, church };
+const PLAYABLE: Partial<Record<ThemeId, ThemeConfig>> = { camping, church, library };
 
 /** The eight theme buildings around the plaza, in this order. */
 export const THEMES: ThemeMeta[] = [
@@ -16,7 +17,7 @@ export const THEMES: ThemeMeta[] = [
   { themeId: 'pool', name: '수영장', emoji: '🏊', tagline: '첨벙첨벙 여름 한가운데', activities: ['수영하기', '튜브 타기', '물장구치기'], color: '#7cc4f0' },
   { themeId: 'tennis', name: '테니스장', emoji: '🎾', tagline: '랠리 한 판 어때?', activities: ['서브', '스윙', '랠리', '친구와 미니게임'], color: '#f2a37e' },
   { themeId: 'gym', name: '헬스장', emoji: '🏋️', tagline: '같이 하면 덜 힘들어', activities: ['덤벨 들기', '러닝머신', '스트레칭', '스쿼트'], color: '#a99fd0' },
-  { themeId: 'library', name: '도서관', emoji: '📚', tagline: '사각사각 집중 모드', activities: ['책 읽기', '공부하기', '집중 타이머'], color: '#c9a27e' },
+  library,
   { themeId: 'mall', name: '쇼핑몰', emoji: '🛍️', tagline: '오늘의 코디 쇼핑', activities: ['옷 구경', '피팅룸', '의상 변경', '코디 공유'], color: '#ff9fc0' },
   { themeId: 'restaurant', name: '레스토랑', emoji: '🍝', tagline: '맛있는 수다 타임', activities: ['음식 주문', '식사하기', '음료 마시기', '대화하기'], color: '#ff9a8a' },
 ];

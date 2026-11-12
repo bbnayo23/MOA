@@ -1,8 +1,43 @@
+import type { CSSProperties } from 'react';
 import { THEMES, type ThemeId } from '../data/themes';
 import { useCheerBoard } from '../hooks/useCheerBoard';
+import { useFocusTimer } from '../hooks/useFocusTimer';
 import { useMoa } from '../store';
 import c from '../styles/common.module.scss';
 import s from '../styles/Panels.module.scss';
+
+/** Opens while I'm studying at a desk (action `opens: 'timer'`). */
+export function FocusTimer() {
+  const t = useFocusTimer();
+  return (
+    <section className={`${c.card} ${s.panel}`} aria-label="집중 타이머">
+      <header>
+        <h2>⏰ 집중 타이머</h2>
+        <button aria-label="닫기" onClick={t.close}>
+          ×
+        </button>
+      </header>
+      <p className={s.clock} style={{ '--progress': t.progress } as CSSProperties} aria-live="off">
+        {t.clock}
+      </p>
+      <div className={s.row}>
+        {t.presets.map((m) => (
+          <button key={m} className={c.chip} aria-pressed={t.total === m * 60} onClick={() => t.pick(m)}>
+            {m}분
+          </button>
+        ))}
+      </div>
+      <div className={s.row}>
+        <button className={c.primary} onClick={t.toggle}>
+          {t.running ? '일시정지' : '시작'}
+        </button>
+        <button className={c.btn} onClick={t.reset}>
+          처음으로
+        </button>
+      </div>
+    </section>
+  );
+}
 
 /** A building that isn't open yet: what you'll be able to do there. */
 export function ThemePreview({ id }: { id: ThemeId }) {

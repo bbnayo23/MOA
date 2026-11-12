@@ -218,6 +218,13 @@ export function renderAvatar(look: CharacterLook, pose: Pose = {}): Pix {
     q(19, 14, 2, 3, '#fff4e6');
     q(19, 12, 2, 2, '#ffb347');
     dots('#fff1a8', [19, 13]);
+  } else if (pose.prop === 'book' || pose.prop === 'bookFlip') {
+    // open book held at the chest
+    q(7, 16, 8, 4, '#e07a5f');
+    q(8, 16, 3, 3, '#fffaf0');
+    q(11, 16, 3, 3, '#f6ecd9');
+    dots('#c9bba5', [8, 17, 9, 17, 11, 17, 12, 17]);
+    if (pose.prop === 'bookFlip') q(11, 15, 3, 1, '#fffaf0');
   } else if (pose.prop === 'pen') {
     dots('#5b4a6b', [20, 16, 21, 15, 22, 14]);
     dots('#ff8fab', [23, 13]);

@@ -8,7 +8,7 @@ export interface Pose {
   legs?: 'stand' | 'stepA' | 'stepB' | 'sit';
   arms?: 'down' | 'waveA' | 'waveB' | 'up' | 'front' | 'pray';
   eyes?: 'closed' | 'happy';
-  prop?: 'stick' | 'spatula' | 'spatulaUp' | 'candle' | 'pen';
+  prop?: 'stick' | 'spatula' | 'spatulaUp' | 'candle' | 'pen' | 'book' | 'bookFlip';
   /** Mirror this frame (on top of the avatar's facing). */
   flip?: boolean;
 }
@@ -19,8 +19,12 @@ export interface Anim {
 }
 
 // ponytail: anims land with the theme that needs them. Still to come:
-// swim, tennis_swing, workout, read, try_on, eat.
-export type AnimKey = 'idle' | 'walk' | 'sit' | 'wave' | 'dance' | 'campfire' | 'cook' | 'pray' | 'candle' | 'write';
+// swim, tennis_swing, workout, try_on, eat.
+export type AnimKey =
+  | 'idle' | 'walk' | 'sit' | 'wave' | 'dance'
+  | 'campfire' | 'cook'
+  | 'pray' | 'candle' | 'write'
+  | 'read' | 'study';
 
 const SIT = { legs: 'sit' } as const;
 const ROAST = { legs: 'sit', arms: 'front', prop: 'stick' } as const;
@@ -28,6 +32,8 @@ const COOK = { arms: 'front', prop: 'spatula' } as const;
 const PRAY = { legs: 'sit', arms: 'pray', eyes: 'closed' } as const;
 const CANDLE = { arms: 'front', prop: 'candle' } as const;
 const WRITE = { arms: 'front', prop: 'pen' } as const;
+const READ = { legs: 'sit', arms: 'pray', prop: 'book' } as const;
+const STUDY = { legs: 'sit', arms: 'front', prop: 'pen' } as const;
 
 export const ANIMS: Record<AnimKey, Anim> = {
   idle: { fps: 3, frames: [{}, {}, {}, { bob: 1 }, { bob: 1 }, {}, {}, { eyes: 'closed' }] },
@@ -48,4 +54,6 @@ export const ANIMS: Record<AnimKey, Anim> = {
   pray: { fps: 2, frames: [PRAY, PRAY, PRAY, { ...PRAY, bob: 1 }, { ...PRAY, bob: 1 }, PRAY] },
   candle: { fps: 3, frames: [CANDLE, CANDLE, { ...CANDLE, bob: 1 }, { ...CANDLE, eyes: 'happy' }] },
   write: { fps: 4, frames: [WRITE, { ...WRITE, bob: 1 }, WRITE, { ...WRITE, bob: -1 }] },
+  read: { fps: 2, frames: [READ, READ, READ, { ...READ, prop: 'bookFlip' }, READ, { ...READ, eyes: 'closed' }] },
+  study: { fps: 3, frames: [STUDY, { ...STUDY, bob: 1 }, STUDY, STUDY, { ...STUDY, eyes: 'closed' }] },
 };

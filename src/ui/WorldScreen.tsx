@@ -9,7 +9,7 @@ import c from '../styles/common.module.scss';
 import s from '../styles/WorldScreen.module.scss';
 import { AvatarCanvas } from './AvatarCanvas';
 import { GameCanvas } from './GameCanvas';
-import { CheerBoard, ThemePreview } from './Panels';
+import { CheerBoard, FocusTimer, ThemePreview } from './Panels';
 
 const EMOTES = ['👋', '❤️', '😆', '😮', '✨'];
 
@@ -25,6 +25,7 @@ export function WorldScreen() {
         <GameCanvas theme={theme} className={s.game} />
         <ActionBar theme={theme} />
         {panel === 'board' && <CheerBoard />}
+        {panel === 'timer' && <FocusTimer />}
         {preview && <ThemePreview id={preview} />}
         <p className={s.hint}>
           방향키 이동 · Enter 채팅 · {theme.themeId === HUB ? '건물을 클릭해 입장' : '오브젝트 클릭'}

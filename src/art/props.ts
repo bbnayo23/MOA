@@ -3,7 +3,8 @@ import { Pix, shade } from './pix';
 export type ArtKind =
   | 'pine' | 'bush' | 'rock' | 'log' | 'tent' | 'campfire' | 'grill' | 'lantern'
   | 'pew' | 'altar' | 'candles' | 'board' | 'plant'
-  | 'building' | 'fountain';
+  | 'building' | 'fountain'
+  | 'bookshelf' | 'table' | 'desk';
 
 const WOOD = '#c58f63';
 const WAX = '#fff4e6';
@@ -274,6 +275,61 @@ export const ART: Record<ArtKind, Art> = {
       p.put(6 + f * 7, 18, 3, 1, foam);
       p.put(2, 20, 32, 2, stone);
       p.put(3, 22, 30, 4, shade(stone, -0.12));
+    },
+  },
+  bookshelf: {
+    w: 30,
+    h: 42,
+    draw(p) {
+      const frame = '#8d6346';
+      p.put(1, 1, 28, 40, frame);
+      p.put(0, 1, 30, 2, shade(frame, 0.15));
+      const spines = ['#e07a5f', '#81b29a', '#f2cc8f', '#9cc9ff', '#cbb8ff', '#ff9fb2', '#5c6185'];
+      let k = 0;
+      for (const top of [4, 13, 22, 31]) {
+        p.put(3, top, 24, 8, '#6b4a35');
+        p.put(2, top + 8, 26, 1, '#a8785a');
+        for (let x = 3; x < 27; k++) {
+          const w = Math.min(2 + (k % 2), 27 - x);
+          const h = 6 + (k % 3 === 0 ? 1 : 0) - (k % 5 === 0 ? 1 : 0);
+          const c = spines[k % spines.length];
+          p.put(x, top + 8 - h, w, h, c);
+          p.put(x, top + 9 - h, w, 1, shade(c, 0.3));
+          x += w + (k % 4 === 3 ? 1 : 0);
+        }
+      }
+    },
+  },
+  table: {
+    w: 36,
+    h: 16,
+    draw(p) {
+      const top = '#d9a676';
+      p.put(1, 2, 34, 3, top);
+      p.put(1, 2, 34, 1, shade(top, 0.2));
+      p.put(2, 5, 32, 2, shade(top, -0.18));
+      for (const x of [3, 31]) p.put(x, 7, 2, 8, shade(top, -0.28));
+    },
+  },
+  desk: {
+    w: 32,
+    h: 26,
+    glow: 0xfff1b0,
+    draw(p) {
+      const wood = '#c58f63';
+      p.put(6, 8, 1, 5, '#b08a3e');
+      p.put(4, 13, 5, 1, '#b08a3e');
+      p.put(3, 5, 7, 3, '#6fbf8e');
+      p.put(4, 4, 5, 1, '#8fd3a7');
+      p.put(4, 8, 5, 1, '#fff1a8');
+      p.put(21, 12, 8, 2, '#e07a5f');
+      p.put(22, 10, 7, 2, '#9cc9ff');
+      p.put(21, 8, 6, 2, '#f2cc8f');
+      p.put(1, 14, 30, 3, wood);
+      p.put(1, 14, 30, 1, shade(wood, 0.2));
+      p.put(2, 17, 28, 2, shade(wood, -0.15));
+      p.put(23, 17, 2, 1, '#e0b84f');
+      for (const x of [3, 27]) p.put(x, 19, 2, 6, shade(wood, -0.28));
     },
   },
 };
