@@ -6,6 +6,8 @@ export const AVATAR_W = 30;
 export const AVATAR_H = 31;
 /** Row under the feet outline — sprites anchor here. */
 export const AVATAR_FOOT = 30;
+/** Pool water; the swim pose's waterline uses it so the band blends into the pool. */
+export const POOL_WATER = '#8fd0f5';
 
 // Body is designed on a 22-wide grid centred at x=11; OX leaves room for props.
 const OX = 4;
@@ -23,7 +25,8 @@ const RIBBON = '#ff8fab';
 export function renderAvatar(look: CharacterLook, pose: Pose = {}): Pix {
   const pix = new Pix(AVATAR_W, AVATAR_H);
   const sit = pose.legs === 'sit';
-  const u = (sit ? 2 : 0) + (pose.bob ?? 0);
+  const swim = pose.legs === 'swim';
+  const u = (sit ? 2 : swim ? 6 : 0) + (pose.bob ?? 0);
   // p: planted on the ground (legs, shoes); q: moves with the upper body
   const p = (x: number, y: number, w: number, h: number, c: string) => pix.put(x + OX, y + OY, w, h, c);
   const lean = pose.lean ?? 0;
@@ -44,8 +47,10 @@ export function renderAvatar(look: CharacterLook, pose: Pose = {}): Pix {
       q(bx + 1, 5, 2, 1, hair);
     }
 
-  // legs & shoes
-  if (sit) {
+  // legs & shoes (none in the water)
+  if (swim) {
+    // the water band below covers everything from the chest down
+  } else if (sit) {
     p(5, 25, 12, 1, look.bottom === 'shorts' ? skin : bottom);
     p(4, 26, 3, 2, shoes);
     p(15, 26, 3, 2, shoes);
@@ -65,7 +70,9 @@ export function renderAvatar(look: CharacterLook, pose: Pose = {}): Pix {
   }
 
   // hips
-  if (look.bottom === 'skirt') {
+  if (swim) {
+    // under water
+  } else if (look.bottom === 'skirt') {
     q(7, 21, 8, 1, bottom);
     q(6, 22, 10, 2, bottom);
     q(6, 23, 10, 1, shade(bottom, -0.1));
@@ -211,6 +218,23 @@ export function renderAvatar(look: CharacterLook, pose: Pose = {}): Pix {
     q(12, 17, 2, 3, shade(SCARF, -0.1));
   }
 
+  // waterline: fixed to the ground (p), so the body bobs inside it
+  if (swim) {
+    p(1, 23, 20, 5, POOL_WATER);
+    p(1, 23, 20, 1, shade(POOL_WATER, 0.5));
+    p(3, 25, 3, 1, shade(POOL_WATER, 0.3));
+    p(15, 26, 3, 1, shade(POOL_WATER, 0.3));
+  }
+  if (pose.prop === 'tube') {
+    p(0, 22, 22, 3, '#ff9fb2');
+    p(1, 22, 20, 1, '#ffc4d3');
+    for (const x of [4, 16]) p(x, 22, 2, 3, WHITE);
+  }
+  if (pose.prop === 'splash' || pose.prop === 'splashB') {
+    const drops = pose.prop === 'splash' ? [0, 19, 21, 18, 2, 15, 19, 13] : [1, 17, 20, 20, 3, 12, 18, 16];
+    for (let i = 0; i < drops.length; i += 2) p(drops[i], drops[i + 1], 1, 2, '#cfeaff');
+  }
+
   // prop, held in the right hand of the 'front' arm
   if (pose.prop === 'stick') {
     dots('#8b5a3c', [20, 16, 21, 15, 22, 14, 23, 13]);
@@ -257,7 +281,7 @@ export function renderAvatar(look: CharacterLook, pose: Pose = {}): Pix {
   } else if (pose.prop === 'pen') {
     dots('#5b4a6b', [20, 16, 21, 15, 22, 14]);
     dots('#ff8fab', [23, 13]);
-  } else if (pose.prop) {
+  } else if (pose.prop === 'spatula' || pose.prop === 'spatulaUp') {
     const o = pose.prop === 'spatulaUp' ? -2 : 0;
     dots('#9aa0a6', [20, 16 + o, 21, 15 + o, 22, 14 + o]);
     q(22, 11 + o, 3, 3, '#d7dbe2');

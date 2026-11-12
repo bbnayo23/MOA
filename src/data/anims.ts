@@ -7,13 +7,14 @@ export interface Pose {
   bob?: number;
   /** Upper-body sideways offset in art pixels (side bends). */
   lean?: number;
-  legs?: 'stand' | 'stepA' | 'stepB' | 'sit';
+  legs?: 'stand' | 'stepA' | 'stepB' | 'sit' | 'swim';
   arms?: 'down' | 'waveA' | 'waveB' | 'up' | 'front' | 'pray';
   eyes?: 'closed' | 'happy';
   mouth?: 'open';
   prop?:
     | 'stick' | 'spatula' | 'spatulaUp' | 'candle' | 'pen' | 'book' | 'bookFlip' | 'fork' | 'forkUp' | 'cup'
-    | 'dumbbells' | 'sweat';
+    | 'dumbbells' | 'sweat'
+    | 'tube' | 'splash' | 'splashB';
   /** Mirror this frame (on top of the avatar's facing). */
   flip?: boolean;
 }
@@ -24,14 +25,15 @@ export interface Anim {
 }
 
 // ponytail: anims land with the theme that needs them. Still to come:
-// swim, tennis_swing, try_on.
+// tennis_swing, try_on.
 export type AnimKey =
   | 'idle' | 'walk' | 'sit' | 'wave' | 'dance'
   | 'campfire' | 'cook'
   | 'pray' | 'candle' | 'write'
   | 'read' | 'study'
   | 'eat' | 'drink' | 'talk'
-  | 'workout' | 'run' | 'stretch' | 'squat';
+  | 'workout' | 'run' | 'stretch' | 'squat'
+  | 'swim' | 'tube' | 'splash';
 
 const SIT = { legs: 'sit' } as const;
 const ROAST = { legs: 'sit', arms: 'front', prop: 'stick' } as const;
@@ -90,6 +92,32 @@ export const ANIMS: Record<AnimKey, Anim> = {
     ],
   },
   squat: { fps: 2, frames: [{ arms: 'pray' }, { legs: 'sit', arms: 'pray', eyes: 'closed' }] },
+  // crawl: one arm over the water, then the other (flip mirrors the frame)
+  swim: {
+    fps: 4,
+    frames: [
+      { legs: 'swim', arms: 'waveA' },
+      { legs: 'swim', bob: 1 },
+      { legs: 'swim', arms: 'waveA', flip: true },
+      { legs: 'swim', bob: 1 },
+    ],
+  },
+  tube: {
+    fps: 2,
+    frames: [
+      { legs: 'swim', prop: 'tube', eyes: 'happy' },
+      { legs: 'swim', prop: 'tube', bob: -1 },
+      { legs: 'swim', prop: 'tube', bob: -1, eyes: 'happy' },
+      { legs: 'swim', prop: 'tube' },
+    ],
+  },
+  splash: {
+    fps: 5,
+    frames: [
+      { legs: 'swim', arms: 'up', prop: 'splash', eyes: 'happy', mouth: 'open' },
+      { legs: 'swim', prop: 'splashB', bob: 1 },
+    ],
+  },
   talk: {
     fps: 3,
     frames: [

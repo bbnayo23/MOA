@@ -6,7 +6,8 @@ export type ArtKind =
   | 'building' | 'fountain'
   | 'bookshelf' | 'table' | 'desk'
   | 'diningTable' | 'counter' | 'menuboard'
-  | 'treadmill' | 'rack' | 'mat';
+  | 'treadmill' | 'rack' | 'mat'
+  | 'ladder' | 'lounger' | 'parasol' | 'ring';
 
 const WOOD = '#c58f63';
 const WAX = '#fff4e6';
@@ -423,6 +424,51 @@ export const ART: Record<ArtKind, Art> = {
       p.put(2, 3, 28, 3, '#ffb3c6');
       p.put(2, 3, 28, 1, '#ffd6e0');
       p.put(29, 2, 3, 4, '#f29bb3');
+    },
+  },
+  ladder: {
+    w: 16,
+    h: 22,
+    draw(p) {
+      const steel = '#d6dbe3';
+      for (const x of [3, 11]) {
+        p.put(x, 4, 2, 17, steel);
+        p.put(x - 1, 2, 3, 2, steel);
+      }
+      for (const y of [9, 14]) p.put(5, y, 6, 1, shade(steel, -0.1));
+    },
+  },
+  lounger: {
+    w: 34,
+    h: 14,
+    draw(p) {
+      const cloth = '#ffd38a';
+      p.put(2, 2, 8, 7, cloth);
+      p.put(9, 7, 23, 3, cloth);
+      for (let x = 4; x < 32; x += 5) p.put(x, x < 10 ? 2 : 7, 2, x < 10 ? 7 : 3, '#fffaf0');
+      for (const x of [3, 9, 30]) p.put(x, 10, 1, 3, '#c4c9cf');
+    },
+  },
+  parasol: {
+    w: 36,
+    h: 38,
+    draw(p) {
+      p.put(17, 9, 2, 27, '#c4c9cf');
+      for (let r = 0; r < 9; r++) {
+        const half = 3 + Math.round(r * 1.75);
+        for (let x = 18 - half; x < 18 + half; x++)
+          p.put(x, 1 + r, 1, 1, Math.floor((x - 18 + 40) / 5) % 2 ? '#ff9fb2' : '#fffaf0');
+      }
+    },
+  },
+  ring: {
+    w: 20,
+    h: 10,
+    draw(p) {
+      p.put(2, 2, 16, 6, '#ff9fb2');
+      p.put(6, 4, 8, 2, '#e07f9a');
+      p.put(3, 2, 14, 1, '#ffc4d3');
+      for (const x of [4, 14]) p.put(x, 2, 2, 6, '#fffdf8');
     },
   },
 };
