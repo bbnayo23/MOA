@@ -1,4 +1,6 @@
-import { isWalkable, tileToWorld, type Tile } from '../../game/iso';
+import { ART } from '../../art/props';
+import type { Tile } from '../../game/iso';
+import { isFree, type Footprint } from '../../game/path';
 import { camping } from './camping';
 import { church } from './church';
 import { gym } from './gym';
@@ -35,16 +37,21 @@ export const THEME_CONFIGS: Partial<Record<ThemeId, ThemeConfig>> = {
 };
 
 /** Dev-time sanity check for hand-written theme data. */
+/** Floor blocked by the theme's furniture and scenery (see `foot` in art/props.ts). */
+export function footprintsOf(t: ThemeConfig): Footprint[] {
+  return [...t.decorations, ...t.interactionObjects].flatMap(({ kind, at }) =>
+    ART[kind].foot ? [{ ...at, r: ART[kind].foot! }] : [],
+  );
+}
+
 export function checkThemes() {
   const errors: string[] = [];
   for (const t of Object.values(THEME_CONFIGS)) {
-    const walkable = (p: Tile) => {
-      const w = tileToWorld(p);
-      return isWalkable(w.x, w.y, t.background.size);
-    };
-    if (!walkable(t.spawnPosition)) errors.push(`${t.themeId}: spawnPosition off the map`);
+    const blocks = footprintsOf(t);
+    const free = (p: Tile) => isFree(p, t.background.size, blocks);
+    if (!free(t.spawnPosition)) errors.push(`${t.themeId}: spawnPosition blocked or off the map`);
     for (const o of t.interactionObjects) {
-      if (!o.spots.length || !o.spots.every(walkable)) errors.push(`${t.themeId}/${o.id}: bad spots`);
+      if (!o.spots.length || !o.spots.every(free)) errors.push(`${t.themeId}/${o.id}: spot blocked or off the map`);
       for (const a of o.actions)
         if (!t.availableActions.includes(a)) errors.push(`${t.themeId}/${o.id}: "${a}" not in availableActions`);
     }

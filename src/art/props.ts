@@ -29,6 +29,8 @@ interface Art {
   glow?: number;
   /** Rows above the bottom edge where the object meets the ground (for slanted art like a net). */
   anchorY?: number;
+  /** Radius (tiles) of floor it blocks. Leave out for things you stand or sit on (benches, mats, …). */
+  foot?: number;
   /** `color` is the object's own tint (e.g. a building's roof), when it has one. */
   draw: (p: Pix, frame: number, color: string) => void;
 }
@@ -47,6 +49,7 @@ export const ART: Record<ArtKind, Art> = {
   pine: {
     w: 22,
     h: 29,
+    foot: 0.3,
     draw(p) {
       p.put(9, 22, 4, 6, '#a0705a');
       tri(p, 11, 12, 10, '#9edbb8', '#7cc3a0');
@@ -57,6 +60,7 @@ export const ART: Record<ArtKind, Art> = {
   bush: {
     w: 18,
     h: 12,
+    foot: 0.3,
     draw(p) {
       const g = '#a3dcb5';
       p.put(4, 2, 10, 1, g);
@@ -69,6 +73,7 @@ export const ART: Record<ArtKind, Art> = {
   rock: {
     w: 14,
     h: 9,
+    foot: 0.25,
     draw(p) {
       const r = '#d3cce0';
       p.put(4, 2, 6, 1, r);
@@ -90,6 +95,7 @@ export const ART: Record<ArtKind, Art> = {
   tent: {
     w: 38,
     h: 29,
+    foot: 0.65,
     draw(p) {
       const cx = 19, top = 3, rows = 25;
       for (let r = 0; r < rows; r++) {
@@ -108,6 +114,7 @@ export const ART: Record<ArtKind, Art> = {
   campfire: {
     w: 26,
     h: 26,
+    foot: 0.5,
     frames: 4,
     glow: 0xffa860,
     draw(p, f) {
@@ -131,6 +138,7 @@ export const ART: Record<ArtKind, Art> = {
   grill: {
     w: 24,
     h: 29,
+    foot: 0.4,
     frames: 3,
     draw(p, f) {
       for (let k = 0; k < 2; k++) {
@@ -151,6 +159,7 @@ export const ART: Record<ArtKind, Art> = {
   lantern: {
     w: 10,
     h: 22,
+    foot: 0.15,
     frames: 2,
     glow: 0xffe7a0,
     draw(p, f) {
@@ -175,6 +184,7 @@ export const ART: Record<ArtKind, Art> = {
   altar: {
     w: 30,
     h: 26,
+    foot: 0.8,
     frames: 2,
     glow: 0xffe2a8,
     draw(p, f) {
@@ -194,6 +204,7 @@ export const ART: Record<ArtKind, Art> = {
   candles: {
     w: 26,
     h: 24,
+    foot: 0.4,
     frames: 2,
     glow: 0xffc870,
     draw(p, f) {
@@ -213,6 +224,7 @@ export const ART: Record<ArtKind, Art> = {
   board: {
     w: 26,
     h: 29,
+    foot: 0.4,
     draw(p) {
       for (const x of [4, 20]) p.put(x, 18, 2, 10, shade(WOOD, -0.2));
       p.put(1, 2, 24, 18, '#b07d5a');
@@ -229,6 +241,7 @@ export const ART: Record<ArtKind, Art> = {
   plant: {
     w: 16,
     h: 24,
+    foot: 0.25,
     draw(p) {
       p.put(5, 6, 6, 10, '#8fd3a7');
       p.put(2, 8, 5, 6, '#7cc39a');
@@ -241,6 +254,7 @@ export const ART: Record<ArtKind, Art> = {
   building: {
     w: 32,
     h: 38,
+    foot: 0.6,
     draw(p, _f, color) {
       const roof = shade(color, -0.2);
       for (let r = 0; r < 10; r++) {
@@ -268,6 +282,7 @@ export const ART: Record<ArtKind, Art> = {
   fountain: {
     w: 36,
     h: 28,
+    foot: 0.7,
     frames: 3,
     draw(p, f) {
       const stone = '#e1dbec', water = '#a9d8ff', foam = '#eef8ff';
@@ -287,6 +302,7 @@ export const ART: Record<ArtKind, Art> = {
   bookshelf: {
     w: 30,
     h: 42,
+    foot: 0.4,
     draw(p) {
       const frame = '#8d6346';
       p.put(1, 1, 28, 40, frame);
@@ -310,6 +326,7 @@ export const ART: Record<ArtKind, Art> = {
   table: {
     w: 36,
     h: 16,
+    foot: 0.45,
     draw(p) {
       const top = '#d9a676';
       p.put(1, 2, 34, 3, top);
@@ -321,6 +338,7 @@ export const ART: Record<ArtKind, Art> = {
   desk: {
     w: 32,
     h: 26,
+    foot: 0.35,
     glow: 0xfff1b0,
     draw(p) {
       const wood = '#c58f63';
@@ -342,6 +360,7 @@ export const ART: Record<ArtKind, Art> = {
   diningTable: {
     w: 34,
     h: 22,
+    foot: 0.45,
     draw(p) {
       p.put(16, 1, 2, 4, '#7cc39a');
       p.put(15, 1, 4, 2, '#ffb3c6');
@@ -359,6 +378,7 @@ export const ART: Record<ArtKind, Art> = {
   counter: {
     w: 40,
     h: 30,
+    foot: 0.5,
     draw(p) {
       p.put(5, 6, 9, 6, '#7c7590');
       p.put(6, 7, 6, 2, '#a9d8ff');
@@ -375,6 +395,7 @@ export const ART: Record<ArtKind, Art> = {
   menuboard: {
     w: 22,
     h: 31,
+    foot: 0.25,
     draw(p) {
       for (const x of [4, 16]) p.put(x, 20, 2, 10, shade(WOOD, -0.2));
       p.put(1, 1, 20, 20, '#9c7a5a');
@@ -406,6 +427,7 @@ export const ART: Record<ArtKind, Art> = {
   rack: {
     w: 34,
     h: 22,
+    foot: 0.4,
     draw(p) {
       const metal = '#7c7590';
       const colors = ['#ff9fb2', '#9cc9ff', '#ffd38a', '#b5e8c9'];
@@ -456,6 +478,7 @@ export const ART: Record<ArtKind, Art> = {
   parasol: {
     w: 36,
     h: 38,
+    foot: 0.15,
     draw(p) {
       p.put(17, 9, 2, 27, '#c4c9cf');
       for (let r = 0; r < 9; r++) {
@@ -502,6 +525,7 @@ export const ART: Record<ArtKind, Art> = {
   clothesRack: {
     w: 34,
     h: 30,
+    foot: 0.45,
     draw(p) {
       const steel = '#c4c9cf';
       const clothes = ['#ffb3c6', '#a9cdfc', '#ffd38a', '#cbb8ff', '#b5e8c9'];
@@ -520,6 +544,7 @@ export const ART: Record<ArtKind, Art> = {
   fittingRoom: {
     w: 34,
     h: 44,
+    foot: 0.5,
     draw(p) {
       const curtain = '#cbb8ff';
       p.put(1, 1, 32, 5, '#ff9fc0');
@@ -536,6 +561,7 @@ export const ART: Record<ArtKind, Art> = {
   mirror: {
     w: 18,
     h: 40,
+    foot: 0.3,
     draw(p) {
       const gold = '#e0b84f';
       p.put(3, 1, 12, 1, gold);

@@ -29,7 +29,9 @@ export class Avatar {
   private frame = 0;
   private elapsed = 0;
   private facingLeft = false;
-  private target: { x: number; y: number; then?: () => void } | null = null;
+  /** Waypoints still to walk (world px), and what to do on arrival. */
+  private route: { x: number; y: number }[] = [];
+  private arrive?: () => void;
 
   constructor(
     private scene: Phaser.Scene,
@@ -47,7 +49,7 @@ export class Avatar {
   }
 
   get walking() {
-    return this.target !== null;
+    return this.route.length > 0;
   }
 
   setLook(look: CharacterLook) {
@@ -67,12 +69,16 @@ export class Avatar {
     this.setFacing(x < this.x);
   }
 
-  walkTo(x: number, y: number, then?: () => void) {
-    this.target = { x, y, then };
+  /** Walk the waypoints in order, then call `then` (right away if there's nowhere to go). */
+  walkPath(points: { x: number; y: number }[], then?: () => void) {
+    this.route = [...points];
+    this.arrive = then;
+    if (!points.length) this.arrived();
   }
 
   cancelWalk() {
-    this.target = null;
+    this.route = [];
+    this.arrive = undefined;
   }
 
   /** Direct control (arrow keys). Slides along the edge when blocked. */
@@ -110,16 +116,15 @@ export class Avatar {
   }
 
   update(dt: number) {
-    if (this.target) {
-      const { x, y, then } = this.target;
+    if (this.route.length) {
+      const { x, y } = this.route[0];
       const dist = Math.hypot(x - this.x, y - this.y);
       const step = (SPEED * dt) / 1000;
       if (dist <= step) {
         this.x = x;
         this.y = y;
-        this.target = null;
-        this.play('idle');
-        then?.();
+        this.route.shift();
+        if (!this.route.length) this.arrived();
       } else {
         this.x += ((x - this.x) / dist) * step;
         this.y += ((y - this.y) / dist) * step;
@@ -136,6 +141,13 @@ export class Avatar {
       this.redraw();
     }
     this.sync();
+  }
+
+  private arrived() {
+    const then = this.arrive;
+    this.arrive = undefined;
+    this.play('idle');
+    then?.();
   }
 
   private setFacing(left: boolean) {

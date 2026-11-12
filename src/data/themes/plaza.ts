@@ -48,8 +48,8 @@ export function makePlaza(themes: ThemeMeta[], isOpen: (id: ThemeId) => boolean)
     interactionObjects: [...buildings, bench('bench-l', { tx: 2.7, ty: 5.1 }), bench('bench-r', { tx: 5.1, ty: 2.7 })],
     decorations: [
       { kind: 'fountain', at: { tx: 4, ty: 4 } },
-      { kind: 'bush', at: { tx: 1.2, ty: 7.4 } },
-      { kind: 'bush', at: { tx: 7.4, ty: 1.2 } },
+      { kind: 'bush', at: { tx: 1.8, ty: 7.5 } }, // beside the end doors, not on their step
+      { kind: 'bush', at: { tx: 7.5, ty: 1.8 } },
       { kind: 'plant', at: { tx: 3.6, ty: 7.5 } },
       { kind: 'plant', at: { tx: 7.5, ty: 3.6 } },
       { kind: 'rock', at: { tx: 2.6, ty: 7.3 } },

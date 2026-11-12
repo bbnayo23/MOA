@@ -6,7 +6,7 @@
 pnpm install
 pnpm dev         # http://localhost:5173
 pnpm build       # tsc(strict) + vite build
-pnpm check       # 랠리 미니게임 규칙 검사 (node)
+pnpm check       # 랠리 미니게임 · 길찾기 규칙 검사 (node)
 ```
 
 ### 배포 (Vercel)
@@ -74,7 +74,8 @@ src/
 │  ├─ props.ts            모닥불·텐트·그릴·나무 등 오브젝트
 │  └─ ground.ts           아이소메트릭 배경
 ├─ game/                  ← Phaser 동작 (스타일 값 없음)
-│  ├─ iso.ts              타일 ↔ 화면 좌표, 이동 가능 영역
+│  ├─ iso.ts              타일 ↔ 화면 좌표, 카메라가 담을 영역
+│  ├─ path.ts             가구 발판(원) 피해 걷기: 이동 가능 판정 + 길찾기 (순수 함수)
 │  ├─ Avatar.ts           스프라이트 + 닉네임 + 말풍선 + 애니메이션 재생
 │  └─ WorldScene.ts       ThemeConfig 하나로 어떤 테마든 구성하는 씬
 ├─ hooks/                 ← 기능: React 쪽 로직 (구독·이펙트·핸들러)
@@ -131,11 +132,12 @@ Pose                →  픽셀                                           (art/a
 
 1. `anims.ts`에 필요한 애니메이션 추가 (예: `swim`), 필요하면 `art/avatar.ts`에 포즈/소품 추가
 2. `actions.ts`에 행동 추가
-3. `art/props.ts`에 오브젝트 아트 추가
+3. `art/props.ts`에 오브젝트 아트 추가 (`foot` = 막는 바닥 반경, 앉거나 올라서는 물건은 생략)
 4. `data/themes/<테마>.ts`에 `ThemeConfig` 작성 → `index.ts`의 `PLAYABLE`과 `THEMES`에 넣으면 끝 (광장 건물·사이드바가 자동으로 열림)
    - 패널이 필요하면 행동에 `opens`를 달고 `hooks/`에 로직, `ui/Panels.tsx`에 마크업, `styles/Panels.module.scss`에 스타일
    - 배경 옵션: 야외는 `night`(별·달) · `hills` · `flowers`, 실내는 `walls`(스테인드글라스 창) · `rugs`(바닥 러너), 공통으로 `motes`(반딧불·먼지 입자)
 5. (선택) `mock.ts`의 `AMBIENT`에 그 공간에서 친구들이 할 말 추가
+6. `pnpm dev`로 열면 `checkThemes()`가 시작 위치·행동 자리가 맵 안, 가구 발판 밖인지 검사합니다
 
 ## 6. 로드맵
 
@@ -151,4 +153,5 @@ Pose                →  픽셀                                           (art/a
 - [ ] Supabase: 프로필 저장(현재 localStorage), Realtime 채널로 위치·행동·채팅 동기화 (`mock.ts` 교체)
 - [x] **전체 화면 + 모바일**: 월드가 화면을 꽉 채우고 UI는 그 위에 떠 있음. 폰(세로·가로)에선 한 열 레이아웃, 카메라가 나를 따라감, 고해상도(DPR) 렌더링
 - [x] **클릭·탭 이동**: 바닥을 누르면 그 자리로 걸어감(맵 밖은 가장자리로), 누른 자리에 링 표시, 터치하면 채팅 키보드 닫힘
-- [ ] 오브젝트 충돌, 뒷모습 프레임
+- [x] **오브젝트 충돌**: 가구·나무가 바닥을 막음(방향키는 가장자리를 미끄러짐), 클릭·행동·친구 이동은 길찾기로 돌아감, 막힌 곳을 누르면 가장 가까운 곳까지
+- [ ] 뒷모습 프레임

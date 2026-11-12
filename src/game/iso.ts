@@ -29,10 +29,3 @@ export function tileToWorld(t: Tile) {
   const a = tileToArt(t.tx, t.ty);
   return { x: a.x * S, y: a.y * S };
 }
-
-// ponytail: walkable = inside the diamond; no per-object collision yet.
-export function isWalkable(x: number, y: number, size: number) {
-  const { tx, ty } = artToTile(x / S, y / S);
-  const m = 0.25;
-  return tx > m && ty > m && tx < size - m && ty < size - m;
-}

@@ -4,10 +4,11 @@ import { ART, renderArt, type ArtKind } from '../art/props';
 import { fromGame, toGame } from '../bridge';
 import { ACTIONS, type ActionId } from '../data/actions';
 import type { Player } from '../data/character';
-import type { InteractionObject, ThemeConfig } from '../data/themes';
+import { footprintsOf, type InteractionObject, type ThemeConfig } from '../data/themes';
 import { FADE_IN_MS, LIGHT, MOTES, TAP_MARK, lockedTint, objectLabelStyle } from '../styles/game';
 import { Avatar } from './Avatar';
-import { S, VIEW, artToTile, isWalkable, tileToWorld, type Tile } from './iso';
+import { S, VIEW, artToTile, tileToWorld, type Tile } from './iso';
+import { findPath, isFree, type Footprint } from './path';
 
 /** Smallest on-screen size (CSS px per world px): below this, the camera follows you instead of shrinking. */
 const MIN_ZOOM = 0.8;
@@ -25,6 +26,8 @@ export class WorldScene extends Phaser.Scene {
   private avatars = new Map<string, Avatar>();
   private objects = new Map<string, Phaser.GameObjects.Image>();
   private keys!: Phaser.Types.Input.Keyboard.CursorKeys;
+  /** Floor taken by furniture and scenery. */
+  private blocks: Footprint[] = [];
   /** Where the camera is looking (eases toward its target every frame). */
   private focus = { x: VIEW.x + VIEW.w / 2, y: VIEW.y + VIEW.h / 2 };
 
@@ -34,6 +37,7 @@ export class WorldScene extends Phaser.Scene {
 
   create({ theme, me, friends }: WorldData) {
     this.theme = theme;
+    this.blocks = footprintsOf(theme);
 
     const bg = this.textures.createCanvas('bg', BG_W, BG_H)!;
     paintBackground(bg.context, theme.background);
@@ -88,7 +92,8 @@ export class WorldScene extends Phaser.Scene {
     const dy = typing ? 0 : +k.down.isDown - +k.up.isDown;
     if (dx || dy) {
       if (this.me.action || this.me.walking) this.stop(this.me);
-      this.me.move(dx, dy, dt, (x, y) => isWalkable(x, y, this.theme.background.size));
+      // (if you're ever caught inside a footprint, you may walk out of it)
+      this.me.move(dx, dy, dt, (x, y) => this.free(x, y) || !this.free(this.me.x, this.me.y));
     } else if (!this.me.action && !this.me.walking) {
       this.me.play('idle');
     }
@@ -148,17 +153,27 @@ export class WorldScene extends Phaser.Scene {
     };
     if (!obj) return start();
     av.spot = freeSpot(obj) ?? obj.spots[0];
-    const p = tileToWorld(av.spot);
-    av.walkTo(p.x, p.y, start);
+    this.route(av, av.spot, start);
   }
 
-  /** Walk to a point on the floor, pulled inside the map's edge if it lies outside. */
+  // ── walking ──────────────────────────────────────────────
+
+  private free(x: number, y: number) {
+    return isFree(artToTile(x / S, y / S), this.theme.background.size, this.blocks);
+  }
+
+  /** Walk around furniture to `to` (or as close as it gets), then `then`. Returns where it ends. */
+  private route(av: Avatar, to: Tile, then?: () => void) {
+    const path = findPath(artToTile(av.x / S, av.y / S), to, this.theme.background.size, this.blocks).map(tileToWorld);
+    av.walkPath(path, then);
+    return path.at(-1);
+  }
+
+  /** Clicked / tapped floor: walk there, or as close as you can get. */
   private walkMeTo(x: number, y: number) {
-    const n = this.theme.background.size, m = 0.3;
-    const t = artToTile(x / S, y / S);
-    const p = tileToWorld({ tx: Phaser.Math.Clamp(t.tx, m, n - m), ty: Phaser.Math.Clamp(t.ty, m, n - m) });
     this.stop(this.me);
-    this.me.walkTo(p.x, p.y);
+    const p = this.route(this.me, artToTile(x / S, y / S));
+    if (!p) return;
     const mark = this.add.ellipse(p.x, p.y, TAP_MARK.w, TAP_MARK.w / 2).setStrokeStyle(TAP_MARK.line, TAP_MARK.color).setDepth(1);
     this.tweens.add({ targets: mark, scale: TAP_MARK.grow, alpha: 0, duration: TAP_MARK.ms, onComplete: () => mark.destroy() });
   }
@@ -179,8 +194,7 @@ export class WorldScene extends Phaser.Scene {
     if (r < 0.45) {
       this.stop(av);
       const n = this.theme.background.size;
-      const p = tileToWorld({ tx: Phaser.Math.FloatBetween(0.8, n - 0.8), ty: Phaser.Math.FloatBetween(0.8, n - 0.8) });
-      av.walkTo(p.x, p.y);
+      this.route(av, { tx: Phaser.Math.FloatBetween(0.8, n - 0.8), ty: Phaser.Math.FloatBetween(0.8, n - 0.8) });
     } else if (r < 0.85 || !av.action) {
       this.perform(av, Phaser.Utils.Array.GetRandom(this.theme.availableActions));
     }
@@ -259,8 +273,7 @@ export class WorldScene extends Phaser.Scene {
   /** Walk up to a door, then let React decide (enter, or preview if locked). */
   private goThrough(o: InteractionObject) {
     this.stop(this.me);
-    const p = tileToWorld(o.spots[0]);
-    this.me.walkTo(p.x, p.y, () => fromGame.emit('portal', o.enter!));
+    this.route(this.me, o.spots[0], () => fromGame.emit('portal', o.enter!));
   }
 
   private poke(id: string) {

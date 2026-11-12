@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "check": "node scripts/check-rally.ts"
+    "check": "node scripts/check-rally.ts && node scripts/check-path.ts"
   },
   "dependencies": {
     "galmuri": "^2.40.3",
