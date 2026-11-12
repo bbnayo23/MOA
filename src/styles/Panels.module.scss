@@ -191,3 +191,60 @@
   grid-row: span 2;
   font-size: 26px;
 }
+
+// rally mini-game: a strip of court, the ball slides along it
+.court {
+  position: relative;
+  height: 48px;
+  border: 2px solid #ffffff;
+  border-radius: var(--r-s);
+  background: #7fc9a6;
+  box-shadow: inset 0 0 0 1px #5fae8f;
+
+  em {
+    position: absolute;
+    bottom: 2px;
+    font-style: normal;
+    font-family: var(--font-pixel);
+    font-size: 10px;
+    color: #ffffff;
+
+    &:first-of-type {
+      left: 6px;
+    }
+
+    &:last-of-type {
+      right: 6px;
+    }
+  }
+}
+
+.zone {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: calc((1 - var(--zone)) * 100%);
+  background: rgba(255, 224, 138, 0.55);
+}
+
+.ball {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--pos) * (100% - 16px));
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #e6f27a;
+  box-shadow: inset -3px -3px 0 rgba(0, 0, 0, 0.12);
+  translate: 0 -50%;
+}
+
+.score {
+  text-align: center;
+  font-size: var(--fs-s);
+
+  b {
+    font-family: var(--font-pixel);
+    font-size: var(--fs-l);
+    color: var(--c-primary-deep);
+  }
+}

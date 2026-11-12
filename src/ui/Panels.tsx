@@ -3,9 +3,44 @@ import { THEMES, type ThemeId } from '../data/themes';
 import { useCheerBoard } from '../hooks/useCheerBoard';
 import { useFocusTimer } from '../hooks/useFocusTimer';
 import { useMenu } from '../hooks/useMenu';
+import { useRallyGame } from '../hooks/useRallyGame';
 import { useMoa } from '../store';
 import c from '../styles/common.module.scss';
 import s from '../styles/Panels.module.scss';
+
+/** Opens for the tennis mini-game (action `opens: 'rally'`). */
+export function RallyGame() {
+  const g = useRallyGame();
+  return (
+    <section className={`${c.card} ${s.panel}`} aria-label="랠리 미니게임">
+      <header>
+        <h2>🏆 랠리 미니게임</h2>
+        <button aria-label="닫기" onClick={g.close}>
+          ×
+        </button>
+      </header>
+      <p className={s.tagline}>하루가 넘긴 공이 노란 구역에 들어오면 스윙!</p>
+      <div className={s.court} style={{ '--pos': g.pos, '--zone': g.zone } as CSSProperties}>
+        <span className={s.zone} />
+        <span className={s.ball} />
+        <em>하루</em>
+        <em>나</em>
+      </div>
+      <p className={s.score}>
+        랠리 <b>{g.hits}</b> · 최고 {g.best}
+      </p>
+      {g.state === 'playing' ? (
+        <button className={c.primary} onClick={g.swing}>
+          스윙! (Space)
+        </button>
+      ) : (
+        <button className={c.primary} onClick={g.start}>
+          {g.state === 'over' ? '다시 하기' : '시작'}
+        </button>
+      )}
+    </section>
+  );
+}
 
 /** Opens while I'm at the restaurant counter (action `opens: 'menu'`). */
 export function MenuPanel() {

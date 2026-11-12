@@ -14,7 +14,8 @@ export interface Pose {
   prop?:
     | 'stick' | 'spatula' | 'spatulaUp' | 'candle' | 'pen' | 'book' | 'bookFlip' | 'fork' | 'forkUp' | 'cup'
     | 'dumbbells' | 'sweat'
-    | 'tube' | 'splash' | 'splashB';
+    | 'tube' | 'splash' | 'splashB'
+    | 'racketUp' | 'racketFwd' | 'racketServe' | 'racketBall';
   /** Mirror this frame (on top of the avatar's facing). */
   flip?: boolean;
 }
@@ -25,7 +26,7 @@ export interface Anim {
 }
 
 // ponytail: anims land with the theme that needs them. Still to come:
-// tennis_swing, try_on.
+// try_on.
 export type AnimKey =
   | 'idle' | 'walk' | 'sit' | 'wave' | 'dance'
   | 'campfire' | 'cook'
@@ -33,7 +34,8 @@ export type AnimKey =
   | 'read' | 'study'
   | 'eat' | 'drink' | 'talk'
   | 'workout' | 'run' | 'stretch' | 'squat'
-  | 'swim' | 'tube' | 'splash';
+  | 'swim' | 'tube' | 'splash'
+  | 'swing' | 'serve' | 'rally';
 
 const SIT = { legs: 'sit' } as const;
 const ROAST = { legs: 'sit', arms: 'front', prop: 'stick' } as const;
@@ -92,6 +94,38 @@ export const ANIMS: Record<AnimKey, Anim> = {
     ],
   },
   squat: { fps: 2, frames: [{ arms: 'pray' }, { legs: 'sit', arms: 'pray', eyes: 'closed' }] },
+  // tennis_swing: wind up behind, swing through, follow-through
+  swing: {
+    fps: 5,
+    frames: [
+      { arms: 'front', prop: 'racketFwd' },
+      { arms: 'waveB', prop: 'racketUp' },
+      { arms: 'front', prop: 'racketFwd', lean: 1, eyes: 'happy' },
+      { arms: 'front', prop: 'racketFwd' },
+    ],
+  },
+  serve: {
+    fps: 4,
+    frames: [
+      { arms: 'up', prop: 'racketServe' },
+      { arms: 'up', prop: 'racketServe', bob: -1 },
+      { arms: 'waveB', prop: 'racketUp', bob: -1 },
+      { arms: 'front', prop: 'racketBall', lean: 1, eyes: 'happy' },
+      { arms: 'front', prop: 'racketFwd' },
+    ],
+  },
+  // ready stance, ball comes in, return it
+  rally: {
+    fps: 4,
+    frames: [
+      { arms: 'front', prop: 'racketFwd' },
+      { arms: 'front', prop: 'racketFwd', bob: 1 },
+      { arms: 'front', prop: 'racketBall' },
+      { arms: 'waveB', prop: 'racketUp' },
+      { arms: 'front', prop: 'racketFwd', lean: 1 },
+      { arms: 'front', prop: 'racketFwd', bob: 1 },
+    ],
+  },
   // crawl: one arm over the water, then the other (flip mirrors the frame)
   swim: {
     fps: 4,

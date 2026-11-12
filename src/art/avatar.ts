@@ -20,6 +20,8 @@ const GLASSES = '#5b4a6b';
 const STAR = '#ffd166';
 const SCARF = '#ff8a8a';
 const RIBBON = '#ff8fab';
+const RACKET = '#5c6185';
+const BALL = '#e6f27a';
 
 /** Character look + animation pose → outlined pixel grid (facing right). */
 export function renderAvatar(look: CharacterLook, pose: Pose = {}): Pix {
@@ -278,6 +280,25 @@ export function renderAvatar(look: CharacterLook, pose: Pose = {}): Pix {
   } else if (pose.prop === 'sweat') {
     q(19, 7, 1, 2, '#a9d8ff');
     dots('#e6f5ff', [19, 7]);
+  } else if (pose.prop?.startsWith('racket')) {
+    // oval head (frame + strings) at (x, y), handle drawn by each grip below
+    const head = (x: number, y: number) => {
+      q(x + 1, y, 2, 1, RACKET);
+      q(x, y + 1, 4, 4, RACKET);
+      q(x + 1, y + 5, 2, 1, RACKET);
+      q(x + 1, y + 1, 2, 4, '#eef2f6');
+    };
+    if (pose.prop === 'racketUp') {
+      dots(RACKET, [20, 10, 20, 9]); // raised behind, from the waveB hand
+      head(19, 3);
+    } else if (pose.prop === 'racketServe') {
+      head(17, 4); // over the raised right hand, ball tossed from the left
+      q(3, 8, 2, 2, BALL);
+    } else {
+      dots(RACKET, [20, 17, 21, 17]); // swung forward from the front hand
+      head(22, 14);
+      if (pose.prop === 'racketBall') q(26, 11, 2, 2, BALL);
+    }
   } else if (pose.prop === 'pen') {
     dots('#5b4a6b', [20, 16, 21, 15, 22, 14]);
     dots('#ff8fab', [23, 13]);

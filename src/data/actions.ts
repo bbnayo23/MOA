@@ -8,7 +8,7 @@ export interface ActionDef {
   /** One-shot actions return to idle after this; others loop until you move. */
   durationMs?: number;
   /** UI panel that opens while *I* am doing this. */
-  opens?: 'board' | 'timer' | 'menu';
+  opens?: 'board' | 'timer' | 'menu' | 'rally';
 }
 
 export type ActionId =
@@ -18,7 +18,8 @@ export type ActionId =
   | 'read' | 'study' | 'focus'
   | 'order' | 'eat' | 'drink' | 'talk'
   | 'dumbbell' | 'treadmill' | 'stretch' | 'squat'
-  | 'swim' | 'tube' | 'splash';
+  | 'swim' | 'tube' | 'splash'
+  | 'serve' | 'swing' | 'rally' | 'minigame';
 
 export const ACTIONS: Record<ActionId, ActionDef> = {
   sit: { label: '앉기', icon: '🪑', anim: 'sit' },
@@ -45,4 +46,8 @@ export const ACTIONS: Record<ActionId, ActionDef> = {
   swim: { label: '수영하기', icon: '🏊', anim: 'swim' },
   tube: { label: '튜브 타기', icon: '🛟', anim: 'tube' },
   splash: { label: '물장구치기', icon: '💦', anim: 'splash' },
+  serve: { label: '서브', icon: '🎾', anim: 'serve' },
+  swing: { label: '스윙', icon: '🏸', anim: 'swing' },
+  rally: { label: '랠리', icon: '🔁', anim: 'rally' },
+  minigame: { label: '미니게임', icon: '🏆', anim: 'rally', opens: 'rally' },
 };

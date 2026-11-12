@@ -7,7 +7,8 @@ export type ArtKind =
   | 'bookshelf' | 'table' | 'desk'
   | 'diningTable' | 'counter' | 'menuboard'
   | 'treadmill' | 'rack' | 'mat'
-  | 'ladder' | 'lounger' | 'parasol' | 'ring';
+  | 'ladder' | 'lounger' | 'parasol' | 'ring'
+  | 'net' | 'balls';
 
 const WOOD = '#c58f63';
 const WAX = '#fff4e6';
@@ -25,6 +26,8 @@ interface Art {
   frames?: number;
   /** Additive light colour drawn around the object. */
   glow?: number;
+  /** Rows above the bottom edge where the object meets the ground (for slanted art like a net). */
+  anchorY?: number;
   /** `color` is the object's own tint (e.g. a building's roof), when it has one. */
   draw: (p: Pix, frame: number, color: string) => void;
 }
@@ -469,6 +472,30 @@ export const ART: Record<ArtKind, Art> = {
       p.put(6, 4, 8, 2, '#e07f9a');
       p.put(3, 2, 14, 1, '#ffc4d3');
       for (const x of [4, 14]) p.put(x, 2, 2, 6, '#fffdf8');
+    },
+  },
+  // Runs across the court along the iso diagonal (bottom-left → top-right, 2:1 slope).
+  net: {
+    w: 56,
+    h: 37,
+    anchorY: 15, // the court centre is at the middle of the slanted base line
+    draw(p) {
+      const base = (x: number) => 34 - Math.floor((x - 3) / 2);
+      for (let x = 5; x < 51; x++) {
+        const b = base(x);
+        for (let y = b - 7; y <= b - 2; y++) p.put(x, y, 1, 1, (x + y) % 3 === 0 ? '#9aa0a6' : '#e9edf2');
+        p.put(x, b - 8, 1, 1, '#ffffff');
+      }
+      for (const x of [3, 51]) p.put(x, base(x) - 9, 2, 10, '#5f5870');
+    },
+  },
+  balls: {
+    w: 16,
+    h: 13,
+    draw(p) {
+      for (const [x, y] of [[4, 3], [7, 2], [10, 3], [5, 5], [9, 5]]) p.put(x, y, 2, 2, '#e6f27a');
+      p.put(2, 6, 12, 5, '#c58f63');
+      for (let x = 3; x < 14; x += 3) p.put(x, 6, 1, 5, shade('#c58f63', -0.2));
     },
   },
 };

@@ -161,7 +161,7 @@ export class WorldScene extends Phaser.Scene {
       if (art.frames) this.time.addEvent({ delay: 160, loop: true, callback: () => paint(++f % art.frames!) });
     }
     const { x, y } = tileToWorld(at);
-    const img = this.add.image(x, y, key).setOrigin(0.5, 1).setScale(S).setDepth(y);
+    const img = this.add.image(x, y, key).setOrigin(0.5, 1 - (art.anchorY ?? 0) / art.h).setScale(S).setDepth(y);
     if (art.glow) {
       // floor-level light: brightens the ground and walls, never washes out characters
       const glow = this.add.image(x, y - 8 * S, this.glowTexture(art.glow)).setBlendMode(Phaser.BlendModes.ADD).setDepth(0);
