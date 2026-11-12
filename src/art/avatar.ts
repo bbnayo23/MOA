@@ -23,8 +23,8 @@ const RIBBON = '#ff8fab';
 const RACKET = '#5c6185';
 const BALL = '#e6f27a';
 
-/** Character look + animation pose → outlined pixel grid (facing right). */
-export function renderAvatar(look: CharacterLook, pose: Pose = {}): Pix {
+/** Character look + animation pose → outlined pixel grid (facing right, or seen from behind with `back`). */
+export function renderAvatar(look: CharacterLook, pose: Pose = {}, back = false): Pix {
   const pix = new Pix(AVATAR_W, AVATAR_H);
   const sit = pose.legs === 'sit';
   const swim = pose.legs === 'swim';
@@ -85,17 +85,18 @@ export function renderAvatar(look: CharacterLook, pose: Pose = {}): Pix {
 
   // torso
   q(7, 16, 8, 5, top);
-  if (look.top === 'tee') q(10, 16, 2, 1, skin);
+  if (look.top === 'tee' && !back) q(10, 16, 2, 1, skin);
   if (look.top === 'stripe') {
     q(7, 17, 8, 1, WHITE);
     q(7, 19, 8, 1, WHITE);
   }
-  if (look.top === 'hoodie') {
+  if (look.top === 'hoodie' && back) q(8, 16, 6, 2, shade(top, -0.15)); // the hood
+  else if (look.top === 'hoodie') {
     q(7, 16, 8, 1, shade(top, -0.15));
     dots(WHITE, [9, 17, 12, 17]);
     q(9, 19, 4, 1, shade(top, -0.1));
   }
-  if (look.top === 'jacket') {
+  if (look.top === 'jacket' && !back) {
     q(10, 16, 2, 5, WHITE);
     dots(shade(top, -0.2), [9, 17, 12, 17]);
   }
@@ -107,47 +108,63 @@ export function renderAvatar(look: CharacterLook, pose: Pose = {}): Pix {
   q(5, 14, 12, 1, skin);
   q(6, 15, 10, 1, skin);
 
-  // face
-  const eyes = pose.eyes === 'closed' ? 'sleepy' : (pose.eyes ?? look.eyes);
-  if (eyes === 'round') {
-    q(7, 10, 2, 2, INK);
-    q(13, 10, 2, 2, INK);
-    dots(WHITE, [7, 10, 13, 10]);
-  } else if (eyes === 'dot') {
-    q(8, 10, 1, 2, INK);
-    q(13, 10, 1, 2, INK);
-  } else if (eyes === 'happy') {
-    dots(INK, [6, 11, 7, 10, 8, 11, 13, 11, 14, 10, 15, 11]);
+  if (back) {
+    // back of the head: all hair, with the nape showing under short styles
+    const long = look.hair === 'long', bob = look.hair === 'bob';
+    q(7, 3, 8, 1, hair);
+    q(5, 4, 12, 1, hair);
+    q(4, 5, 14, 9, hair);
+    q(5, 14, 12, 1, hair);
+    if (long || bob) q(6, 15, 10, 1, hair);
+    if (long) q(6, 15, 10, 6, shade(hair, -0.05)); // falls down the back, between the arms
+    q(8, 5, 4, 1, shade(hair, 0.3));
+    if (long || bob) {
+      q(3, 6, 2, long ? 10 : 9, hair);
+      q(17, 6, 2, long ? 10 : 9, hair);
+    }
   } else {
-    q(7, 11, 2, 1, INK);
-    q(13, 11, 2, 1, INK);
-  }
-  q(5, 12, 2, 1, BLUSH);
-  q(15, 12, 2, 1, BLUSH);
-  const mouth = pose.mouth ?? look.mouth;
-  if (mouth === 'smile') dots(MOUTH, [9, 12, 10, 13, 11, 13, 12, 12]);
-  else if (mouth === 'cat') dots(MOUTH, [8, 13, 9, 14, 10, 13, 11, 13, 12, 14, 13, 13]);
-  else if (mouth === 'open') q(10, 13, 2, 2, MOUTH);
-  else q(10, 13, 2, 1, MOUTH);
+    // face
+    const eyes = pose.eyes === 'closed' ? 'sleepy' : (pose.eyes ?? look.eyes);
+    if (eyes === 'round') {
+      q(7, 10, 2, 2, INK);
+      q(13, 10, 2, 2, INK);
+      dots(WHITE, [7, 10, 13, 10]);
+    } else if (eyes === 'dot') {
+      q(8, 10, 1, 2, INK);
+      q(13, 10, 1, 2, INK);
+    } else if (eyes === 'happy') {
+      dots(INK, [6, 11, 7, 10, 8, 11, 13, 11, 14, 10, 15, 11]);
+    } else {
+      q(7, 11, 2, 1, INK);
+      q(13, 11, 2, 1, INK);
+    }
+    q(5, 12, 2, 1, BLUSH);
+    q(15, 12, 2, 1, BLUSH);
+    const mouth = pose.mouth ?? look.mouth;
+    if (mouth === 'smile') dots(MOUTH, [9, 12, 10, 13, 11, 13, 12, 12]);
+    else if (mouth === 'cat') dots(MOUTH, [8, 13, 9, 14, 10, 13, 11, 13, 12, 14, 13, 13]);
+    else if (mouth === 'open') q(10, 13, 2, 2, MOUTH);
+    else q(10, 13, 2, 1, MOUTH);
 
-  // front hair
-  q(7, 3, 8, 1, hair);
-  q(5, 4, 12, 1, hair);
-  q(4, 5, 14, 4, hair);
-  q(7, 4, 3, 1, shade(hair, 0.3));
-  q(6, 5, 2, 1, shade(hair, 0.3));
+    // front hair
+    q(7, 3, 8, 1, hair);
+    q(5, 4, 12, 1, hair);
+    q(4, 5, 14, 4, hair);
+    q(7, 4, 3, 1, shade(hair, 0.3));
+    q(6, 5, 2, 1, shade(hair, 0.3));
+    if (look.hair === 'bob' || look.hair === 'long') {
+      const len = look.hair === 'long' ? 10 : 9;
+      q(3, 6, 2, len, hair);
+      q(17, 6, 2, len, hair);
+    } else {
+      q(4, 9, 1, 3, hair);
+      q(17, 9, 1, 3, hair);
+    }
+  }
   if (look.hair === 'spiky') {
     q(6, 2, 2, 1, hair);
     q(10, 1, 2, 2, hair);
     q(14, 2, 2, 1, hair);
-  }
-  if (look.hair === 'bob' || look.hair === 'long') {
-    const len = look.hair === 'long' ? 10 : 9;
-    q(3, 6, 2, len, hair);
-    q(17, 6, 2, len, hair);
-  } else {
-    q(4, 9, 1, 3, hair);
-    q(17, 9, 1, 3, hair);
   }
 
   // arms (after head so a raised arm sits in front of it)
@@ -190,7 +207,7 @@ export function renderAvatar(look: CharacterLook, pose: Pose = {}): Pix {
     q(6, 2, 10, 1, top);
     q(5, 3, 12, 4, top);
     q(7, 3, 3, 1, shade(top, 0.35));
-    q(4, 7, 16, 1, shade(top, -0.2));
+    q(4, 7, back ? 14 : 16, 1, shade(top, -0.2)); // brim, just a band from behind
   } else if (look.hat === 'beanie') {
     q(6, 2, 10, 1, top);
     q(5, 3, 12, 3, top);
@@ -204,7 +221,7 @@ export function renderAvatar(look: CharacterLook, pose: Pose = {}): Pix {
   }
 
   // accessory
-  if (look.accessory === 'glasses') {
+  if (look.accessory === 'glasses' && !back) {
     for (const gx of [6, 12]) {
       q(gx, 9, 4, 1, GLASSES);
       q(gx, 12, 4, 1, GLASSES);
@@ -217,7 +234,7 @@ export function renderAvatar(look: CharacterLook, pose: Pose = {}): Pix {
     q(14, 6, 3, 1, STAR);
   } else if (look.accessory === 'scarf') {
     q(6, 15, 10, 2, SCARF);
-    q(12, 17, 2, 3, shade(SCARF, -0.1));
+    if (!back) q(12, 17, 2, 3, shade(SCARF, -0.1));
   }
 
   // waterline: fixed to the ground (p), so the body bobs inside it

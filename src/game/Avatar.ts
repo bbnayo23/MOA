@@ -29,6 +29,8 @@ export class Avatar {
   private frame = 0;
   private elapsed = 0;
   private facingLeft = false;
+  /** Seen from behind: walking up the screen, until the next action. */
+  private facingBack = false;
   /** Waypoints still to walk (world px), and what to do on arrival. */
   private route: { x: number; y: number }[] = [];
   private arrive?: () => void;
@@ -59,6 +61,7 @@ export class Avatar {
 
   play(anim: AnimKey) {
     if (anim === this.anim) return;
+    if (anim !== 'walk' && anim !== 'idle') this.facingBack = false; // actions face the camera
     this.anim = anim;
     this.frame = 0;
     this.elapsed = 0;
@@ -89,6 +92,7 @@ export class Avatar {
     if (canWalk(nx, this.y)) this.x = nx;
     if (canWalk(this.x, ny)) this.y = ny;
     if (dx) this.setFacing(dx < 0);
+    this.setBack(dy < 0);
     this.play('walk');
   }
 
@@ -129,6 +133,8 @@ export class Avatar {
         this.x += ((x - this.x) / dist) * step;
         this.y += ((y - this.y) / dist) * step;
         if (Math.abs(x - this.x) > 2) this.setFacing(x < this.x);
+        // up the screen (iso diagonals included, not a nearly flat sideways walk)
+        this.setBack(y - this.y < -Math.abs(x - this.x) * 0.3);
         this.play('walk');
       }
     }
@@ -156,10 +162,16 @@ export class Avatar {
     this.redraw();
   }
 
+  private setBack(back: boolean) {
+    if (back === this.facingBack) return;
+    this.facingBack = back;
+    this.redraw();
+  }
+
   private redraw() {
     const pose = ANIMS[this.anim].frames[this.frame];
     this.tex.context.clearRect(0, 0, AVATAR_W, AVATAR_H);
-    renderAvatar(this.look, pose).paint(this.tex.context, 1, this.facingLeft !== !!pose.flip);
+    renderAvatar(this.look, pose, this.facingBack).paint(this.tex.context, 1, this.facingLeft !== !!pose.flip);
     this.tex.refresh();
   }
 
