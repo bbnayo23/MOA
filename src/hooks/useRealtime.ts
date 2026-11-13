@@ -44,7 +44,7 @@ export function useRealtime() {
       message: (msg) => {
         const p = peers.get(msg.id);
         if (!p || msg.themeId !== useMoa.getState().themeId) return;
-        if (msg.type === 'chat') return useMoa.getState().say(p, msg.text);
+        if (msg.type === 'chat') return useMoa.getState().say(p, msg.text, msg.original);
         const { type: _t, id: _i, themeId: _th, ...motion } = msg;
         motions.set(p.id, motion);
         show(p);
@@ -59,9 +59,9 @@ export function useRealtime() {
         link.send(mine);
         s.setLast({ themeId: s.themeId!, pos: motion.pos });
       }),
-      toGame.on('chat', ({ playerId, text }) => {
+      toGame.on('chat', ({ playerId, text, original }) => {
         const s = useMoa.getState();
-        if (playerId === s.me.id) link.send({ type: 'chat', id: playerId, themeId: s.themeId!, text });
+        if (playerId === s.me.id) link.send({ type: 'chat', id: playerId, themeId: s.themeId!, text, original });
       }),
     ];
     // moving to another space, or changing clothes / name: update presence

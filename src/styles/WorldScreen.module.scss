@@ -443,6 +443,13 @@ $phone: 720px;
   font-size: var(--fs-xs);
 }
 
+// what was typed, under its translation
+.original {
+  display: block;
+  color: var(--c-ink-soft);
+  font-size: var(--fs-xs);
+}
+
 .compose {
   display: flex;
   flex-wrap: wrap;
@@ -482,5 +489,41 @@ $phone: 720px;
     &:hover {
       transform: translateY(-2px) scale(1.1);
     }
+  }
+}
+
+// the bubble-language picker, at the end of the emote row
+.lang {
+  margin-left: auto;
+  height: 32px;
+  padding: 0 var(--sp-2);
+  border: 2px solid var(--c-line);
+  border-radius: var(--r-pill);
+  background: var(--c-surface-soft);
+  color: var(--c-ink);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--c-primary);
+  }
+}
+
+// what the bubble will say, while typing
+.preview {
+  flex-basis: 100%;
+  padding: var(--sp-1) var(--sp-3);
+  border-radius: var(--r-m);
+  background: var(--c-surface-soft);
+  font-size: var(--fs-s);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+
+  span {
+    margin-right: var(--sp-1);
+    color: var(--c-accent);
+    font-size: var(--fs-xs);
+    font-weight: 700;
   }
 }

@@ -23,7 +23,7 @@ export interface Motion {
 
 export type Message =
   | ({ type: 'state'; id: string; themeId: ThemeId } & Motion)
-  | { type: 'chat'; id: string; themeId: ThemeId; text: string };
+  | { type: 'chat'; id: string; themeId: ThemeId; text: string; original?: string };
 
 export interface Link {
   track(me: Presence): void;

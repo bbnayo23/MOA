@@ -7,6 +7,7 @@ import { useZoom } from '../hooks/useZoom';
 import { useRooms, useWorldSession } from '../hooks/useWorldSession';
 import { FRIENDS } from '../mock';
 import { supabase } from '../net/supabase';
+import { LANGS, type Lang } from '../net/translate';
 import { useMoa } from '../store';
 import c from '../styles/common.module.scss';
 import s from '../styles/WorldScreen.module.scss';
@@ -199,7 +200,7 @@ function ActionBar({ theme }: { theme: ThemeConfig }) {
 }
 
 function ChatPanel() {
-  const { messages, text, setText, inputRef, logRef, sendEmote, submit, blurOnEscape } = useChat();
+  const { messages, lang, setLang, preview, busy, text, setText, inputRef, logRef, sendEmote, submit, blurOnEscape } = useChat();
   const myId = useMoa((st) => st.me.id);
   return (
     <section className={s.chat}>
@@ -208,6 +209,7 @@ function ChatPanel() {
           <li key={m.id} className={m.system ? s.system : m.playerId === myId ? s.mine : undefined}>
             {!m.system && <b>{m.nickname}</b>}
             {m.text}
+            {m.original && <small className={s.original}>{m.original}</small>}
           </li>
         ))}
       </ol>
@@ -218,18 +220,31 @@ function ChatPanel() {
               {e}
             </button>
           ))}
+          <select className={s.lang} aria-label="내 말풍선 언어" value={lang ?? ''} onChange={(e) => setLang((e.target.value || null) as Lang | null)}>
+            <option value="">🌐 번역 끔</option>
+            {(Object.keys(LANGS) as Lang[]).map((id) => (
+              <option key={id} value={id}>
+                🌐 {LANGS[id]}
+              </option>
+            ))}
+          </select>
         </div>
+        {preview && (
+          <p className={s.preview} aria-live="polite">
+            <span>{LANGS[lang!]}</span> {preview}
+          </p>
+        )}
         <input
           ref={inputRef}
           value={text}
           maxLength={80}
-          placeholder="친구들에게 한마디"
+          placeholder={lang ? `쓰면 ${LANGS[lang]}로 바꿔 보내요` : '친구들에게 한마디'}
           enterKeyHint="send"
           onChange={(e) => setText(e.target.value)}
           onKeyDown={blurOnEscape}
         />
-        <button type="submit" className={c.primary}>
-          전송
+        <button type="submit" className={c.primary} disabled={busy}>
+          {busy ? '번역 중' : '전송'}
         </button>
       </form>
     </section>

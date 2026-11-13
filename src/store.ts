@@ -6,6 +6,7 @@ import { PRESETS, type CharacterLook, type Player } from './data/character';
 import { HUB, THEME_CONFIGS, type ThemeId } from './data/themes';
 import type { Presence } from './net/link';
 import type { Profile } from './net/supabase';
+import type { Lang } from './net/translate';
 import type { Tile } from './world/space';
 
 export type Screen = 'create' | 'world';
@@ -15,6 +16,8 @@ export interface ChatMessage {
   playerId: string;
   nickname: string;
   text: string;
+  /** What they typed, when `text` is its translation. */
+  original?: string;
   system?: boolean;
 }
 
@@ -45,6 +48,8 @@ interface MoaState {
   /** Other people online right now (any space). */
   peers: Presence[];
   last: Place | null;
+  /** My speech bubbles come out in this language (null: as typed). */
+  lang: Lang | null;
 
   go: (screen: Screen) => void;
   showPreview: (id: ThemeId | null) => void;
@@ -53,7 +58,8 @@ interface MoaState {
   enterTheme: (id: ThemeId) => void;
   /** Enter if the theme is open, otherwise show its preview. */
   visit: (id: ThemeId) => void;
-  say: (from: Pick<Player, 'id' | 'nickname'>, text: string) => void;
+  say: (from: Pick<Player, 'id' | 'nickname'>, text: string, original?: string) => void;
+  setLang: (lang: Lang | null) => void;
   system: (text: string) => void;
   selectObject: (id: string | null) => void;
   setCurrentAction: (id: ActionId | null) => void;
@@ -91,6 +97,7 @@ export const useMoa = create<MoaState>()(
       cheers: [],
       peers: [],
       last: null,
+      lang: null,
 
       go: (screen) => set({ screen }),
       showPreview: (preview) => set({ preview }),
@@ -99,10 +106,11 @@ export const useMoa = create<MoaState>()(
       enterTheme: (themeId) =>
         set({ themeId, screen: 'world', messages: [], selectedObject: null, currentAction: null, preview: null }),
       visit: (id) => (THEME_CONFIGS[id] ? get().enterTheme(id) : set({ preview: id })),
-      say: (from, text) => {
-        set((s) => ({ messages: push(s.messages, { playerId: from.id, nickname: from.nickname, text }) }));
-        toGame.emit('chat', { playerId: from.id, text });
+      say: (from, text, original) => {
+        set((s) => ({ messages: push(s.messages, { playerId: from.id, nickname: from.nickname, text, original }) }));
+        toGame.emit('chat', { playerId: from.id, text, original });
       },
+      setLang: (lang) => set({ lang }),
       system: (text) => set((s) => ({ messages: push(s.messages, { playerId: '', nickname: '', text, system: true }) })),
       selectObject: (selectedObject) => set({ selectedObject }),
       setCurrentAction: (currentAction) => set({ currentAction }),
@@ -120,11 +128,11 @@ export const useMoa = create<MoaState>()(
       name: 'moa',
       version: 2,
       // the id isn't kept: it's per tab, or the signed-in account's
-      partialize: (s) => ({ me: { nickname: s.me.nickname, look: s.me.look }, cheers: s.cheers, last: s.last }),
+      partialize: (s) => ({ me: { nickname: s.me.nickname, look: s.me.look }, cheers: s.cheers, last: s.last, lang: s.lang }),
       // v0 looks predate face shape / nose: fill them in
       migrate: (saved) => {
         const s = saved as { me: Player; cheers?: Cheer[] };
-        return { cheers: s.cheers ?? [], last: null, me: { nickname: s.me.nickname, look: { ...PRESETS[0].look, ...s.me.look } } };
+        return { cheers: s.cheers ?? [], last: null, lang: null, me: { nickname: s.me.nickname, look: { ...PRESETS[0].look, ...s.me.look } } };
       },
       merge: (saved, current) => {
         const s = (saved ?? {}) as Partial<Pick<MoaState, 'cheers' | 'last'>> & { me?: Partial<Player> };
