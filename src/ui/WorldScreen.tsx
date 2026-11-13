@@ -11,6 +11,7 @@ import { useMoa } from '../store';
 import c from '../styles/common.module.scss';
 import s from '../styles/WorldScreen.module.scss';
 import { AvatarImage } from './AvatarImage';
+import { ZOOM } from '../world/camera';
 import { World } from '../world/World';
 import { InstallButton } from './InstallButton';
 import { CheerBoard, FocusTimer, MenuPanel, RallyGame, ThemePreview, Wardrobe } from './Panels';
@@ -54,11 +55,11 @@ function ZoomControls() {
   const z = useZoom();
   return (
     <div className={s.zoom} role="group" aria-label="화면 확대·축소">
-      <button aria-label="확대" onClick={z.zoomIn} disabled={z.pct >= 200}>
+      <button aria-label="확대" onClick={z.zoomIn} disabled={z.pct >= ZOOM.max * 100}>
         +
       </button>
       <span aria-live="polite">{z.pct}%</span>
-      <button aria-label="축소" onClick={z.zoomOut} disabled={z.pct <= 50}>
+      <button aria-label="축소" onClick={z.zoomOut} disabled={z.pct <= ZOOM.min * 100}>
         −
       </button>
       <button aria-label="기본 화면으로" onClick={z.reset} className={s.home}>

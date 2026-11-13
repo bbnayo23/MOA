@@ -22,7 +22,7 @@ assert.ok(after.distanceTo(before) < 1e-6, 'the point under the cursor stays put
 
 // zoom limits
 assert.equal(clampZoom(5), 2);
-assert.equal(clampZoom(0.1), 0.5);
+assert.equal(clampZoom(0.1), 0.25);
 
 // bounds: 3.6 in from the edge at 100%, tighter in, wider out, centred when the map fits
 const S = 19.2, M = 3.6;

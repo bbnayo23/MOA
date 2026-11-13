@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 /** Zoom: 1 = 100%. */
-export const ZOOM = { min: 0.5, max: 2, step: 1.25 };
+export const ZOOM = { min: 0.25, max: 2, step: 1.25 };
 export const clampZoom = (z: number) => Math.min(ZOOM.max, Math.max(ZOOM.min, z));
 
 const PITCH = (40 * Math.PI) / 180;

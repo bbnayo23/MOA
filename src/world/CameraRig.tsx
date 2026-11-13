@@ -26,7 +26,7 @@ interface Cam {
 }
 
 /**
- * Quarter-view camera that follows me, plus zoom (50–200%: wheel at the cursor,
+ * Quarter-view camera that follows me, plus zoom (25–200%: wheel at the cursor,
  * pinch between the fingers, the +/− buttons at the centre) and pan (drag the
  * ground). It never shows past the map, and once I walk off it drifts back to me.
  */
