@@ -1,3 +1,4 @@
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { ActionId } from '../data/actions';
 import type { AnimKey } from '../data/anims';
 import type { CharacterLook } from '../data/character';
@@ -45,29 +46,45 @@ export function openLink(me: Presence, on: LinkHandlers): Link {
   return supabase ? supabaseLink(me, on) : tabLink(me, on);
 }
 
+/**
+ * The previous link's channel on its way out. supabase-js hands back the same
+ * channel for a topic until it has fully left, so a new link (back from
+ * 꾸미기, React's dev double-mount) waits for that instead of joining a dying one.
+ */
+let leaving: Promise<unknown> = Promise.resolve();
+
 /** Supabase Realtime: presence for who's here, broadcast for movement and chat (private channel, members only). */
 function supabaseLink(me: Presence, on: LinkHandlers): Link {
   const sb = supabase!;
-  const ch = sb.channel(TOPIC, { config: { private: true, presence: { key: me.id }, broadcast: { self: false } } });
+  let ch: RealtimeChannel | undefined;
   let mine = me;
   let live = false;
-  ch.on('presence', { event: 'sync' }, () => on.presence(Object.values(ch.presenceState<Presence>()).map((list) => list[0])))
-    .on('broadcast', { event: 'msg' }, ({ payload }) => on.message(payload as Message));
-  void sb.realtime.setAuth().then(() =>
-    ch.subscribe((status) => {
-      live = status === 'SUBSCRIBED';
-      if (live) void ch.track(mine);
-    }),
-  );
+  let closed = false;
+  void leaving
+    .then(() => sb.realtime.setAuth())
+    .then(() => {
+      if (closed) return; // closed before it ever joined
+      const c = (ch = sb.channel(TOPIC, { config: { private: true, presence: { key: me.id }, broadcast: { self: false } } }));
+      c.on('presence', { event: 'sync' }, () => on.presence(Object.values(c.presenceState<Presence>()).map((list) => list[0])))
+        .on('broadcast', { event: 'msg' }, ({ payload }) => on.message(payload as Message))
+        .subscribe((status) => {
+          live = status === 'SUBSCRIBED';
+          if (live) void c.track(mine);
+        });
+    });
   return {
     track: (p) => {
       mine = p;
-      if (live) void ch.track(p);
+      if (live) void ch!.track(p);
     },
     send: (msg) => {
-      if (live) void ch.send({ type: 'broadcast', event: 'msg', payload: msg });
+      if (live) void ch!.send({ type: 'broadcast', event: 'msg', payload: msg });
     },
-    close: () => void sb.removeChannel(ch),
+    close: () => {
+      closed = true;
+      live = false;
+      if (ch) leaving = sb.removeChannel(ch);
+    },
   };
 }
 
