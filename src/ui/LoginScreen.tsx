@@ -18,19 +18,24 @@ export function LoginScreen() {
               <input type="email" required autoComplete="email" value={l.email} placeholder="you@example.com" onChange={(e) => l.setEmail(e.target.value)} />
             </label>
             <button className={c.primary} disabled={l.busy}>
-              로그인 코드 받기
+              로그인 메일 받기
             </button>
           </form>
         ) : (
+          // the email's link signs you in; a code only appears if the email template carries one
           <form onSubmit={l.verify} className={s.form}>
+            <p className={s.sent}>
+              📩 <b>{l.email}</b>로 로그인 메일을 보냈어요.
+              <br />
+              메일 속 <b>로그인 링크</b>를 누르면 바로 들어와져요.
+            </p>
             <label>
-              <span>{l.email}로 보낸 6자리 코드</span>
+              <span>메일에 6자리 코드가 있다면</span>
               <input inputMode="numeric" autoComplete="one-time-code" required value={l.code} placeholder="123456" onChange={(e) => l.setCode(e.target.value)} />
             </label>
-            <button className={c.primary} disabled={l.busy}>
-              들어가기
+            <button className={c.btn} disabled={l.busy}>
+              코드로 들어가기
             </button>
-            <p className={c.note}>메일에 있는 링크를 눌러도 바로 들어와져요.</p>
             <button type="button" className={c.btn} onClick={l.restart}>
               다른 이메일로
             </button>

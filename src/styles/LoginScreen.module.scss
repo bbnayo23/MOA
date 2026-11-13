@@ -46,6 +46,15 @@
   }
 }
 
+.sent {
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-m);
+  background: #e9f7ef;
+  font-size: var(--fs-s);
+  line-height: 1.6;
+  word-break: keep-all;
+}
+
 .error {
   padding: var(--sp-2) var(--sp-3);
   border-radius: var(--r-m);
