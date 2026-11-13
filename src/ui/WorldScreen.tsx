@@ -2,7 +2,6 @@ import { useState, type CSSProperties } from 'react';
 import { HUB, type ThemeConfig } from '../data/themes';
 import { useActionBar } from '../hooks/useActionBar';
 import { useChat } from '../hooks/useChat';
-import { signOut } from '../hooks/useAccount';
 import { useRealtime } from '../hooks/useRealtime';
 import { useZoom } from '../hooks/useZoom';
 import { useRooms, useWorldSession } from '../hooks/useWorldSession';
@@ -173,11 +172,6 @@ function Sidebar({ theme, close }: { theme: ThemeConfig; close: () => void }) {
       )}
 
       <InstallButton />
-      {supabase && (
-        <button className={c.btn} onClick={signOut}>
-          로그아웃
-        </button>
-      )}
     </aside>
   );
 }

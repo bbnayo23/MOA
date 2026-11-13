@@ -1,15 +1,15 @@
 import { useAccount } from './hooks/useAccount';
 import { useMoa } from './store';
 import { CreateScreen } from './ui/CreateScreen';
-import { LoginScreen } from './ui/LoginScreen';
+import { OfflineScreen } from './ui/OfflineScreen';
 import { WorldScreen } from './ui/WorldScreen';
 import { ThumbStudio } from './world/Preview';
 
 export default function App() {
   const screen = useMoa((s) => s.screen);
   const account = useAccount();
-  if (account === 'loading') return null;
-  if (account === 'out') return <LoginScreen />;
+  if (account.status === 'loading') return null;
+  if (account.status === 'out') return <OfflineScreen why={account.why} />;
   return (
     <>
       {screen === 'create' ? <CreateScreen /> : <WorldScreen />}

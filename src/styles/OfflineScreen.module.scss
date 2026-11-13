@@ -1,0 +1,35 @@
+.page {
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  padding: max(var(--sp-4), env(safe-area-inset-top)) var(--sp-4) max(var(--sp-4), env(safe-area-inset-bottom));
+}
+
+.card {
+  width: min(380px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+  padding: var(--sp-6) var(--sp-5);
+
+  h1 {
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-1);
+  }
+}
+
+.error {
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-m);
+  background: #ffe4ec;
+  color: var(--c-primary-deep);
+  font-size: var(--fs-s);
+  line-height: 1.6;
+  word-break: keep-all;
+
+  small {
+    display: block;
+    opacity: 0.7;
+  }
+}
