@@ -4,7 +4,8 @@ import type { ThemeId } from '../data/themes';
 import type { Tile } from '../world/space';
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+// either name: Supabase's own snippets now call it the publishable key
+const key = (import.meta.env.VITE_SUPABASE_ANON_KEY ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY) as string | undefined;
 
 /**
  * The Supabase project, when one is configured (VITE_SUPABASE_URL / _ANON_KEY).
