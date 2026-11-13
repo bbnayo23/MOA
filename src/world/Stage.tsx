@@ -2,6 +2,7 @@ import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import type { Background } from '../data/themes';
+import { gesture } from './camera';
 import { MODELS } from './models';
 import { FACE_CAMERA, T, type Tile } from './space';
 import { canvasTexture, castShadows, toon } from './toon';
@@ -14,9 +15,10 @@ import { canvasTexture, castShadows, toon } from './toon';
 export function Stage({ bg, onTap }: { bg: Background; onTap: (t: Tile) => void }) {
   const S = bg.size * T;
   const indoor = !!bg.walls;
-  const tap = (e: ThreeEvent<PointerEvent>) => {
+  // a tap on the ground (released without dragging / pinching) walks there
+  const tap = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
-    onTap({ tx: e.point.x / T, ty: e.point.z / T });
+    if (!gesture.dragged) onTap({ tx: e.point.x / T, ty: e.point.z / T });
   };
   const floor = useMemo(() => toon('#ffffff', floorTexture(bg), `floor${JSON.stringify(bg)}`), [bg]);
 
@@ -28,7 +30,7 @@ export function Stage({ bg, onTap }: { bg: Background; onTap: (t: Tile) => void 
         <Room bg={bg} S={S} floor={floor} onTap={tap} />
       ) : (
         <>
-          <mesh material={floor} rotation-x={-Math.PI / 2} position={[S / 2, 0.005, S / 2]} receiveShadow onPointerDown={tap}>
+          <mesh material={floor} rotation-x={-Math.PI / 2} position={[S / 2, 0.005, S / 2]} receiveShadow onClick={tap}>
             <planeGeometry args={[S, S]} />
           </mesh>
           <Land bg={bg} S={S} onTap={tap} />
@@ -131,7 +133,7 @@ function floorTexture(bg: Background) {
 
 const WALL_H = 3.6;
 
-function Room({ bg, S, floor, onTap }: { bg: Background; S: number; floor: THREE.Material; onTap: (e: ThreeEvent<PointerEvent>) => void }) {
+function Room({ bg, S, floor, onTap }: { bg: Background; S: number; floor: THREE.Material; onTap: (e: ThreeEvent<MouseEvent>) => void }) {
   const { left, right, trim, glass } = bg.walls!;
   const sides = [toon(bg.side[1]), toon(bg.side[0]), floor, floor, toon(bg.side[0]), toon(bg.side[1])];
   // an arch in the trim colour as the frame, the stained glass just inside it
@@ -142,7 +144,7 @@ function Room({ bg, S, floor, onTap }: { bg: Background; S: number; floor: THREE
   return (
     <group ref={room}>
       {/* the floor slab: textured top, coloured sides */}
-      <mesh material={sides} position={[S / 2, -0.25, S / 2]} onPointerDown={onTap}>
+      <mesh material={sides} position={[S / 2, -0.25, S / 2]} onClick={onTap}>
         <boxGeometry args={[S, 0.5, S]} />
       </mesh>
       {/* back walls along tx = 0 (left) and ty = 0 (right) */}
@@ -218,7 +220,7 @@ function archTexture(glass: string[], leaded = false) {
 // ── outdoors ──────────────────────────────────────────────────
 
 /** Open land past the map's edge: grass to the horizon, trees, bushes, flowers. */
-function Land({ bg, S, onTap }: { bg: Background; S: number; onTap: (e: ThreeEvent<PointerEvent>) => void }) {
+function Land({ bg, S, onTap }: { bg: Background; S: number; onTap: (e: ThreeEvent<MouseEvent>) => void }) {
   const props = useMemo(() => {
     const rnd = seeded(11);
     const out: { kind: 'pine' | 'bush' | 'rock'; x: number; z: number; s: number }[] = [];
@@ -234,7 +236,7 @@ function Land({ bg, S, onTap }: { bg: Background; S: number; onTap: (e: ThreeEve
   useLayoutEffect(() => castShadows(group.current));
   return (
     <>
-      <mesh material={toon(bg.grass ?? bg.ground[0])} rotation-x={-Math.PI / 2} position={[S / 2, 0, S / 2]} receiveShadow onPointerDown={onTap}>
+      <mesh material={toon(bg.grass ?? bg.ground[0])} rotation-x={-Math.PI / 2} position={[S / 2, 0, S / 2]} receiveShadow onClick={onTap}>
         <planeGeometry args={[160, 160]} />
       </mesh>
       <group ref={group}>

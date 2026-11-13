@@ -1,5 +1,5 @@
 // The world fills the screen; UI floats over it in a grid of overlay slots:
-//   top bar / drawer · · · panel / dock (chat + actions).
+//   top bar / drawer · · · panel · zoom / dock (chat + actions).
 // Phones collapse it to one column with the dock at the bottom.
 
 $phone: 720px;
@@ -17,12 +17,12 @@ $phone: 720px;
   inset: 0;
   overflow: hidden;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   grid-template-rows: auto minmax(0, 1fr) auto;
   grid-template-areas:
-    'top top top'
-    'side . panel'
-    'dock dock dock';
+    'top top top top'
+    'side . panel zoom'
+    'dock dock dock dock';
   gap: var(--sp-3);
   padding: max(var(--sp-3), env(safe-area-inset-top)) max(var(--sp-3), env(safe-area-inset-right))
     max(var(--sp-3), env(safe-area-inset-bottom)) max(var(--sp-3), env(safe-area-inset-left));
@@ -42,6 +42,18 @@ $phone: 720px;
     z-index: 0;
   }
 
+  // pinching anywhere here zooms the game camera, never the page (scrolling lists still scroll)…
+  &,
+  * {
+    touch-action: pan-x pan-y;
+  }
+
+  // …and the world itself takes every touch: taps, drags, pinches
+  > .game,
+  > .game * {
+    touch-action: none;
+  }
+
   @media (max-width: $phone) {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
@@ -54,8 +66,58 @@ $phone: 720px;
   }
 }
 
-.game {
-  touch-action: none; // the world handles taps itself: no double-tap zoom or scrolling
+// ── zoom ──────────────────────────────────
+
+.zoom {
+  @extend %glass;
+  grid-area: zoom;
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: var(--r-pill);
+
+  button {
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    font-size: 22px;
+    line-height: 1;
+    color: var(--c-ink);
+
+    &:hover:not(:disabled) {
+      background: var(--c-surface-soft);
+    }
+
+    &:disabled {
+      opacity: 0.35;
+      cursor: default;
+    }
+  }
+
+  span {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--c-ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+
+  // back to the default view, set apart under the zoom level
+  .home {
+    border-top: 1px solid var(--c-line);
+    border-radius: 0 0 var(--r-pill) var(--r-pill);
+    font-size: 18px;
+  }
+
+  // phones: float on the right edge of the middle area (a bottom sheet may slide over it)
+  @media (max-width: $phone) {
+    grid-area: panel;
+    justify-self: end;
+  }
 }
 
 // ── top bar ───────────────────────────────

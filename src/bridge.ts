@@ -14,6 +14,8 @@ export interface ToGame {
   peer: { player: Player } & Motion;
   /** …or left it. */
   peerLeave: string;
+  /** Camera zoom buttons: in / out at the centre, or back to 100% on me. */
+  zoom: 'in' | 'out' | 'reset';
 }
 
 /** World → React events. */
@@ -26,6 +28,8 @@ export interface FromGame {
   portal: ThemeId;
   /** Where I am / what I'm doing, whenever it changes (≤ 10×/s). */
   moved: Motion;
+  /** Camera zoom, in percent (50–200). */
+  zoomLevel: number;
 }
 
 function channel<M>() {

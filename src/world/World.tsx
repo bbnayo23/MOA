@@ -12,6 +12,8 @@ import { supabase } from '../net/supabase';
 import { useMoa } from '../store';
 import s from '../styles/World.module.scss';
 import { AvatarBody, SIT_BACK, SIT_UP, useAvatarPose, useJoints } from './Avatar3D';
+import { gesture } from './camera';
+import { CameraRig } from './CameraRig';
 import { KINDS, type ArtKind } from './kinds';
 import { Labels } from './labels';
 import { Chair, MODELS } from './models';
@@ -221,9 +223,10 @@ function Thing({ kind, at, indoor, color, onPick, onHover }: ThingProps) {
     document.body.style.cursor = on ? 'pointer' : '';
   };
   const handlers = onPick && {
-    onPointerDown: (e: { stopPropagation: () => void }) => {
+    // on release, and only if it was a tap (not the end of a drag / pinch)
+    onClick: (e: { stopPropagation: () => void }) => {
       e.stopPropagation();
-      onPick();
+      if (!gesture.dragged) onPick();
     },
     onPointerOver: () => over(true),
     onPointerOut: () => over(false),
@@ -344,34 +347,6 @@ function Driver({ sim, me }: { sim: Sim; me: Agent }) {
       sent.current = { at: sim.time, key };
       fromGame.emit('moved', motion);
     }
-  });
-  return null;
-}
-
-const PITCH = (40 * Math.PI) / 180;
-
-/** Quarter view from the +x +z side, easing after me, never drifting past the map. */
-function CameraRig({ sim, me }: { sim: Sim; me: Agent }) {
-  const camera = useThree((st) => st.camera);
-  const focus = useRef<THREE.Vector3 | null>(null);
-  useFrame(({ size }, dt) => {
-    const S = sim.size * T, edge = T * 1.5;
-    const goal = new THREE.Vector3(
-      THREE.MathUtils.clamp(me.pos.tx * T, edge, S - edge),
-      0,
-      THREE.MathUtils.clamp(me.pos.ty * T, edge, S - edge),
-    );
-    focus.current ??= goal.clone();
-    focus.current.lerp(goal, 1 - Math.exp(-Math.min(dt, 0.1) * 4));
-    // pull back on narrow (portrait) screens so the sides aren't cut too tight
-    const aspect = size.width / size.height;
-    const dist = 16 * (aspect < 1 ? 1 + (1 - aspect) * 0.8 : 1);
-    // aim a little past me so I stand slightly below the middle; on phones a bit higher, clear of the chat dock
-    const ahead = aspect < 1 ? 0.45 : -0.5;
-    const look = focus.current.clone().add(new THREE.Vector3(ahead, 0.6, ahead));
-    const flat = Math.cos(PITCH) * dist * Math.SQRT1_2;
-    camera.position.set(look.x + flat, look.y + Math.sin(PITCH) * dist, look.z + flat);
-    camera.lookAt(look);
   });
   return null;
 }

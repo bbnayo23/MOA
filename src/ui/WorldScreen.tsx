@@ -4,6 +4,7 @@ import { useActionBar } from '../hooks/useActionBar';
 import { useChat } from '../hooks/useChat';
 import { signOut } from '../hooks/useAccount';
 import { useRealtime } from '../hooks/useRealtime';
+import { useZoom } from '../hooks/useZoom';
 import { useRooms, useWorldSession } from '../hooks/useWorldSession';
 import { FRIENDS } from '../mock';
 import { supabase } from '../net/supabase';
@@ -29,6 +30,7 @@ export function WorldScreen() {
     <div className={s.layout} style={{ '--stage-bg': theme.background.sky[0] } as CSSProperties}>
       <World theme={theme} className={s.game} />
       <TopBar theme={theme} drawer={drawer} toggleDrawer={() => setDrawer(!drawer)} />
+      <ZoomControls />
       {drawer && <Sidebar theme={theme} close={() => setDrawer(false)} />}
       {panel === 'board' && <CheerBoard />}
       {panel === 'timer' && <FocusTimer />}
@@ -44,6 +46,25 @@ export function WorldScreen() {
           {hub ? '건물을 눌러 입장' : '오브젝트를 눌러 행동'}
         </p>
       </div>
+    </div>
+  );
+}
+
+/** + / − / back to the default view, with the current zoom. */
+function ZoomControls() {
+  const z = useZoom();
+  return (
+    <div className={s.zoom} role="group" aria-label="화면 확대·축소">
+      <button aria-label="확대" onClick={z.zoomIn} disabled={z.pct >= 200}>
+        +
+      </button>
+      <span aria-live="polite">{z.pct}%</span>
+      <button aria-label="축소" onClick={z.zoomOut} disabled={z.pct <= 50}>
+        −
+      </button>
+      <button aria-label="기본 화면으로" onClick={z.reset} className={s.home}>
+        ⟲
+      </button>
     </div>
   );
 }
