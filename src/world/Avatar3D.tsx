@@ -3,7 +3,7 @@ import { useLayoutEffect, useRef, type ReactNode, type RefObject } from 'react';
 import * as THREE from 'three';
 import { ANIMS, type Pose } from '../data/anims';
 import type { CharacterLook } from '../data/character';
-import { canvasTexture, castShadows, toon } from './toon';
+import { canvasTexture, castShadows, glow, toon } from './toon';
 
 /**
  * A chibi 3D character built from rounded primitives: big head, small round
@@ -44,8 +44,6 @@ export interface Joints {
   eyesHappy: RefObject<THREE.Group | null>;
   mouthLook: RefObject<THREE.Group | null>;
   mouthOpen: RefObject<THREE.Group | null>;
-  /** Right hand, where props attach. */
-  hand: RefObject<THREE.Group | null>;
 }
 
 export function useJoints(): Joints {
@@ -53,7 +51,7 @@ export function useJoints(): Joints {
     sink: useRef(null), upper: useRef(null), head: useRef(null),
     armL: useRef(null), armR: useRef(null), legL: useRef(null), legR: useRef(null),
     eyesOpen: useRef(null), eyesClosed: useRef(null), eyesHappy: useRef(null),
-    mouthLook: useRef(null), mouthOpen: useRef(null), hand: useRef(null),
+    mouthLook: useRef(null), mouthOpen: useRef(null),
   };
 }
 
@@ -74,8 +72,8 @@ function stripeTexture(color: string) {
   return t;
 }
 
-/** The character's meshes. `hand` children render in the right hand. */
-export function AvatarBody({ look, joints, hand }: { look: CharacterLook; joints: Joints; hand?: ReactNode }) {
+/** The character's meshes, plus every prop it can hold (hidden until a pose shows one). */
+export function AvatarBody({ look, joints }: { look: CharacterLook; joints: Joints }) {
   const root = useRef<THREE.Group>(null);
   const skin = toon(look.skin);
   const top = look.top === 'stripe' ? toon('#ffffff', stripeTexture(look.topColor), `stripe${look.topColor}`) : toon(look.topColor);
@@ -114,11 +112,7 @@ export function AvatarBody({ look, joints, hand }: { look: CharacterLook; joints
       <mesh material={skin} position={[0, -0.24, 0]}>
         <sphereGeometry args={[0.065, 12, 10]} />
       </mesh>
-      {side === -1 && (
-        <group ref={joints.hand} position={[0, -0.26, 0.02]}>
-          {hand}
-        </group>
-      )}
+      <group position={[0, -0.26, 0.02]}>{side === -1 ? <RightHandProps /> : <LeftHandProps />}</group>
     </group>
   );
 
@@ -127,6 +121,7 @@ export function AvatarBody({ look, joints, hand }: { look: CharacterLook; joints
       <group ref={joints.sink}>
         {leg(1)}
         {leg(-1)}
+        <WaterProps />
         <group ref={joints.upper}>
           {/* hips */}
           {look.bottom === 'skirt' ? (
@@ -155,6 +150,7 @@ export function AvatarBody({ look, joints, hand }: { look: CharacterLook; joints
           )}
           {arm(1)}
           {arm(-1)}
+          <BodyProps />
           <group ref={joints.head} position={[0, NECK_Y, 0]}>
             <mesh material={skin} position={[0, HEAD_Y, 0]} scale={HEAD_SCALE}>
               <sphereGeometry args={[HEAD_R, 32, 24]} />
@@ -165,6 +161,7 @@ export function AvatarBody({ look, joints, hand }: { look: CharacterLook; joints
               <Hat look={look} />
             </group>
             {look.accessory === 'glasses' && <Glasses />}
+            <HeadProps />
             {look.accessory === 'star' && (
               <mesh material={toon(STAR)} position={[0.25, HEAD_Y + 0.2, 0.18]} rotation={[0, 0.6, 0.3]} scale={[1, 1, 0.45]}>
                 <octahedronGeometry args={[0.07]} />
@@ -388,6 +385,192 @@ function Glasses() {
   );
 }
 
+// ── props ─────────────────────────────────────────────────────
+// Each prop is a hidden group named `prop:<name>`; the pose's `prop` decides which are shown.
+// Hand props are in the arm's own space: −y runs down the arm, so with the arm held
+// forward ("front") the direction (0, −0.8, 0.6) points ahead and a little up.
+
+const Prop = ({ name, children }: { name: string; children: ReactNode }) => (
+  <group name={`prop:${name}`} visible={false}>
+    {children}
+  </group>
+);
+
+const AHEAD = 2.5; // rotation.x that lays a stick along (0, −0.8, 0.6)
+const UPRIGHT = 1.35; // rotation.x that stands a cup / candle upright while the arm is forward
+
+const Stick = ({ len, r = 0.016, color }: { len: number; r?: number; color: string }) => (
+  <mesh material={toon(color)} position={[0, -0.8 * (len / 2), 0.6 * (len / 2)]} rotation={[AHEAD, 0, 0]}>
+    <cylinderGeometry args={[r, r, len, 6]} />
+  </mesh>
+);
+const tip = (len: number): [number, number, number] => [0, -0.8 * len, 0.6 * len];
+
+function RightHandProps() {
+  return (
+    <>
+      <Prop name="stick">
+        <Stick len={0.85} color="#8b5a3c" />
+        <mesh material={toon('#fff4e6')} position={tip(0.85)}>
+          <sphereGeometry args={[0.06, 10, 8]} />
+        </mesh>
+      </Prop>
+      <Prop name="spatula">
+        <Stick len={0.4} color="#9aa0a6" />
+        <mesh material={toon('#d7dbe2')} position={tip(0.45)} rotation={[AHEAD, 0, 0]}>
+          <boxGeometry args={[0.14, 0.12, 0.02]} />
+        </mesh>
+      </Prop>
+      <Prop name="pen">
+        <Stick len={0.2} r={0.012} color="#5b4a6b" />
+      </Prop>
+      <Prop name="fork">
+        <Stick len={0.28} r={0.012} color="#c4c9cf" />
+        <mesh material={toon('#f2cc8f')} position={tip(0.3)}>
+          <sphereGeometry args={[0.045, 8, 6]} />
+        </mesh>
+      </Prop>
+      <Prop name="candle">
+        <group rotation={[UPRIGHT, 0, 0]}>
+          <mesh material={toon('#fff4e6')} position={[0, 0.08, 0]}>
+            <cylinderGeometry args={[0.035, 0.035, 0.16, 8]} />
+          </mesh>
+          <mesh material={glow('#ffb347')} position={[0, 0.2, 0]}>
+            <coneGeometry args={[0.04, 0.1, 8]} />
+          </mesh>
+        </group>
+      </Prop>
+      <Prop name="cup">
+        <group rotation={[UPRIGHT, 0, 0]}>
+          <mesh material={toon('#ffffff')} position={[0, 0.05, 0.04]}>
+            <cylinderGeometry args={[0.065, 0.05, 0.14, 12]} />
+          </mesh>
+          <mesh material={toon('#c98f6a')} position={[0, 0.115, 0.04]}>
+            <cylinderGeometry args={[0.06, 0.06, 0.01, 12]} />
+          </mesh>
+        </group>
+      </Prop>
+      <Prop name="racket">
+        <Stick len={0.22} r={0.02} color="#5c6185" />
+        <group position={tip(0.42)} rotation={[AHEAD, 0, 0]}>
+          <mesh material={toon('#5c6185')} scale={[1, 1.25, 1]}>
+            <torusGeometry args={[0.13, 0.018, 6, 20]} />
+          </mesh>
+          <mesh material={glow('#eef2f6', 0.85)} scale={[1, 1.25, 1]}>
+            <circleGeometry args={[0.12, 16]} />
+          </mesh>
+        </group>
+      </Prop>
+      <Prop name="dumbbellR">
+        <Dumbbell />
+      </Prop>
+    </>
+  );
+}
+
+function LeftHandProps() {
+  return (
+    <Prop name="dumbbellL">
+      <Dumbbell />
+    </Prop>
+  );
+}
+
+const Dumbbell = () => (
+  <group rotation={[0, 0, Math.PI / 2]}>
+    <mesh material={toon('#c4c9cf')}>
+      <cylinderGeometry args={[0.02, 0.02, 0.3, 6]} />
+    </mesh>
+    {[-0.12, 0.12].map((y) => (
+      <mesh key={y} material={toon('#5f5870')} position={[0, y, 0]}>
+        <cylinderGeometry args={[0.06, 0.06, 0.06, 10]} />
+      </mesh>
+    ))}
+  </group>
+);
+
+/** Held at the chest, or in the air in front. */
+function BodyProps() {
+  return (
+    <>
+      <Prop name="book">
+        <group position={[0, 0.62, 0.26]} rotation={[-0.5, 0, 0]}>
+          {[-1, 1].map((s) => (
+            <mesh key={s} material={toon('#fffaf0')} position={[0.085 * s, 0, 0]} rotation={[0, -0.35 * s, 0]}>
+              <boxGeometry args={[0.17, 0.22, 0.015]} />
+            </mesh>
+          ))}
+          <mesh material={toon('#e07a5f')} position={[0, 0, -0.02]}>
+            <boxGeometry args={[0.36, 0.24, 0.015]} />
+          </mesh>
+        </group>
+      </Prop>
+      <Prop name="toss">
+        <mesh material={toon('#e6f27a')} position={[0.32, 1.75, 0.15]}>
+          <sphereGeometry args={[0.06, 10, 8]} />
+        </mesh>
+      </Prop>
+      <Prop name="ball">
+        <mesh material={toon('#e6f27a')} position={[-0.45, 0.85, 0.75]}>
+          <sphereGeometry args={[0.06, 10, 8]} />
+        </mesh>
+      </Prop>
+    </>
+  );
+}
+
+function HeadProps() {
+  return (
+    <>
+      <Prop name="sweat">
+        <mesh material={glow('#a9d8ff')} position={[0.3, HEAD_Y + 0.2, 0.18]} scale={[1, 1.5, 1]}>
+          <sphereGeometry args={[0.04, 8, 6]} />
+        </mesh>
+      </Prop>
+      <Prop name="sparkle">
+        {([[0.45, HEAD_Y + 0.25, 0.1], [-0.42, HEAD_Y + 0.05, 0.15], [0.3, HEAD_Y + 0.55, -0.05]] as const).map((p, i) => (
+          <mesh key={i} material={glow('#ffd166')} position={[...p]} scale={[1, 1, 0.4]}>
+            <octahedronGeometry args={[0.06]} />
+          </mesh>
+        ))}
+      </Prop>
+    </>
+  );
+}
+
+/** Things at the waterline: they stay level with the pool while the body sinks into it. */
+function WaterProps() {
+  return (
+    <>
+      <Prop name="tube">
+        <mesh material={toon('#ff9fb2')} position={[0, 0.67, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.3, 0.1, 10, 24]} />
+        </mesh>
+      </Prop>
+      <Prop name="splash">
+        {Array.from({ length: 6 }, (_, i) => {
+          const a = (i / 6) * Math.PI * 2;
+          return (
+            <mesh key={i} material={glow('#cfeaff')} position={[Math.cos(a) * 0.45, 0.75 + (i % 2) * 0.15, Math.sin(a) * 0.45]}>
+              <sphereGeometry args={[0.05, 8, 6]} />
+            </mesh>
+          );
+        })}
+      </Prop>
+    </>
+  );
+}
+
+/** Which prop groups each pose `prop` shows. */
+const PROP_GROUPS: Record<NonNullable<Pose['prop']>, string[]> = {
+  stick: ['stick'], spatula: ['spatula'], spatulaUp: ['spatula'], candle: ['candle'], pen: ['pen'],
+  book: ['book'], bookFlip: ['book'], fork: ['fork'], forkUp: ['fork'], cup: ['cup'],
+  dumbbells: ['dumbbellR', 'dumbbellL'], sweat: ['sweat'],
+  tube: ['tube'], splash: ['splash'], splashB: ['splash'],
+  racketUp: ['racket'], racketFwd: ['racket'], racketServe: ['racket', 'toss'], racketBall: ['racket', 'ball'],
+  sparkle: ['sparkle'],
+};
+
 // ── animation ────────────────────────────────────────────────
 
 interface Targets {
@@ -398,6 +581,8 @@ interface Targets {
   bob: number;
   lean: number;
   sink: number;
+  /** Shift back (−z): sitting puts the hips back onto the seat behind the spot. */
+  back: number;
 }
 
 /** Pose data (shared with the 2D-era animation tables) → joint angles. Right arm is the −x one. */
@@ -428,11 +613,16 @@ function targets(p: Pose): Targets {
     legL, legR, armL: l, armR: r,
     bob: -(p.bob ?? 0) * 0.04,
     lean: -(p.lean ?? 0) * 0.12,
-    sink: p.legs === 'swim' ? -0.62 : p.legs === 'sit' ? -0.04 : 0,
+    sink: p.legs === 'swim' ? -0.62 : p.legs === 'sit' ? SIT_UP : 0,
+    back: p.legs === 'sit' ? -SIT_BACK : 0,
   };
 }
 
 const damp = (from: number, to: number, k: number) => from + (to - from) * k;
+
+/** Seated hips sit this far up and back from where the feet stood (seat height ≈ 0.45). */
+export const SIT_UP = 0.06;
+export const SIT_BACK = 0.22;
 
 /**
  * Drives the joints every frame from an animation key (frames from anims.ts,
@@ -468,7 +658,10 @@ export function useAvatarPose(joints: Joints, look: CharacterLook, anim: () => s
       j.upper.current.position.y = damp(j.upper.current.position.y, t.bob, k);
       j.upper.current.rotation.z = damp(j.upper.current.rotation.z, t.lean, k);
     }
-    if (j.sink.current) j.sink.current.position.y = damp(j.sink.current.position.y, t.sink, k);
+    if (j.sink.current) {
+      j.sink.current.position.y = damp(j.sink.current.position.y, t.sink, k);
+      j.sink.current.position.z = damp(j.sink.current.position.z, t.back, k);
+    }
     // the pose can close / squint the eyes and open the mouth; otherwise the look decides
     const eyes = pose.eyes ?? (look.eyes === 'happy' ? 'happy' : look.eyes === 'sleepy' ? 'closed' : undefined);
     if (j.eyesOpen.current && j.eyesClosed.current && j.eyesHappy.current) {
@@ -481,5 +674,9 @@ export function useAvatarPose(joints: Joints, look: CharacterLook, anim: () => s
       j.mouthOpen.current.visible = open;
       j.mouthLook.current.visible = !open;
     }
+    const shown = pose.prop ? PROP_GROUPS[pose.prop] : [];
+    j.sink.current?.traverse((o) => {
+      if (o.name.startsWith('prop:')) o.visible = shown.includes(o.name.slice(5));
+    });
   });
 }

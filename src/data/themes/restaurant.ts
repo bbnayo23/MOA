@@ -20,7 +20,7 @@ export const MENU: MenuItem[] = [
 const table = (id: string, at: Tile): InteractionObject => ({
   id, kind: 'diningTable', label: '테이블', icon: '🍽️', at,
   actions: ['eat', 'drink', 'talk'],
-  spots: [behind(at, 0.3, 0.45), behind(at, -0.3, 0.45)],
+  spots: [behind(at, 0.18, 0.3), behind(at, -0.18, 0.3)],
 });
 
 export const restaurant: ThemeConfig = {

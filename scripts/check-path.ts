@@ -30,4 +30,10 @@ const wall: Footprint[] = [0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5].map((ty) => (
 const walled = findPath({ tx: 2, ty: 4 }, { tx: 7, ty: 4 }, N, wall);
 assert.ok(walled.at(-1)!.tx < 5 && walkable({ tx: 2, ty: 4 }, walled, wall), 'stays on its side of the wall');
 
+// a seat just outside a table whose grid cell centre is inside it: still arrive exactly
+const diningTable: Footprint = { tx: 3.7, ty: 5.3, r: 0.45 };
+const seat = { tx: 3.58, ty: 4.82 };
+assert.ok(isFree(seat, N, [diningTable]), 'the seat itself is free');
+assert.deepEqual(findPath({ tx: 6.4, ty: 6.4 }, seat, N, [diningTable]).at(-1), seat, 'sits right on the seat');
+
 console.log('path rules ok');

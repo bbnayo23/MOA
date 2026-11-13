@@ -32,6 +32,8 @@ export interface Background {
   walls?: { left: string; right: string; trim: string; glass: string[] };
   /** Floor runners between two map points (paths, court lines, pool water…). */
   rugs?: { from: Tile; to: Tile; width: number; color: string; border: string }[];
+  /** A pool: a rippling water surface over this stretch (same shape as a rug). */
+  water?: { from: Tile; to: Tile; width: number };
   /** Floating light particles (fireflies, dust). */
   motes?: number;
 }

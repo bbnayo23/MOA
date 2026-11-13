@@ -4,7 +4,8 @@ import type { AnimKey } from '../data/anims';
 import type { Player } from '../data/character';
 import { footprintsOf, type InteractionObject, type ThemeConfig } from '../data/themes';
 import { findPath, isFree, type Footprint } from './path';
-import { FACE_CAMERA, SPEED, headingOf, screenToTile, type Tile } from './space';
+import { KINDS } from './kinds';
+import { FACE_CAMERA, SPEED, headingOf, objectYaw, screenToTile, type Tile } from './space';
 
 /** One character in the world. Plain data, mutated by the Sim and read by the renderer every frame. */
 export interface Agent {
@@ -37,6 +38,9 @@ interface Timer {
 export class Sim {
   readonly agents = new Map<string, Agent>();
   readonly blocks: Footprint[];
+  /** The object I'm standing by (its action buttons pop up), and who to tell when it changes. */
+  near: InteractionObject | null = null;
+  onNear?: (o: InteractionObject | null) => void;
   /** Last walk-to point (for the tap marker), with the time it was set. */
   marker: { at: Tile; time: number } | null = null;
   time = 0;
@@ -85,6 +89,23 @@ export class Sim {
     } else if (!me.action && !me.route.length) me.anim = 'idle';
 
     for (const a of this.agents.values()) this.walk(a, dt);
+    this.updateNear(me);
+  }
+
+  /** Nearest object within reach while I'm free to use it (not busy, not on my way somewhere). */
+  private updateNear(me: Agent) {
+    let near: InteractionObject | null = null;
+    if (!me.route.length && !me.action) {
+      let best = Infinity;
+      for (const o of this.theme.interactionObjects) {
+        const d = Math.hypot(o.at.tx - me.pos.tx, o.at.ty - me.pos.ty);
+        if (d < (KINDS[o.kind].foot ?? 0.3) + 0.9 && d < best) [near, best] = [o, d];
+      }
+    }
+    if (near !== this.near) {
+      this.near = near;
+      this.onNear?.(near);
+    }
   }
 
   // ── walking ──────────────────────────────────────────────
@@ -168,10 +189,13 @@ export class Sim {
     this.route(a, a.spot, start);
   }
 
-  /** Face the object, or the camera when sitting right on it (benches, mats, loungers). */
+  /**
+   * Face the object — unless it's something you sit or stand on (no footprint:
+   * benches, mats, loungers, treadmills), then face the way it faces.
+   */
   private faceFor(at: Tile, o: InteractionObject) {
-    const dx = o.at.tx - at.tx, dy = o.at.ty - at.ty;
-    return Math.hypot(dx, dy) < 0.5 ? FACE_CAMERA : headingOf(dx, dy);
+    const { foot, face = 0 } = KINDS[o.kind];
+    return foot ? headingOf(o.at.tx - at.tx, o.at.ty - at.ty) : objectYaw(o.at, !!this.theme.background.walls) + face;
   }
 
   stop(a: Agent) {

@@ -2,19 +2,20 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { fromGame, toGame } from '../bridge';
+import { ACTIONS } from '../data/actions';
 import { ANIMS } from '../data/anims';
 import type { CharacterLook } from '../data/character';
 import type { InteractionObject, ThemeConfig } from '../data/themes';
 import { FRIENDS } from '../mock';
 import { useMoa } from '../store';
 import s from '../styles/World.module.scss';
-import { AvatarBody, useAvatarPose, useJoints } from './Avatar3D';
+import { AvatarBody, SIT_BACK, SIT_UP, useAvatarPose, useJoints } from './Avatar3D';
 import { KINDS, type ArtKind } from './kinds';
 import { Labels } from './labels';
-import { MODELS } from './models';
+import { Chair, MODELS } from './models';
 import { Sim, type Agent } from './sim';
 import { Stage } from './Stage';
-import { FACE_CAMERA, T, type Tile } from './space';
+import { T, headingOf, objectYaw, type Tile } from './space';
 import { castShadows, glow } from './toon';
 
 /**
@@ -37,13 +38,20 @@ export function World({ theme, className }: { theme: ThemeConfig; className?: st
   const labels = useMemo(() => new Labels(), []);
   const bubbles = useBubbles();
   const [hover, setHover] = useState<InteractionObject | null>(null);
+  const [near, setNear] = useState<InteractionObject | null>(null);
+  const indoor = !!theme.background.walls;
 
   useEffect(() => {
     const offs = [
       toGame.on('act', ({ actionId, objectId }) => sim.perform(me, actionId, objectId)),
       toGame.on('stop', () => sim.stop(me)),
     ];
-    return () => offs.forEach((off) => off());
+    sim.onNear = setNear;
+    if (import.meta.env.DEV) (window as unknown as { __moaSim: Sim }).__moaSim = sim; // for the browser tests
+    return () => {
+      offs.forEach((off) => off());
+      sim.onNear = undefined;
+    };
   }, [sim, me]);
 
   const pick = (o: InteractionObject) => (o.enter ? sim.goThrough(me, o) : fromGame.emit('objectClick', o.id));
@@ -58,11 +66,14 @@ export function World({ theme, className }: { theme: ThemeConfig; className?: st
         <Driver sim={sim} me={me} />
         <Stage bg={theme.background} onTap={(t) => walkTo(sim, me, t)} />
         {theme.decorations.map((d, i) => (
-          <Thing key={`d${i}`} kind={d.kind} at={d.at} />
+          <Thing key={`d${i}`} kind={d.kind} at={d.at} indoor={indoor} />
         ))}
         {theme.interactionObjects.map((o) => (
-          <Thing key={o.id} kind={o.kind} at={o.at} color={o.color} onPick={() => pick(o)} onHover={(on) => setHover(on ? o : null)} />
+          <Thing key={o.id} kind={o.kind} at={o.at} indoor={indoor} color={o.color} onPick={() => pick(o)} onHover={(on) => setHover(on ? o : null)} />
         ))}
+        {theme.interactionObjects
+          .filter((o) => MODELS[o.kind].seats)
+          .flatMap((o) => o.spots.map((at, i) => <Seat key={`${o.id}${i}`} at={at} facing={o.at} />))}
         {agents.map((a) => (
           <Character key={a.player.id} agent={a} look={a.isMe ? meLook : a.player.look} />
         ))}
@@ -79,11 +90,27 @@ export function World({ theme, className }: { theme: ThemeConfig; className?: st
               {o.icon} {o.label}
             </button>
           ))}
-        {hover && !hover.enter && (
+        {hover && !hover.enter && hover !== near && (
           <span ref={labels.bind('hover', above(hover))} className={s.label}>
             {hover.icon} {hover.label}
-            {MODELS[hover.kind].temp && import.meta.env.DEV && <em className={s.temp}>임시</em>}
           </span>
+        )}
+        {near && (
+          // walked up to something: its actions pop up right there
+          <div key={near.id} ref={labels.bind('near', near.enter ? onFront(near) : above(near))} className={s.near}>
+            <strong>
+              {near.icon} {near.label}
+            </strong>
+            {near.enter ? (
+              <button onClick={() => sim.goThrough(me, near)}>🚪 들어가기</button>
+            ) : (
+              near.actions.map((id) => (
+                <button key={id} onClick={() => sim.perform(me, id, near.id)}>
+                  {ACTIONS[id].icon} {ACTIONS[id].label}
+                </button>
+              ))
+            )}
+          </div>
         )}
         {agents.map((a) => (
           <span key={a.player.id} ref={labels.bind(`tag:${a.player.id}`, head(a))} className={a.isMe ? `${s.tag} ${s.me}` : s.tag}>
@@ -108,7 +135,7 @@ export function World({ theme, className }: { theme: ThemeConfig; className?: st
 /** Swimmers sit low in the water, sitters a touch lower: keep tags on their heads. */
 const sinkOf = (a: Agent) => {
   const legs = ANIMS[a.anim].frames[0].legs;
-  return legs === 'swim' ? -0.62 : legs === 'sit' ? -0.04 : 0;
+  return legs === 'swim' ? -0.62 : legs === 'sit' ? SIT_UP : 0;
 };
 
 function walkTo(sim: Sim, me: Agent, t: Tile) {
@@ -142,14 +169,15 @@ function useBubbles() {
 interface ThingProps {
   kind: ArtKind;
   at: Tile;
+  indoor: boolean;
   color?: string;
   onPick?: () => void;
   onHover?: (on: boolean) => void;
 }
 
-/** One placed object: its model turned to face the camera, and a light if it glows. */
-function Thing({ kind, at, color, onPick, onHover }: ThingProps) {
-  const { Model, h } = MODELS[kind];
+/** One placed object: its model turned to face the camera (or away from its wall), and a light if it glows. */
+function Thing({ kind, at, indoor, color, onPick, onHover }: ThingProps) {
+  const { Model, h, yaw } = MODELS[kind];
   const light = KINDS[kind].light;
   const [hover, setHover] = useState(false);
   const group = useRef<THREE.Group>(null);
@@ -169,10 +197,22 @@ function Thing({ kind, at, color, onPick, onHover }: ThingProps) {
   };
   return (
     <group position={[at.tx * T, 0, at.ty * T]}>
-      <group ref={group} rotation={[0, FACE_CAMERA, 0]} scale={hover ? 1.04 : 1} {...handlers}>
+      <group ref={group} rotation={[0, yaw ?? objectYaw(at, indoor), 0]} scale={hover ? 1.04 : 1} {...handlers}>
         <Model color={color} />
       </group>
       {light && <Glow color={light} y={Math.min(h, 1.2)} />}
+    </group>
+  );
+}
+
+/** A chair at a seat of a table / desk, turned towards it, just behind where the sitter's feet are. */
+function Seat({ at, facing }: { at: Tile; facing: Tile }) {
+  const group = useRef<THREE.Group>(null);
+  useLayoutEffect(() => castShadows(group.current));
+  const yaw = headingOf(facing.tx - at.tx, facing.ty - at.ty);
+  return (
+    <group ref={group} position={[at.tx * T - Math.sin(yaw) * SIT_BACK, 0, at.ty * T - Math.cos(yaw) * SIT_BACK]} rotation={[0, yaw, 0]}>
+      <Chair />
     </group>
   );
 }

@@ -62,13 +62,18 @@ export function findPath(a: Tile, b: Tile, size: number, blocks: Footprint[]): T
     }
   }
 
-  // b itself when its cell was reached (ties for "closest cell" can pick a neighbour), else the closest cell
-  const arrive = isFree(b, size, blocks) && prev.has(cellOf(b));
-  const last = arrive ? cellOf(b) : best;
-  if (last === start) return arrive ? [b] : [];
+  // end on b's own cell when it was reached (ties for "closest cell" can pick a neighbour), else the closest cell…
+  const goalFree = isFree(b, size, blocks);
+  const last = goalFree && prev.has(cellOf(b)) ? cellOf(b) : best;
   const cells: Tile[] = [];
   for (let c = last; c !== start; c = prev.get(c)!) cells.unshift(center(c));
-  if (arrive) cells[cells.length - 1] = b;
+  // …then step onto b itself if it's free and in plain sight (its cell's centre may sit inside a footprint)
+  const end = cells.at(-1) ?? a;
+  if (goalFree && isClear(end, b, size, blocks)) {
+    if (last === cellOf(b) && cells.length) cells[cells.length - 1] = b;
+    else cells.push(b);
+  }
+  if (!cells.length) return [];
 
   // pull the string: from each point, jump to the farthest waypoint in plain sight
   const path: Tile[] = [];

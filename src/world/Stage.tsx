@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import type { Background } from '../data/themes';
 import { MODELS } from './models';
 import { FACE_CAMERA, T, type Tile } from './space';
-import { canvasTexture, castShadows, glow, toon } from './toon';
+import { canvasTexture, castShadows, toon } from './toon';
 
 /**
  * The space itself: light, the floor (with its rugs, paths and court lines
@@ -34,6 +34,7 @@ export function Stage({ bg, onTap }: { bg: Background; onTap: (t: Tile) => void 
           <Land bg={bg} S={S} onTap={tap} />
         </>
       )}
+      {bg.water && <Water {...bg.water} />}
       {bg.motes !== undefined && <Motes color={bg.motes} S={S} />}
     </>
   );
@@ -133,9 +134,9 @@ const WALL_H = 3.6;
 function Room({ bg, S, floor, onTap }: { bg: Background; S: number; floor: THREE.Material; onTap: (e: ThreeEvent<PointerEvent>) => void }) {
   const { left, right, trim, glass } = bg.walls!;
   const sides = [toon(bg.side[1]), toon(bg.side[0]), floor, floor, toon(bg.side[0]), toon(bg.side[1])];
-  const window = useMemo(() => glow('#ffffff'), []);
-  const glassTex = useMemo(() => archTexture(glass), [glass]);
-  const pane = useMemo(() => new THREE.MeshBasicMaterial({ map: glassTex, transparent: true, alphaTest: 0.5 }), [glassTex]);
+  // an arch in the trim colour as the frame, the stained glass just inside it
+  const frame = useMemo(() => arched(archTexture([trim])), [trim]);
+  const pane = useMemo(() => arched(archTexture(glass, true)), [glass]);
   const room = useRef<THREE.Group>(null);
   useLayoutEffect(() => castShadows(room.current, true));
   return (
@@ -166,8 +167,8 @@ function Room({ bg, S, floor, onTap }: { bg: Background; S: number; floor: THREE
             const at: [number, number, number] = w === 0 ? [out[0], 2.0, along] : [along, 2.0, out[2]];
             return (
               <group key={f} position={at} rotation={[0, turn, 0]}>
-                <mesh material={window} position={[0, 0, 0.005]}>
-                  <planeGeometry args={[1.3, 2.05]} />
+                <mesh material={frame} position={[0, 0, 0.005]}>
+                  <planeGeometry args={[1.36, 2.12]} />
                 </mesh>
                 <mesh material={pane} position={[0, 0, 0.02]}>
                   <planeGeometry args={[1.2, 1.95]} />
@@ -181,8 +182,11 @@ function Room({ bg, S, floor, onTap }: { bg: Background; S: number; floor: THREE
   );
 }
 
-/** Arched stained-glass window: leaded grid of the theme's glass colours. */
-function archTexture(glass: string[]) {
+/** Unlit, cut out along the arch's edge. */
+const arched = (map: THREE.Texture) => new THREE.MeshBasicMaterial({ map, transparent: true, alphaTest: 0.5 });
+
+/** Arched window: a leaded grid of the theme's glass colours (or one solid colour for the frame). */
+function archTexture(glass: string[], leaded = false) {
   return canvasTexture(48, 78, (ctx) => {
     const r = 24;
     ctx.beginPath();
@@ -196,6 +200,7 @@ function archTexture(glass: string[]) {
         ctx.fillStyle = glass[(x / 12 + y / 13) % glass.length];
         ctx.fillRect(x, y, 12, 13);
       }
+    if (!leaded) return;
     ctx.strokeStyle = '#6b5a7a';
     ctx.lineWidth = 2;
     for (let x = 12; x < 48; x += 12) ctx.strokeRect(x, 0, 0.01, 78);
@@ -280,6 +285,48 @@ function Flowers({ colors, S, rugs, onMap }: { colors: string[]; S: number; rugs
       <sphereGeometry args={[0.08, 8, 6]} />
     </instancedMesh>
   );
+}
+
+// ── water ─────────────────────────────────────────────────────
+
+/**
+ * A pool's surface: a stadium shape (the rug's footprint, a little inside the coping)
+ * with ripples drifting across. Swimmers sink below the floor, so only their heads
+ * and shoulders come up through it.
+ */
+function Water({ from, to, width }: NonNullable<Background['water']>) {
+  const geo = useMemo(() => {
+    const ax = from.tx * T, az = from.ty * T, bx = to.tx * T, bz = to.ty * T;
+    const len = Math.hypot(bx - ax, bz - az), r = (width / 2) * T - 0.18;
+    const shape = new THREE.Shape();
+    shape.absarc(0, 0, r, Math.PI / 2, (Math.PI * 3) / 2, false);
+    shape.absarc(len, 0, r, -Math.PI / 2, Math.PI / 2, false);
+    const g = new THREE.ShapeGeometry(shape, 24);
+    g.rotateX(Math.PI / 2); // shape's y → world z
+    g.rotateY(-Math.atan2(bz - az, bx - ax));
+    g.translate(ax, 0, az);
+    return g;
+  }, [from, to, width]);
+  const mat = useMemo(() => {
+    const ripples = canvasTexture(64, 64, (ctx) => {
+      ctx.fillStyle = '#7fc8f2';
+      ctx.fillRect(0, 0, 64, 64);
+      ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 6; i++) {
+        ctx.beginPath();
+        const y = 6 + i * 11;
+        ctx.moveTo(4 + (i % 2) * 20, y);
+        ctx.quadraticCurveTo(14 + (i % 2) * 20, y - 4, 26 + (i % 2) * 20, y);
+        ctx.stroke();
+      }
+    }, [3, 3]);
+    return new THREE.MeshBasicMaterial({ map: ripples, transparent: true, opacity: 0.78, depthWrite: false });
+  }, []);
+  useFrame(({ clock }) => {
+    mat.map!.offset.set(clock.elapsedTime * 0.02, Math.sin(clock.elapsedTime * 0.5) * 0.03);
+  });
+  return <mesh geometry={geo} material={mat} position={[0, 0.06, 0]} />;
 }
 
 // ── particles ─────────────────────────────────────────────────

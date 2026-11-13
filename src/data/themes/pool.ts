@@ -23,8 +23,9 @@ export const pool: ThemeConfig = {
     grass: '#bfe6c9',
     ground: ['#fdf8ef', '#f3ead9'],
     side: ['#e0cdb0', '#cdb898'],
+    // the pool itself (tx 2.2–5.6, ty 2.2–5.0): a basin painted on the floor with white coping, water on top
+    water: { from: { tx: 2.2, ty: 3.6 }, to: { tx: 5.6, ty: 3.6 }, width: 2.8 },
     rugs: [
-      // the pool itself (tx 2.2–5.6, ty 2.2–5.0) with white coping, and a lane rope
       { from: { tx: 2.2, ty: 3.6 }, to: { tx: 5.6, ty: 3.6 }, width: 2.8, color: POOL_WATER, border: '#ffffff' },
       { from: { tx: 2.4, ty: 3.6 }, to: { tx: 5.4, ty: 3.6 }, width: 0.14, color: '#ffb3c6', border: '#ffb3c6' },
     ],

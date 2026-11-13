@@ -13,9 +13,10 @@ export type ArtKind =
 /**
  * Physical facts about a kind, used by the simulation (not the renderer):
  * `foot` = radius (tiles) of floor it blocks — left out for things you stand or sit on;
- * `light` = colour of the warm light it gives off.
+ * `light` = colour of the warm light it gives off;
+ * `face` = how someone using it from right on top turns, relative to the object (treadmill: along the belt).
  */
-export const KINDS: Record<ArtKind, { foot?: number; light?: string }> = {
+export const KINDS: Record<ArtKind, { foot?: number; light?: string; face?: number }> = {
   pine: { foot: 0.3 },
   bush: { foot: 0.3 },
   rock: { foot: 0.25 },
@@ -37,7 +38,7 @@ export const KINDS: Record<ArtKind, { foot?: number; light?: string }> = {
   diningTable: { foot: 0.45 },
   counter: { foot: 0.5 },
   menuboard: { foot: 0.25 },
-  treadmill: {},
+  treadmill: { face: -Math.PI / 2 },
   rack: { foot: 0.4 },
   mat: {},
   ladder: {},

@@ -5,7 +5,7 @@ import type { InteractionObject, ThemeConfig } from './types';
 const table = (id: string, at: Tile): InteractionObject => ({
   id, kind: 'table', label: '열람 테이블', icon: '📖', at,
   actions: ['read', 'study'],
-  spots: [behind(at, 0.3), behind(at, -0.3)],
+  spots: [behind(at, 0.25), behind(at, -0.25)],
 });
 
 const desk = (id: string, at: Tile): InteractionObject => ({
