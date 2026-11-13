@@ -185,6 +185,29 @@ $phone: 720px;
   }
 }
 
+// the room I'm in, opening the room list
+.room {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 220px;
+  height: 30px;
+  padding: 0 var(--sp-2);
+  border: 2px solid var(--c-line);
+  border-radius: var(--r-pill);
+  background: var(--c-surface);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+
+  .label {
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
 .live {
   flex: none;
   font-size: var(--fs-xs);
@@ -298,6 +321,64 @@ $phone: 720px;
 
   small {
     color: var(--c-ink-soft);
+  }
+}
+
+.inviteBtn {
+  margin-left: auto;
+  height: 26px;
+  padding: 0 var(--sp-2);
+  border: 2px solid var(--c-primary);
+  border-radius: var(--r-pill);
+  background: var(--c-surface);
+  color: var(--c-primary-deep);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+
+  &:disabled {
+    border-color: var(--c-line);
+    color: var(--c-ink-soft);
+  }
+
+  + .online {
+    margin-left: 0;
+  }
+}
+
+// an invitation, floating under the top bar
+.invite {
+  position: absolute;
+  top: calc(max(var(--sp-3), env(safe-area-inset-top)) + 64px);
+  left: 50%;
+  z-index: 3;
+  translate: -50% 0;
+  width: min(380px, calc(100% - 2 * var(--sp-3)));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border-radius: var(--r-l);
+  background: var(--c-surface);
+  box-shadow: var(--shadow-m);
+  animation: drop 0.25s cubic-bezier(0.3, 1.4, 0.6, 1);
+
+  p {
+    flex-basis: 100%;
+    font-size: var(--fs-s);
+    word-break: keep-all;
+  }
+
+  button {
+    flex: 1;
+    height: 38px;
+  }
+}
+
+@keyframes drop {
+  from {
+    translate: -50% -12px;
+    opacity: 0;
   }
 }
 

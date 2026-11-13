@@ -4,6 +4,7 @@ import type { AnimKey } from '../data/anims';
 import type { CharacterLook } from '../data/character';
 import type { ThemeId } from '../data/themes';
 import type { Tile } from '../world/space';
+import type { Room } from './rooms';
 import { supabase } from './supabase';
 
 /** Who's online and where — slow-changing, kept by presence. */
@@ -12,6 +13,9 @@ export interface Presence {
   nickname: string;
   look: CharacterLook;
   themeId: ThemeId;
+  room: Room;
+  /** When they came into that room (who's host, who's over the limit). */
+  joinedAt: number;
 }
 
 /** Where a character is and what it's doing (sent as it changes). */
@@ -23,8 +27,10 @@ export interface Motion {
 }
 
 export type Message =
-  | ({ type: 'state'; id: string; themeId: ThemeId } & Motion)
-  | { type: 'chat'; id: string; themeId: ThemeId; text: string; original?: string };
+  | ({ type: 'state'; id: string; roomId: string; themeId: ThemeId } & Motion)
+  | { type: 'chat'; id: string; roomId: string; themeId: ThemeId; text: string; original?: string }
+  // ponytail: on the shared channel everyone receives invites and ignores ones not `to` them; fine among friends
+  | { type: 'invite'; id: string; to: string; nickname: string; room: Room; themeId: ThemeId };
 
 export interface Link {
   track(me: Presence): void;

@@ -1,21 +1,24 @@
-import { useState, type CSSProperties } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
+import { toGame } from '../bridge';
 import { HUB, type ThemeConfig } from '../data/themes';
 import { useActionBar } from '../hooks/useActionBar';
 import { useChat } from '../hooks/useChat';
+import { useRoomList } from '../hooks/useLobby';
 import { useRealtime } from '../hooks/useRealtime';
 import { useZoom } from '../hooks/useZoom';
-import { useRooms, useWorldSession } from '../hooks/useWorldSession';
+import { usePlaces, useWorldSession } from '../hooks/useWorldSession';
 import { FRIENDS } from '../mock';
+import { ROOM_MAX } from '../net/rooms';
 import { supabase } from '../net/supabase';
 import { LANGS, type Lang } from '../net/translate';
-import { useMoa } from '../store';
+import { roomOf, useMoa } from '../store';
 import c from '../styles/common.module.scss';
 import s from '../styles/WorldScreen.module.scss';
 import { AvatarImage } from './AvatarImage';
 import { ZOOM } from '../world/camera';
 import { World } from '../world/World';
 import { InstallButton } from './InstallButton';
-import { CheerBoard, FocusTimer, MenuPanel, RallyGame, ThemePreview, Wardrobe } from './Panels';
+import { CheerBoard, FocusTimer, Lobby, MenuPanel, RallyGame, ThemePreview, Wardrobe } from './Panels';
 
 const EMOTES = ['👋', '❤️', '😆', '😮', '✨'];
 
@@ -24,20 +27,30 @@ export function WorldScreen() {
   const { theme, panel, preview } = useWorldSession();
   useRealtime();
   const [drawer, setDrawer] = useState(false);
+  const [lobby, setLobby] = useState(false);
+  const roomId = useMoa((st) => roomOf(st).id);
   if (!theme) return null;
   const hub = theme.themeId === HUB;
 
   return (
     <div className={s.layout} style={{ '--stage-bg': theme.background.sky[0] } as CSSProperties}>
-      <World theme={theme} className={s.game} />
-      <TopBar theme={theme} drawer={drawer} toggleDrawer={() => setDrawer(!drawer)} />
+      {/* a fresh world per room: only its people are in it */}
+      <World key={roomId} theme={theme} className={s.game} />
+      <TopBar theme={theme} drawer={drawer} toggleDrawer={() => setDrawer(!drawer)} openLobby={() => setLobby(true)} />
       <ZoomControls />
       {drawer && <Sidebar theme={theme} close={() => setDrawer(false)} />}
-      {panel === 'board' && <CheerBoard />}
-      {panel === 'timer' && <FocusTimer />}
-      {panel === 'menu' && <MenuPanel />}
-      {panel === 'rally' && <RallyGame />}
-      {panel === 'wardrobe' && <Wardrobe />}
+      {lobby ? (
+        <Lobby close={() => setLobby(false)} />
+      ) : (
+        <>
+          {panel === 'board' && <CheerBoard />}
+          {panel === 'timer' && <FocusTimer />}
+          {panel === 'menu' && <MenuPanel />}
+          {panel === 'rally' && <RallyGame />}
+          {panel === 'wardrobe' && <Wardrobe />}
+        </>
+      )}
+      <InviteToast />
       {preview && <ThemePreview id={preview} />}
       <div className={s.dock}>
         <ChatPanel />
@@ -74,11 +87,12 @@ interface TopBarProps {
   theme: ThemeConfig;
   drawer: boolean;
   toggleDrawer: () => void;
+  openLobby: () => void;
 }
 
-function TopBar({ theme, drawer, toggleDrawer }: TopBarProps) {
+function TopBar({ theme, drawer, toggleDrawer, openLobby }: TopBarProps) {
   const me = useMoa((st) => st.me);
-  const online = useOnline();
+  const { here } = useRoomList();
   const { go, enterTheme } = useMoa.getState();
   return (
     <header className={s.top}>
@@ -89,7 +103,12 @@ function TopBar({ theme, drawer, toggleDrawer }: TopBarProps) {
       <div className={s.place}>
         <span aria-hidden>{theme.emoji}</span>
         <strong>{theme.name}</strong>
-        <span className={s.live}>{online.length}명</span>
+        <button className={s.room} aria-label={`방 목록 (지금 ${here.name}, ${here.members.length}명)`} onClick={openLobby}>
+          🚪<span className={s.label}>{here.name}</span>
+          <span className={s.live}>
+            {here.members.length}/{ROOM_MAX}
+          </span>
+        </button>
       </div>
       <div className={s.user}>
         {theme.themeId !== HUB && (
@@ -110,16 +129,52 @@ function TopBar({ theme, drawer, toggleDrawer }: TopBarProps) {
 function useOnline() {
   const me = useMoa((st) => st.me);
   const themeId = useMoa((st) => st.themeId);
+  const room = useMoa((st) => st.room);
   const peers = useMoa((st) => st.peers);
-  const others = supabase ? peers : [...FRIENDS.map((f) => ({ ...f, themeId: themeId! })), ...peers];
-  return [{ ...me, themeId: themeId! }, ...others];
+  const mine = roomOf({ room, me });
+  const bots = supabase ? [] : FRIENDS.map((f) => ({ ...f, themeId: themeId!, room: mine, bot: true }));
+  return [{ ...me, themeId: themeId!, room: mine, bot: false }, ...bots, ...peers.map((p) => ({ ...p, bot: false }))];
+}
+
+/** "So-and-so asked you over": join them (in the space they're in), or not. Fades after 30 s. */
+function InviteToast() {
+  const invite = useMoa((st) => st.invite);
+  const { rooms } = useRoomList();
+  useEffect(() => {
+    if (!invite) return;
+    const t = setTimeout(() => useMoa.getState().setInvite(null), 30_000);
+    return () => clearTimeout(t);
+  }, [invite]);
+  if (!invite) return null;
+  const st = useMoa.getState();
+  const full = (rooms.find((r) => r.id === invite.room.id)?.members.length ?? 0) >= ROOM_MAX;
+  return (
+    <div className={s.invite} role="alertdialog" aria-label="초대">
+      <p>
+        💌 <b>{invite.from}</b>님이 <b>{invite.room.name}</b>에 초대했어요
+      </p>
+      <button className={c.primary} disabled={full} onClick={() => st.joinRoom(invite.room, invite.themeId)}>
+        {full ? '가득 찼어요' : '수락'}
+      </button>
+      <button className={c.btn} onClick={() => st.setInvite(null)}>
+        거절
+      </button>
+    </div>
+  );
 }
 
 function Sidebar({ theme, close }: { theme: ThemeConfig; close: () => void }) {
   const me = useMoa((st) => st.me);
   const setLook = useMoa((st) => st.setLook);
-  const rooms = useRooms(theme.themeId);
+  const rooms = usePlaces(theme.themeId);
   const online = useOnline();
+  const myRoom = online[0].room;
+  const [invited, setInvited] = useState<string[]>([]);
+  const invite = (p: { id: string; nickname: string }) => {
+    toGame.emit('invite', p.id);
+    setInvited([...invited, p.id]);
+    useMoa.getState().system(`💌 ${p.nickname}님을 ${myRoom.name}에 초대했어요.`);
+  };
   return (
     <aside className={`${c.card} ${s.side}`}>
       <section>
@@ -152,8 +207,17 @@ function Sidebar({ theme, close }: { theme: ThemeConfig; close: () => void }) {
               <span>
                 {p.nickname}
                 {p.id === me.id && <small> (나)</small>}
-                {p.themeId !== theme.themeId && <small> · {rooms.find((r) => r.themeId === p.themeId)?.emoji}</small>}
+                {p.room.id !== myRoom.id ? (
+                  <small> · {p.room.listed ? p.room.name : '자기 공간'}</small>
+                ) : (
+                  p.themeId !== theme.themeId && <small> · {rooms.find((r) => r.themeId === p.themeId)?.emoji}</small>
+                )}
               </span>
+              {p.room.id !== myRoom.id && !p.bot && (
+                <button className={s.inviteBtn} disabled={invited.includes(p.id)} onClick={() => invite(p)}>
+                  {invited.includes(p.id) ? '보냄' : '초대'}
+                </button>
+              )}
               <i className={s.online} aria-label="온라인" />
             </li>
           ))}

@@ -6,6 +6,7 @@ import { PRESETS, type CharacterLook, type Player } from './data/character';
 import { HUB, THEME_CONFIGS, type ThemeId } from './data/themes';
 import type { Presence } from './net/link';
 import type { Profile } from './net/supabase';
+import { ownRoom, type Room } from './net/rooms';
 import type { Lang } from './net/translate';
 import type { Tile } from './world/space';
 
@@ -26,6 +27,14 @@ export interface Cheer {
   id: string;
   nickname: string;
   text: string;
+}
+
+/** Someone asked me over to their room. */
+export interface Invite {
+  from: string;
+  room: Room;
+  /** The space they're in. */
+  themeId: ThemeId;
 }
 
 /** Where I was: brought back on the next visit. */
@@ -50,6 +59,10 @@ interface MoaState {
   last: Place | null;
   /** My speech bubbles come out in this language (null: as typed). */
   lang: Lang | null;
+  /** The room I'm in (null: my own space). */
+  room: Room | null;
+  joinedAt: number;
+  invite: Invite | null;
 
   go: (screen: Screen) => void;
   showPreview: (id: ThemeId | null) => void;
@@ -60,6 +73,12 @@ interface MoaState {
   visit: (id: ThemeId) => void;
   say: (from: Pick<Player, 'id' | 'nickname'>, text: string, original?: string) => void;
   setLang: (lang: Lang | null) => void;
+  /** Move to a room (null: back to my own space), staying in this space. */
+  setRoom: (room: Room | null) => void;
+  createRoom: (name: string) => void;
+  /** Go to a room, into the space they're in. */
+  joinRoom: (room: Room, themeId: ThemeId) => void;
+  setInvite: (invite: Invite | null) => void;
   system: (text: string) => void;
   selectObject: (id: string | null) => void;
   setCurrentAction: (id: ActionId | null) => void;
@@ -69,6 +88,19 @@ interface MoaState {
   /** Signed in: become this account, and pick up where its profile left off. */
   signIn: (id: string, profile: Profile | null) => void;
 }
+
+/** The room I'm in: a made / joined one, or my own space. */
+export const roomOf = (s: Pick<MoaState, 'room' | 'me'>) => s.room ?? ownRoom(s.me);
+
+/** How I appear to everyone online. */
+export const presenceOf = (s: MoaState): Presence => ({
+  id: s.me.id,
+  nickname: s.me.nickname,
+  look: s.me.look,
+  themeId: s.themeId!,
+  room: roomOf(s),
+  joinedAt: s.joinedAt,
+});
 
 let nextId = 1;
 const push = (list: ChatMessage[], m: Omit<ChatMessage, 'id'>) => [...list.slice(-99), { ...m, id: nextId++ }];
@@ -98,6 +130,9 @@ export const useMoa = create<MoaState>()(
       peers: [],
       last: null,
       lang: null,
+      room: null,
+      joinedAt: Date.now(),
+      invite: null,
 
       go: (screen) => set({ screen }),
       showPreview: (preview) => set({ preview }),
@@ -111,6 +146,16 @@ export const useMoa = create<MoaState>()(
         toGame.emit('chat', { playerId: from.id, text, original });
       },
       setLang: (lang) => set({ lang }),
+      setRoom: (room) => {
+        set({ room, joinedAt: Date.now(), invite: null, messages: [], selectedObject: null, currentAction: null });
+        get().system(`🚪 ${room?.name ?? '내 공간'}에 들어왔어요.`);
+      },
+      createRoom: (name) => get().setRoom({ id: crypto.randomUUID(), name, listed: true }),
+      joinRoom: (room, themeId) => {
+        if (themeId !== get().themeId && THEME_CONFIGS[themeId]) get().enterTheme(themeId);
+        get().setRoom(room.id === get().me.id ? null : room);
+      },
+      setInvite: (invite) => set({ invite }),
       system: (text) => set((s) => ({ messages: push(s.messages, { playerId: '', nickname: '', text, system: true }) })),
       selectObject: (selectedObject) => set({ selectedObject }),
       setCurrentAction: (currentAction) => set({ currentAction }),

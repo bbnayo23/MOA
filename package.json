@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "check": "node scripts/check-rally.ts && node scripts/check-path.ts && node scripts/check-camera.ts && node scripts/check-translate.ts"
+    "check": "node scripts/check-rally.ts && node scripts/check-path.ts && node scripts/check-camera.ts && node scripts/check-translate.ts && node scripts/check-rooms.ts"
   },
   "dependencies": {
     "@react-three/drei": "10.7.9",

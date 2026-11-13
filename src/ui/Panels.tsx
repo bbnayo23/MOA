@@ -1,14 +1,76 @@
 import type { CSSProperties } from 'react';
-import { THEMES, type ThemeId } from '../data/themes';
+import { THEME_CONFIGS, THEMES, type ThemeId } from '../data/themes';
 import { useCheerBoard } from '../hooks/useCheerBoard';
 import { useFocusTimer } from '../hooks/useFocusTimer';
+import { useLobby } from '../hooks/useLobby';
 import { useMenu } from '../hooks/useMenu';
 import { useRallyGame } from '../hooks/useRallyGame';
 import { useWardrobe } from '../hooks/useWardrobe';
+import { ROOM_MAX } from '../net/rooms';
 import { useMoa } from '../store';
 import c from '../styles/common.module.scss';
 import s from '../styles/Panels.module.scss';
 import { AvatarImage } from './AvatarImage';
+
+/** The room list (🚪 in the top bar): join a room, make one, or go back to your own space. */
+export function Lobby({ close }: { close: () => void }) {
+  const l = useLobby(close);
+  return (
+    <section className={`${c.card} ${s.panel}`} aria-label="방 목록">
+      <header>
+        <h2>🚪 방 목록</h2>
+        <button aria-label="닫기" onClick={close}>
+          ×
+        </button>
+      </header>
+      <p className={s.here}>
+        <span>
+          지금 <b>{l.here.name}</b> · {l.here.members.length}/{ROOM_MAX}명
+        </span>
+        {!l.inOwnSpace && (
+          <button className={c.btn} onClick={l.leave}>
+            내 공간으로
+          </button>
+        )}
+      </p>
+      {l.rooms.length ? (
+        <ol className={s.rooms}>
+          {l.rooms.map((r, i) => {
+            const space = THEME_CONFIGS[r.themeId];
+            return (
+              <li key={r.id} aria-current={r.mine || undefined}>
+                <span className={s.no}>{String(i + 1).padStart(3, '0')}</span>
+                <span className={s.title}>
+                  <b>{r.name}</b>
+                  <small>
+                    {space?.emoji} {space?.name} · 방장 {r.members[0].nickname}
+                  </small>
+                </span>
+                <span className={s.count}>
+                  {r.members.length}/{ROOM_MAX}
+                </span>
+                {r.mine ? (
+                  <em>참여 중</em>
+                ) : (
+                  <button className={c.primary} disabled={r.full} onClick={() => l.join(r)}>
+                    {r.full ? '가득' : '입장'}
+                  </button>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+      ) : (
+        <p className={s.tagline}>아직 열린 방이 없어요. 첫 방을 만들어 보세요!</p>
+      )}
+      <form onSubmit={l.create}>
+        <input value={l.name} maxLength={20} placeholder={l.placeholder} aria-label="새 방 이름" onChange={(e) => l.setName(e.target.value)} />
+        <button className={c.primary}>방 만들기</button>
+      </form>
+      <p className={s.tagline}>내 공간엔 ☰ 친구 목록에서 초대해서 모여요. 한 방에 {ROOM_MAX}명까지.</p>
+    </section>
+  );
+}
 
 /** Opens in the fitting room (action `opens: 'wardrobe'`). Each card previews the look on you. */
 export function Wardrobe() {

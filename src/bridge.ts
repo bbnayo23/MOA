@@ -9,6 +9,8 @@ export interface ToGame {
   act: { actionId: ActionId; objectId?: string };
   /** Stop whatever my avatar is doing. */
   stop: null;
+  /** Invite this person (their id) to my room. */
+  invite: string;
   /** A line said (`original`: what was typed, when `text` is its translation). */
   chat: { playerId: string; text: string; original?: string };
   /** Someone else in this space moved / changed (they appear on first sight). */

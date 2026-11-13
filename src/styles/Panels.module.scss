@@ -66,6 +66,89 @@
   color: var(--c-ink-soft);
 }
 
+// ── room list ──
+.here {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  font-size: var(--fs-s);
+
+  button {
+    flex: none;
+    height: 32px;
+    padding: 0 var(--sp-3);
+  }
+}
+
+.rooms {
+  max-height: 46vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: var(--sp-2);
+    border: 2px solid var(--c-line);
+    border-radius: var(--r-m);
+    background: var(--c-surface);
+
+    &[aria-current] {
+      border-color: var(--c-primary);
+    }
+
+    > button {
+      flex: none;
+      height: 34px;
+      padding: 0 var(--sp-3);
+    }
+
+    > em {
+      flex: none;
+      font-style: normal;
+      font-size: var(--fs-xs);
+      font-weight: 700;
+      color: var(--c-primary-deep);
+    }
+  }
+}
+
+.no {
+  flex: none;
+  font-family: var(--font-pixel);
+  font-size: var(--fs-xs);
+  color: var(--c-ink-soft);
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+
+  b,
+  small {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  small {
+    font-size: var(--fs-xs);
+    color: var(--c-ink-soft);
+  }
+}
+
+.count {
+  flex: none;
+  font-size: var(--fs-s);
+  font-weight: 700;
+}
+
 .acts {
   display: flex;
   flex-wrap: wrap;

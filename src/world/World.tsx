@@ -9,7 +9,7 @@ import type { InteractionObject, ThemeConfig } from '../data/themes';
 import { FRIENDS } from '../mock';
 import type { Motion } from '../net/link';
 import { supabase } from '../net/supabase';
-import { useMoa } from '../store';
+import { roomOf, useMoa } from '../store';
 import s from '../styles/World.module.scss';
 import { AvatarBody, SIT_BACK, SIT_UP, useAvatarPose, useJoints } from './Avatar3D';
 import { gesture } from './camera';
@@ -30,11 +30,15 @@ import { castShadows, glow } from './toon';
 export function World({ theme, className }: { theme: ThemeConfig; className?: string }) {
   const meLook = useMoa((st) => st.me.look);
   const peers = useMoa((st) => st.peers);
+  const roomId = useMoa((st) => roomOf(st).id);
   const sim = useMemo(() => {
     const sim = new Sim(theme);
     const { me, last } = useMoa.getState();
-    // back where I left off, if that's here and still free
-    const at = last?.themeId === theme.themeId && sim.free(last.pos) ? last.pos : theme.spawnPosition;
+    // back where I left off, if that's here and still free; otherwise a step or so from the
+    // entrance, so friends arriving together (joining a room) don't stand inside each other
+    const s0 = theme.spawnPosition;
+    const near = { tx: s0.tx + Math.random() * 1.6 - 0.8, ty: s0.ty + Math.random() * 1.6 - 0.8 };
+    const at = last?.themeId === theme.themeId && sim.free(last.pos) ? last.pos : sim.free(near) ? near : s0;
     sim.add(me, at, true);
     if (!supabase) {
       // no server: two mock friends keep you company
@@ -104,7 +108,7 @@ export function World({ theme, className }: { theme: ThemeConfig; className?: st
         {theme.interactionObjects
           .filter((o) => o.enter)
           .map((o) => (
-            <Sign key={o.id} anchor={labels.bind(`sign:${o.id}`, onFront(o))} o={o} inside={peers.filter((p) => p.themeId === o.enter)} onPick={() => pick(o)} />
+            <Sign key={o.id} anchor={labels.bind(`sign:${o.id}`, onFront(o))} o={o} inside={peers.filter((p) => p.room.id === roomId && p.themeId === o.enter)} onPick={() => pick(o)} />
           ))}
         {hover && !hover.enter && hover !== near && (
           <span ref={labels.bind('hover', above(hover))} className={s.label}>

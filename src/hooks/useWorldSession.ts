@@ -27,7 +27,7 @@ export function useWorldSession() {
 }
 
 /** Every place you can go from the sidebar: the plaza first, then the eight themes. */
-export function useRooms(currentId: ThemeId) {
+export function usePlaces(currentId: ThemeId) {
   const visit = useMoa((st) => st.visit);
   return [THEME_CONFIGS[HUB]!, ...THEMES].map((t) => ({
     ...t,
