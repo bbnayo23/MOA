@@ -7,6 +7,8 @@ import { ANIMS } from '../data/anims';
 import type { CharacterLook } from '../data/character';
 import type { InteractionObject, ThemeConfig } from '../data/themes';
 import { FRIENDS } from '../mock';
+import type { Motion } from '../net/link';
+import { supabase } from '../net/supabase';
 import { useMoa } from '../store';
 import s from '../styles/World.module.scss';
 import { AvatarBody, SIT_BACK, SIT_UP, useAvatarPose, useJoints } from './Avatar3D';
@@ -25,15 +27,24 @@ import { castShadows, glow } from './toon';
  */
 export function World({ theme, className }: { theme: ThemeConfig; className?: string }) {
   const meLook = useMoa((st) => st.me.look);
+  const peers = useMoa((st) => st.peers);
   const sim = useMemo(() => {
     const sim = new Sim(theme);
-    const at = theme.spawnPosition;
-    sim.add(useMoa.getState().me, at, true);
-    FRIENDS.forEach((f, i) => sim.add(f, { tx: at.tx - 0.8 + i * 1.6, ty: at.ty + 0.8 - i * 1.6 }, false));
-    sim.startFriends();
+    const { me, last } = useMoa.getState();
+    // back where I left off, if that's here and still free
+    const at = last?.themeId === theme.themeId && sim.free(last.pos) ? last.pos : theme.spawnPosition;
+    sim.add(me, at, true);
+    if (!supabase) {
+      // no server: two mock friends keep you company
+      const s = theme.spawnPosition;
+      FRIENDS.forEach((f, i) => sim.add(f, { tx: s.tx - 0.8 + i * 1.6, ty: s.ty + 0.8 - i * 1.6 }, false));
+      sim.startFriends();
+    }
     return sim;
   }, [theme]);
   const me = sim.agents.get(useMoa.getState().me.id)!;
+  // people come and go: re-render the cast when they do (or change clothes)
+  const [, recast] = useState(0);
   const agents = [...sim.agents.values()];
   const labels = useMemo(() => new Labels(), []);
   const bubbles = useBubbles();
@@ -45,6 +56,11 @@ export function World({ theme, className }: { theme: ThemeConfig; className?: st
     const offs = [
       toGame.on('act', ({ actionId, objectId }) => sim.perform(me, actionId, objectId)),
       toGame.on('stop', () => sim.stop(me)),
+      toGame.on('peer', ({ player, ...motion }) => {
+        const before = sim.agents.get(player.id)?.player.look;
+        if (sim.upsertRemote(player, motion) || before !== player.look) recast((n) => n + 1);
+      }),
+      toGame.on('peerLeave', (id) => sim.agents.delete(id) && recast((n) => n + 1)),
     ];
     sim.onNear = setNear;
     if (import.meta.env.DEV) (window as unknown as { __moaSim: Sim }).__moaSim = sim; // for the browser tests
@@ -86,9 +102,7 @@ export function World({ theme, className }: { theme: ThemeConfig; className?: st
         {theme.interactionObjects
           .filter((o) => o.enter)
           .map((o) => (
-            <button key={o.id} ref={labels.bind(`sign:${o.id}`, onFront(o))} className={s.sign} onClick={() => pick(o)}>
-              {o.icon} {o.label}
-            </button>
+            <Sign key={o.id} anchor={labels.bind(`sign:${o.id}`, onFront(o))} o={o} inside={peers.filter((p) => p.themeId === o.enter)} onPick={() => pick(o)} />
           ))}
         {hover && !hover.enter && hover !== near && (
           <span ref={labels.bind('hover', above(hover))} className={s.label}>
@@ -128,6 +142,25 @@ export function World({ theme, className }: { theme: ThemeConfig; className?: st
           );
         })}
       </div>
+    </div>
+  );
+}
+
+/** A door's sign, with a bubble of who's inside right now. */
+function Sign({ o, inside, anchor, onPick }: { o: InteractionObject; inside: { nickname: string }[]; anchor: (el: HTMLElement | null) => void; onPick: () => void }) {
+  const names = inside.map((p) => p.nickname);
+  return (
+    <div ref={anchor} className={s.door}>
+      {names.length > 0 && (
+        <p className={s.inside}>
+          {names.slice(0, 3).join(', ')}
+          {names.length > 3 && ` 외 ${names.length - 3}명`}
+        </p>
+      )}
+      <button className={s.sign} onClick={onPick}>
+        {o.icon} {o.label}
+        {names.length > 0 && <b>{names.length}</b>}
+      </button>
     </div>
   );
 }
@@ -277,9 +310,10 @@ const KEYS: Record<string, [number, number]> = {
   ArrowRight: [1, 0], KeyD: [1, 0],
 };
 
-/** Runs the simulation every frame with the held arrow / WASD keys. */
+/** Runs the simulation every frame with the held arrow / WASD keys, and reports where I am. */
 function Driver({ sim, me }: { sim: Sim; me: Agent }) {
   const held = useRef(new Set<string>());
+  const sent = useRef({ at: -Infinity, key: '' });
   useEffect(() => {
     const typing = () => document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement;
     const down = (e: KeyboardEvent) => {
@@ -302,6 +336,14 @@ function Driver({ sim, me }: { sim: Sim; me: Agent }) {
     let dx = 0, dy = 0;
     held.current.forEach((k) => ((dx += KEYS[k][0]), (dy += KEYS[k][1])));
     sim.step(Math.min(dt, 0.1), me, { dx, dy });
+    // tell the room (≤ 10×/s, and only when something changed — or every 3 s as a keep-alive)
+    const motion: Motion = { pos: { tx: +me.pos.tx.toFixed(2), ty: +me.pos.ty.toFixed(2) }, heading: +me.heading.toFixed(2), anim: me.anim, action: me.action };
+    const key = JSON.stringify(motion);
+    const since = sim.time - sent.current.at;
+    if (since > 0.1 && (key !== sent.current.key || since > 3)) {
+      sent.current = { at: sim.time, key };
+      fromGame.emit('moved', motion);
+    }
   });
   return null;
 }

@@ -1,5 +1,7 @@
 import type { ActionId } from './data/actions';
+import type { Player } from './data/character';
 import type { ThemeId } from './data/themes';
+import type { Motion } from './net/link';
 
 /** React → world commands. */
 export interface ToGame {
@@ -8,6 +10,10 @@ export interface ToGame {
   /** Stop whatever my avatar is doing. */
   stop: null;
   chat: { playerId: string; text: string };
+  /** Someone else in this space moved / changed (they appear on first sight). */
+  peer: { player: Player } & Motion;
+  /** …or left it. */
+  peerLeave: string;
 }
 
 /** World → React events. */
@@ -18,6 +24,8 @@ export interface FromGame {
   actionChange: ActionId | null;
   /** My avatar reached a door leading to this theme. */
   portal: ThemeId;
+  /** Where I am / what I'm doing, whenever it changes (≤ 10×/s). */
+  moved: Motion;
 }
 
 function channel<M>() {

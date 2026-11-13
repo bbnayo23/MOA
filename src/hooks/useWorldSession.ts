@@ -3,6 +3,7 @@ import { fromGame } from '../bridge';
 import { ACTIONS } from '../data/actions';
 import { HUB, THEMES, THEME_CONFIGS, type ThemeId } from '../data/themes';
 import { startMockFriends } from '../mock';
+import { supabase } from '../net/supabase';
 import { useMoa } from '../store';
 
 /** While a world is open: mock friends are around, and game events land in the store. */
@@ -11,7 +12,7 @@ export function useWorldSession() {
   const panel = useMoa((st) => (st.currentAction ? ACTIONS[st.currentAction].opens : undefined));
   const preview = useMoa((st) => st.preview);
 
-  useEffect(() => (themeId ? startMockFriends(themeId) : undefined), [themeId]);
+  useEffect(() => (themeId && !supabase ? startMockFriends(themeId) : undefined), [themeId]);
   useEffect(() => {
     const st = useMoa.getState();
     const offs = [

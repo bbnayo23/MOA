@@ -2,8 +2,11 @@ import { useState, type CSSProperties } from 'react';
 import { HUB, type ThemeConfig } from '../data/themes';
 import { useActionBar } from '../hooks/useActionBar';
 import { useChat } from '../hooks/useChat';
+import { signOut } from '../hooks/useAccount';
+import { useRealtime } from '../hooks/useRealtime';
 import { useRooms, useWorldSession } from '../hooks/useWorldSession';
 import { FRIENDS } from '../mock';
+import { supabase } from '../net/supabase';
 import { useMoa } from '../store';
 import c from '../styles/common.module.scss';
 import s from '../styles/WorldScreen.module.scss';
@@ -17,6 +20,7 @@ const EMOTES = ['👋', '❤️', '😆', '😮', '✨'];
 /** The world fills the screen; every piece of UI floats on top of it. */
 export function WorldScreen() {
   const { theme, panel, preview } = useWorldSession();
+  useRealtime();
   const [drawer, setDrawer] = useState(false);
   if (!theme) return null;
   const hub = theme.themeId === HUB;
@@ -52,6 +56,7 @@ interface TopBarProps {
 
 function TopBar({ theme, drawer, toggleDrawer }: TopBarProps) {
   const me = useMoa((st) => st.me);
+  const online = useOnline();
   const { go, enterTheme } = useMoa.getState();
   return (
     <header className={s.top}>
@@ -62,7 +67,7 @@ function TopBar({ theme, drawer, toggleDrawer }: TopBarProps) {
       <div className={s.place}>
         <span aria-hidden>{theme.emoji}</span>
         <strong>{theme.name}</strong>
-        <span className={s.live}>{FRIENDS.length + 1}명</span>
+        <span className={s.live}>{online.length}명</span>
       </div>
       <div className={s.user}>
         {theme.themeId !== HUB && (
@@ -79,10 +84,20 @@ function TopBar({ theme, drawer, toggleDrawer }: TopBarProps) {
   );
 }
 
+/** Everyone online: me, then real people (or, without a server, the two mock friends) with where they are. */
+function useOnline() {
+  const me = useMoa((st) => st.me);
+  const themeId = useMoa((st) => st.themeId);
+  const peers = useMoa((st) => st.peers);
+  const others = supabase ? peers : [...FRIENDS.map((f) => ({ ...f, themeId: themeId! })), ...peers];
+  return [{ ...me, themeId: themeId! }, ...others];
+}
+
 function Sidebar({ theme, close }: { theme: ThemeConfig; close: () => void }) {
   const me = useMoa((st) => st.me);
   const setLook = useMoa((st) => st.setLook);
   const rooms = useRooms(theme.themeId);
+  const online = useOnline();
   return (
     <aside className={`${c.card} ${s.side}`}>
       <section>
@@ -107,14 +122,15 @@ function Sidebar({ theme, close }: { theme: ThemeConfig; close: () => void }) {
       </section>
 
       <section>
-        <h2>친구 {FRIENDS.length + 1}</h2>
+        <h2>친구 {online.length}</h2>
         <ul className={s.friends}>
-          {[me, ...FRIENDS].map((p) => (
+          {online.map((p) => (
             <li key={p.id}>
               <AvatarImage look={p.look} className={s.face} />
               <span>
                 {p.nickname}
-                {p.id === 'me' && <small> (나)</small>}
+                {p.id === me.id && <small> (나)</small>}
+                {p.themeId !== theme.themeId && <small> · {rooms.find((r) => r.themeId === p.themeId)?.emoji}</small>}
               </span>
               <i className={s.online} aria-label="온라인" />
             </li>
@@ -136,6 +152,11 @@ function Sidebar({ theme, close }: { theme: ThemeConfig; close: () => void }) {
       )}
 
       <InstallButton />
+      {supabase && (
+        <button className={c.btn} onClick={signOut}>
+          로그아웃
+        </button>
+      )}
     </aside>
   );
 }
@@ -163,11 +184,12 @@ function ActionBar({ theme }: { theme: ThemeConfig }) {
 
 function ChatPanel() {
   const { messages, text, setText, inputRef, logRef, sendEmote, submit, blurOnEscape } = useChat();
+  const myId = useMoa((st) => st.me.id);
   return (
     <section className={s.chat}>
       <ol ref={logRef} className={s.log} aria-live="polite">
         {messages.map((m) => (
-          <li key={m.id} className={m.system ? s.system : m.playerId === 'me' ? s.mine : undefined}>
+          <li key={m.id} className={m.system ? s.system : m.playerId === myId ? s.mine : undefined}>
             {!m.system && <b>{m.nickname}</b>}
             {m.text}
           </li>

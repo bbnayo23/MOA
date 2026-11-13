@@ -2,8 +2,8 @@ import type { Player } from './data/character';
 import type { ThemeId } from './data/themes';
 import { useMoa } from './store';
 
-// ponytail: stand-in for realtime presence + chat. Replace with a Supabase
-// channel that calls the same store actions (say / system).
+// Company for when there's no server (no Supabase configured): two friends who
+// wander, use things and chat back. With Supabase, real people take their place.
 export const FRIENDS: Player[] = [
   {
     id: 'haru',
@@ -75,7 +75,7 @@ export function startMockFriends(themeId: ThemeId): () => void {
     if (note && note !== prev.cheers.at(-1) && note.nickname === s.me.nickname)
       later(between(1500, 3000), () => say(pick(FRIENDS), pick(['응원 고마워 💕', '보드에 남긴 거 봤어! 🥹', '나도 힘낼게 💪'])));
     const last = s.messages.at(-1);
-    if (!last || last === prev.messages.at(-1) || last.playerId !== 'me') return;
+    if (!last || last === prev.messages.at(-1) || last.playerId !== s.me.id) return;
     const pool = REPLIES.find(([re]) => re.test(last.text))?.[1];
     if (!pool && Math.random() < 0.4) return;
     later(between(1200, 2600), () => say(pick(FRIENDS), pick(pool ?? GENERIC)));

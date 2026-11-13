@@ -90,6 +90,28 @@
   box-shadow: var(--shadow-s);
 }
 
+// a door: its sign, and above it a bubble of who's inside
+.door {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.inside {
+  max-width: 160px;
+  padding: 3px 9px;
+  border-radius: var(--r-pill);
+  background: var(--c-primary-deep);
+  color: var(--c-on-primary);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: var(--shadow-s);
+}
+
 // doors' signs are always up, and tapping one walks you to that door
 .sign {
   border: 2px solid var(--c-line);
@@ -101,6 +123,16 @@
 
   &:hover {
     border-color: var(--c-primary);
+  }
+
+  // how many are inside
+  b {
+    margin-left: 6px;
+    padding: 0 6px;
+    border-radius: var(--r-pill);
+    background: var(--c-online);
+    color: #fff;
+    font-size: 11px;
   }
 }
 

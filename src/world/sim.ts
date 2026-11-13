@@ -4,6 +4,7 @@ import type { AnimKey } from '../data/anims';
 import type { Player } from '../data/character';
 import { footprintsOf, type InteractionObject, type ThemeConfig } from '../data/themes';
 import { findPath, isFree, type Footprint } from './path';
+import type { Motion } from '../net/link';
 import { KINDS } from './kinds';
 import { FACE_CAMERA, SPEED, headingOf, objectYaw, screenToTile, type Tile } from './space';
 
@@ -11,6 +12,8 @@ import { FACE_CAMERA, SPEED, headingOf, objectYaw, screenToTile, type Tile } fro
 export interface Agent {
   player: Player;
   isMe: boolean;
+  /** Another real person: driven by what they send, not by the mock brain. */
+  remote?: boolean;
   pos: Tile;
   /** Facing in radians, 0 = +ty (see space.ts). */
   heading: number;
@@ -63,7 +66,32 @@ export class Sim {
   /** Mock friends start wandering and using things. */
   startFriends() {
     let i = 0;
-    for (const a of this.agents.values()) if (!a.isMe) this.after(1500 + i++ * 1500, () => this.think(a));
+    for (const a of this.agents.values()) if (!a.isMe && !a.remote) this.after(1500 + i++ * 1500, () => this.think(a));
+  }
+
+  /**
+   * Someone else's latest state: they walk over to where they say they are (or
+   * pop there if far / new), then play what they're doing. Returns true if new.
+   */
+  upsertRemote(player: Player, m: Motion) {
+    let a = this.agents.get(player.id);
+    const isNew = !a;
+    if (!a) (a = this.add(player, m.pos, false)).remote = true;
+    a.player = player;
+    a.action = m.action;
+    if (Math.hypot(m.pos.tx - a.pos.tx, m.pos.ty - a.pos.ty) > 3) a.pos = { ...m.pos };
+    const arrive = (agent: Agent) => {
+      agent.anim = m.anim;
+      agent.heading = m.heading;
+    };
+    if (Math.hypot(m.pos.tx - a.pos.tx, m.pos.ty - a.pos.ty) < 0.02) {
+      a.route = [];
+      arrive(a);
+    } else {
+      a.route = [{ ...m.pos }];
+      a.arrive = () => arrive(a);
+    }
+    return isNew;
   }
 
   after(ms: number, run: () => void): Timer {
