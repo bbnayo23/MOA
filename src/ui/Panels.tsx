@@ -8,7 +8,7 @@ import { useWardrobe } from '../hooks/useWardrobe';
 import { useMoa } from '../store';
 import c from '../styles/common.module.scss';
 import s from '../styles/Panels.module.scss';
-import { AvatarCanvas } from './AvatarCanvas';
+import { AvatarImage } from './AvatarImage';
 
 /** Opens in the fitting room (action `opens: 'wardrobe'`). Each card previews the look on you. */
 export function Wardrobe() {
@@ -25,7 +25,7 @@ export function Wardrobe() {
         {w.outfits.map((o) => (
           <li key={o.name}>
             <button aria-pressed={o.wearing} onClick={() => w.wear(o.look)}>
-              <AvatarCanvas look={o.preview} scale={2} />
+              <AvatarImage look={o.preview} mode="full" className={s.outfit} />
               <span>{o.name}</span>
             </button>
           </li>

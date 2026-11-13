@@ -255,6 +255,12 @@
 }
 
 // fitting room: outfit cards, each previewing the look on you
+.outfit {
+  display: block;
+  width: 72px;
+  height: 72px;
+}
+
 .outfits {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

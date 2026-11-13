@@ -1,10 +1,10 @@
 import { useState, type CSSProperties } from 'react';
-import { AVATAR_H } from '../art/avatar';
 import type { AnimKey } from '../data/anims';
 import { LABELS, LOOK_OPTIONS, PRESETS, randomLook, type CharacterLook } from '../data/character';
 import { HUB } from '../data/themes';
 import { useMoa } from '../store';
-import { AvatarCanvas } from './AvatarCanvas';
+import { AvatarPreview } from '../world/Preview';
+import { AvatarImage } from './AvatarImage';
 import { InstallButton } from './InstallButton';
 import c from '../styles/common.module.scss';
 import s from '../styles/CreateScreen.module.scss';
@@ -13,6 +13,7 @@ const TABS = ['얼굴', '헤어', '옷', '소품'] as const;
 const PREVIEW: [AnimKey, string][] = [
   ['idle', '기본'],
   ['walk', '걷기'],
+  ['run', '뛰기'],
   ['wave', '인사'],
   ['dance', '춤'],
   ['sit', '앉기'],
@@ -39,9 +40,8 @@ export function CreateScreen() {
 
       <main className={s.body}>
         <section className={`${c.card} ${s.stageCard}`}>
-          <div className={s.stage}>
-            <AvatarCanvas look={me.look} anim={anim} scale={8} animate />
-          </div>
+          <AvatarPreview look={me.look} anim={anim} className={s.stage} />
+          <p className={s.spin}>드래그해서 돌려 보기</p>
           <div className={s.row}>
             {PREVIEW.map(([key, label]) => (
               <button key={key} className={c.chip} aria-pressed={anim === key} onClick={() => setAnim(key)}>
@@ -69,7 +69,7 @@ export function CreateScreen() {
           <div className={s.presets}>
             {PRESETS.map((p) => (
               <button key={p.name} className={s.preset} onClick={() => setLook(p.look)}>
-                <AvatarCanvas look={p.look} scale={3} />
+                <AvatarImage look={p.look} mode="full" className={s.presetImg} />
                 <span>{p.name}</span>
               </button>
             ))}
@@ -106,7 +106,7 @@ export function CreateScreen() {
                       />
                     ) : (
                       <button key={v} className={s.option} aria-pressed={pressed} onClick={() => setLook(patch)}>
-                        <AvatarCanvas look={{ ...me.look, ...patch }} scale={2} rows={o.tab === '옷' ? AVATAR_H : 19} />
+                        <AvatarImage look={{ ...me.look, ...patch }} mode={o.tab === '옷' ? 'full' : 'head'} className={s.optionImg} />
                         <span>{LABELS[v]}</span>
                       </button>
                     );

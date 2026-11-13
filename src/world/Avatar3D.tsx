@@ -27,7 +27,13 @@ const SHOULDER_Y = 0.7;
 const NECK_Y = 0.76;
 const HEAD_R = 0.36;
 const HEAD_Y = 0.33; // head centre above the neck
-const HEAD_SCALE: [number, number, number] = [1, 0.92, 0.95];
+type V3 = [number, number, number];
+/** Head ellipsoid per face shape (hair, hats and features follow it). */
+const FACE_SCALE: Record<CharacterLook['face'], V3> = {
+  round: [1, 0.92, 0.95],
+  oval: [0.92, 1.0, 0.93],
+  wide: [1.08, 0.86, 0.96],
+};
 const HAIR_R = 0.385;
 
 /** Bones the animation drives. */
@@ -82,6 +88,7 @@ export function AvatarBody({ look, joints }: { look: CharacterLook; joints: Join
   const hair = toon(look.hairColor);
   const shoes = toon(look.shoes);
   const longSleeves = look.top === 'hoodie' || look.top === 'jacket';
+  const head = FACE_SCALE[look.face];
 
   useLayoutEffect(() => castShadows(root.current));
 
@@ -152,15 +159,15 @@ export function AvatarBody({ look, joints }: { look: CharacterLook; joints: Join
           {arm(-1)}
           <BodyProps />
           <group ref={joints.head} position={[0, NECK_Y, 0]}>
-            <mesh material={skin} position={[0, HEAD_Y, 0]} scale={HEAD_SCALE}>
+            <mesh material={skin} position={[0, HEAD_Y, 0]} scale={head}>
               <sphereGeometry args={[HEAD_R, 32, 24]} />
             </mesh>
-            <Face look={look} joints={joints} />
-            <group position={[0, HEAD_Y, 0]} scale={HEAD_SCALE}>
+            <Face look={look} joints={joints} head={head} />
+            <group position={[0, HEAD_Y, 0]} scale={head}>
               <Hair look={look} material={hair} />
               <Hat look={look} />
             </group>
-            {look.accessory === 'glasses' && <Glasses />}
+            {look.accessory === 'glasses' && <Glasses head={head} />}
             <HeadProps />
             {look.accessory === 'star' && (
               <mesh material={toon(STAR)} position={[0.25, HEAD_Y + 0.2, 0.18]} rotation={[0, 0.6, 0.3]} scale={[1, 1, 0.45]}>
@@ -214,7 +221,8 @@ function TopDetails({ look, topDark }: { look: CharacterLook; topDark: THREE.Mat
 }
 
 // face features sit on the head ellipsoid; z = how far out the surface is there
-const surfZ = (x: number, y: number) => HEAD_R * HEAD_SCALE[2] * Math.sqrt(Math.max(0, 1 - (x / HEAD_R) ** 2 - (y / (HEAD_R * HEAD_SCALE[1])) ** 2));
+const surfZ = (x: number, y: number, [sx, sy, sz]: V3) =>
+  HEAD_R * sz * Math.sqrt(Math.max(0, 1 - (x / (HEAD_R * sx)) ** 2 - (y / (HEAD_R * sy)) ** 2));
 const EYE_X = 0.12;
 const EYE_Y = 0.01;
 
@@ -227,16 +235,18 @@ function Arc({ r, tube, color, flip, position }: { r: number; tube: number; colo
   );
 }
 
-function Face({ look, joints }: { look: CharacterLook; joints: Joints }) {
+function Face({ look, joints, head }: { look: CharacterLook; joints: Joints; head: V3 }) {
   const y = HEAD_Y + EYE_Y;
-  const ez = surfZ(EYE_X, EYE_Y);
+  const ez = surfZ(EYE_X, EYE_Y, head);
   const my = HEAD_Y - 0.11;
-  const mz = surfZ(0, -0.11) - 0.004;
+  const mz = surfZ(0, -0.11, head) - 0.004;
+  // which eyes / mouth show before any animation runs (thumbnails are a single still frame)
+  const eyes = look.eyes === 'happy' ? 'happy' : look.eyes === 'sleepy' ? 'closed' : 'open';
   const big = look.eyes === 'round';
   return (
     <group>
       {/* open eyes in the look's style; closed / happy variants are swapped in by the animation */}
-      <group ref={joints.eyesOpen}>
+      <group ref={joints.eyesOpen} visible={eyes === 'open'}>
         {[-1, 1].map((s) => (
           <group key={s} position={[EYE_X * s, y, ez - 0.008]}>
             <mesh material={toon(INK)} scale={big ? [0.048, 0.066, 0.03] : [0.032, 0.045, 0.025]}>
@@ -248,26 +258,26 @@ function Face({ look, joints }: { look: CharacterLook; joints: Joints }) {
           </group>
         ))}
       </group>
-      <group ref={joints.eyesClosed} visible={false}>
+      <group ref={joints.eyesClosed} visible={eyes === 'closed'}>
         {[-1, 1].map((s) => (
           <mesh key={s} material={toon(INK)} position={[EYE_X * s, y - 0.01, ez]}>
             <boxGeometry args={[0.075, 0.014, 0.012]} />
           </mesh>
         ))}
       </group>
-      <group ref={joints.eyesHappy} visible={false}>
+      <group ref={joints.eyesHappy} visible={eyes === 'happy'}>
         {[-1, 1].map((s) => (
           <Arc key={s} r={0.038} tube={0.012} color={INK} position={[EYE_X * s, y - 0.015, ez]} />
         ))}
       </group>
       {/* cheeks */}
       {[-1, 1].map((s) => (
-        <mesh key={s} material={toon(BLUSH)} position={[0.205 * s, HEAD_Y - 0.075, surfZ(0.205, -0.075) - 0.012]} rotation={[0, 0.55 * s, 0]} scale={[0.055, 0.032, 0.01]}>
+        <mesh key={s} material={toon(BLUSH)} position={[0.205 * s, HEAD_Y - 0.075, surfZ(0.205, -0.075, head) - 0.012]} rotation={[0, 0.55 * s, 0]} scale={[0.055, 0.032, 0.01]}>
           <sphereGeometry args={[1, 12, 8]} />
         </mesh>
       ))}
       {/* mouth: the look's, or open while talking / eating */}
-      <group ref={joints.mouthLook}>
+      <group ref={joints.mouthLook} visible={look.mouth !== 'open'}>
         {look.mouth === 'smile' && <Arc r={0.04} tube={0.011} color={MOUTH} flip position={[0, my + 0.02, mz]} />}
         {look.mouth === 'cat' &&
           [-1, 1].map((s) => <Arc key={s} r={0.022} tube={0.009} color={MOUTH} flip position={[0.022 * s, my + 0.012, mz]} />)}
@@ -277,7 +287,16 @@ function Face({ look, joints }: { look: CharacterLook; joints: Joints }) {
           </mesh>
         )}
       </group>
-      <group ref={joints.mouthOpen} visible={false}>
+      {look.nose !== 'none' && (
+        <mesh
+          material={toon(look.nose === 'dot' ? new THREE.Color(look.skin).multiplyScalar(0.8).getStyle() : '#ffb0a0')}
+          position={[0, HEAD_Y - 0.045, surfZ(0, -0.045, head) - 0.006]}
+          scale={look.nose === 'dot' ? [0.02, 0.016, 0.014] : [0.04, 0.032, 0.026]}
+        >
+          <sphereGeometry args={[1, 10, 8]} />
+        </mesh>
+      )}
+      <group ref={joints.mouthOpen} visible={look.mouth === 'open'}>
         <mesh material={toon('#b8475f')} position={[0, my, mz - 0.004]} scale={[0.042, 0.038, 0.02]}>
           <sphereGeometry args={[1, 12, 10]} />
         </mesh>
@@ -367,10 +386,10 @@ function Hat({ look }: { look: CharacterLook }) {
   return null;
 }
 
-function Glasses() {
+function Glasses({ head }: { head: V3 }) {
   const m = toon(GLASSES);
   const y = HEAD_Y + EYE_Y;
-  const z = surfZ(EYE_X, EYE_Y) + 0.025;
+  const z = surfZ(EYE_X, EYE_Y, head) + 0.025;
   return (
     <group>
       {[-1, 1].map((s) => (

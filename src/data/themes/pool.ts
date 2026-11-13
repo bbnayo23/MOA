@@ -1,6 +1,7 @@
-import { POOL_WATER } from '../../art/avatar';
 import type { Tile } from '../../world/space';
 import type { InteractionObject, ThemeConfig } from './types';
+
+const POOL_WATER = '#8fd0f5';
 
 const onTop = (at: Tile): Tile => ({ tx: at.tx + 0.05, ty: at.ty + 0.05 });
 

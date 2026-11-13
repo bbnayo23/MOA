@@ -2,6 +2,8 @@ export const SKIN_TONES = ['#ffe8dc', '#fcd5bd', '#eab894', '#c99271', '#8f6450'
 export const HAIR_COLORS = ['#4a3540', '#8a5a44', '#e0a96d', '#f7d88b', '#f4a6c0', '#a7bcf5', '#9fdcc0', '#eeeaf6'] as const;
 export const CLOTH_COLORS = ['#fffaf2', '#ffb3c6', '#ffd38a', '#b5e8c9', '#a9cdfc', '#cbb8ff', '#ff9a7a', '#5c6185'] as const;
 
+export const FACE_SHAPES = ['round', 'oval', 'wide'] as const;
+export const NOSES = ['none', 'dot', 'button'] as const;
 export const HAIR_STYLES = ['short', 'bob', 'long', 'spiky', 'buns'] as const;
 export const EYE_TYPES = ['round', 'dot', 'happy', 'sleepy'] as const;
 export const MOUTH_TYPES = ['smile', 'cat', 'open', 'flat'] as const;
@@ -12,7 +14,9 @@ export const ACCESSORIES = ['none', 'glasses', 'star', 'scarf'] as const;
 
 export interface CharacterLook {
   skin: string;
+  face: (typeof FACE_SHAPES)[number];
   eyes: (typeof EYE_TYPES)[number];
+  nose: (typeof NOSES)[number];
   mouth: (typeof MOUTH_TYPES)[number];
   hair: (typeof HAIR_STYLES)[number];
   hairColor: string;
@@ -40,7 +44,9 @@ export const LOOK_OPTIONS: {
   color?: boolean;
 }[] = [
   { tab: '얼굴', key: 'skin', label: '피부색', values: SKIN_TONES, color: true },
+  { tab: '얼굴', key: 'face', label: '얼굴형', values: FACE_SHAPES },
   { tab: '얼굴', key: 'eyes', label: '눈', values: EYE_TYPES },
+  { tab: '얼굴', key: 'nose', label: '코', values: NOSES },
   { tab: '얼굴', key: 'mouth', label: '입', values: MOUTH_TYPES },
   { tab: '헤어', key: 'hair', label: '헤어스타일', values: HAIR_STYLES },
   { tab: '헤어', key: 'hairColor', label: '헤어 컬러', values: HAIR_COLORS, color: true },
@@ -54,6 +60,7 @@ export const LOOK_OPTIONS: {
 ];
 
 export const LABELS: Record<string, string> = {
+  oval: '갸름', wide: '넓적', button: '동글 코',
   round: '동글', dot: '콩알', happy: '웃는 눈', sleepy: '졸린 눈',
   smile: '미소', cat: '고양이', open: '활짝', flat: '시크',
   short: '숏컷', bob: '단발', long: '긴 머리', spiky: '삐죽', buns: '똥머리',
@@ -67,7 +74,7 @@ export const PRESETS: { name: string; look: CharacterLook }[] = [
   {
     name: '모아',
     look: {
-      skin: '#ffe8dc', eyes: 'round', mouth: 'smile', hair: 'bob', hairColor: '#8a5a44',
+      skin: '#ffe8dc', face: 'round', eyes: 'round', nose: 'none', mouth: 'smile', hair: 'bob', hairColor: '#8a5a44',
       top: 'stripe', topColor: '#ffb3c6', bottom: 'skirt', bottomColor: '#a9cdfc', shoes: '#fffaf2',
       hat: 'none', accessory: 'none',
     },
@@ -75,7 +82,7 @@ export const PRESETS: { name: string; look: CharacterLook }[] = [
   {
     name: '콩이',
     look: {
-      skin: '#fcd5bd', eyes: 'dot', mouth: 'cat', hair: 'spiky', hairColor: '#4a3540',
+      skin: '#fcd5bd', face: 'wide', eyes: 'dot', nose: 'dot', mouth: 'cat', hair: 'spiky', hairColor: '#4a3540',
       top: 'hoodie', topColor: '#a9cdfc', bottom: 'pants', bottomColor: '#5c6185', shoes: '#ff9a7a',
       hat: 'none', accessory: 'glasses',
     },
@@ -83,7 +90,7 @@ export const PRESETS: { name: string; look: CharacterLook }[] = [
   {
     name: '보리',
     look: {
-      skin: '#eab894', eyes: 'happy', mouth: 'open', hair: 'buns', hairColor: '#f7d88b',
+      skin: '#eab894', face: 'round', eyes: 'happy', nose: 'button', mouth: 'open', hair: 'buns', hairColor: '#f7d88b',
       top: 'tee', topColor: '#ffd38a', bottom: 'shorts', bottomColor: '#b5e8c9', shoes: '#cbb8ff',
       hat: 'none', accessory: 'star',
     },
@@ -91,7 +98,7 @@ export const PRESETS: { name: string; look: CharacterLook }[] = [
   {
     name: '루루',
     look: {
-      skin: '#ffe8dc', eyes: 'sleepy', mouth: 'smile', hair: 'long', hairColor: '#a7bcf5',
+      skin: '#ffe8dc', face: 'oval', eyes: 'sleepy', nose: 'none', mouth: 'smile', hair: 'long', hairColor: '#a7bcf5',
       top: 'jacket', topColor: '#cbb8ff', bottom: 'pants', bottomColor: '#fffaf2', shoes: '#5c6185',
       hat: 'ribbon', accessory: 'none',
     },

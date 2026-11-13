@@ -7,7 +7,7 @@ import { FRIENDS } from '../mock';
 import { useMoa } from '../store';
 import c from '../styles/common.module.scss';
 import s from '../styles/WorldScreen.module.scss';
-import { AvatarCanvas } from './AvatarCanvas';
+import { AvatarImage } from './AvatarImage';
 import { World } from '../world/World';
 import { InstallButton } from './InstallButton';
 import { CheerBoard, FocusTimer, MenuPanel, RallyGame, ThemePreview, Wardrobe } from './Panels';
@@ -71,7 +71,7 @@ function TopBar({ theme, drawer, toggleDrawer }: TopBarProps) {
           </button>
         )}
         <button className={c.btn} aria-label="꾸미기" onClick={() => go('create')}>
-          <AvatarCanvas look={me.look} scale={1} rows={19} />
+          <AvatarImage look={me.look} className={s.face} />
           <span className={s.label}>{me.nickname} · 꾸미기</span>
         </button>
       </div>
@@ -111,7 +111,7 @@ function Sidebar({ theme, close }: { theme: ThemeConfig; close: () => void }) {
         <ul className={s.friends}>
           {[me, ...FRIENDS].map((p) => (
             <li key={p.id}>
-              <AvatarCanvas look={p.look} scale={1} rows={19} />
+              <AvatarImage look={p.look} className={s.face} />
               <span>
                 {p.nickname}
                 {p.id === 'me' && <small> (나)</small>}

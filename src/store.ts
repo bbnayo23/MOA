@@ -81,6 +81,15 @@ export const useMoa = create<MoaState>()(
       addCheer: (nickname, text) =>
         set((s) => ({ cheers: [...s.cheers.slice(-29), { id: crypto.randomUUID(), nickname, text }] })),
     }),
-    { name: 'moa', partialize: (s) => ({ me: s.me, cheers: s.cheers }) },
+    {
+      name: 'moa',
+      version: 1,
+      partialize: (s) => ({ me: s.me, cheers: s.cheers }),
+      // v0 looks predate face shape / nose: fill them in
+      migrate: (saved) => {
+        const s = saved as Pick<MoaState, 'me' | 'cheers'>;
+        return { ...s, me: { ...s.me, look: { ...PRESETS[0].look, ...s.me.look } } };
+      },
+    },
   ),
 );

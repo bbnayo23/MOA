@@ -151,6 +151,16 @@ $phone: 720px;
   }
 }
 
+// a character's 3D portrait (top bar, friends list)
+.face {
+  display: block;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--c-surface-soft);
+}
+
 // button text that phones drop, keeping just the icon
 .label {
   @media (max-width: $phone) {
