@@ -1,4 +1,4 @@
-import type { Tile } from '../../game/iso';
+import type { Tile } from '../../world/space';
 
 /**
  * A seat *behind* a piece of furniture (smaller screen y), so the furniture

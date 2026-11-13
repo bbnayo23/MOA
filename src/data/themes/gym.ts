@@ -1,4 +1,4 @@
-import type { Tile } from '../../game/iso';
+import type { Tile } from '../../world/space';
 import type { InteractionObject, ThemeConfig } from './types';
 
 /** You stand on the belt, just in front of the console. */

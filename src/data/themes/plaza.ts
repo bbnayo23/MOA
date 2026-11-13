@@ -1,4 +1,4 @@
-import type { Tile } from '../../game/iso';
+import type { Tile } from '../../world/space';
 import type { InteractionObject, ThemeConfig, ThemeId, ThemeMeta } from './types';
 
 const bench = (id: string, at: Tile): InteractionObject => ({
@@ -33,7 +33,7 @@ export function makePlaza(themes: ThemeMeta[], isOpen: (id: ThemeId) => boolean)
     background: {
       size: 8,
       sky: ['#a9c8ff', '#bcd2ff', '#cfdcff', '#e2e3ff', '#f3e6fb', '#ffe9f0'],
-      hills: ['#c4d9f5', '#b3e0c8'],
+      grass: '#bfe6c4',
       ground: ['#f6efe7', '#ece4f4'],
       side: ['#d8c9e6', '#c4b4d8'],
       flowers: ['#ffb3c6', '#fff1a8', '#c9b6ff'],
@@ -43,7 +43,7 @@ export function makePlaza(themes: ThemeMeta[], isOpen: (id: ThemeId) => boolean)
       ],
       motes: 0xffd6e0,
     },
-    spawnPosition: { tx: 5.4, ty: 5.4 },
+    spawnPosition: { tx: 4.75, ty: 4.75 }, // just in front of the fountain, buildings in view
     availableActions: ['sit', 'wave', 'dance'],
     interactionObjects: [...buildings, bench('bench-l', { tx: 2.7, ty: 5.1 }), bench('bench-r', { tx: 5.1, ty: 2.7 })],
     decorations: [

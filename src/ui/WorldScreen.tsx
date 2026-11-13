@@ -8,7 +8,7 @@ import { useMoa } from '../store';
 import c from '../styles/common.module.scss';
 import s from '../styles/WorldScreen.module.scss';
 import { AvatarCanvas } from './AvatarCanvas';
-import { GameCanvas } from './GameCanvas';
+import { World } from '../world/World';
 import { InstallButton } from './InstallButton';
 import { CheerBoard, FocusTimer, MenuPanel, RallyGame, ThemePreview, Wardrobe } from './Panels';
 
@@ -23,7 +23,7 @@ export function WorldScreen() {
 
   return (
     <div className={s.layout} style={{ '--stage-bg': theme.background.sky[0] } as CSSProperties}>
-      <GameCanvas theme={theme} className={s.game} />
+      <World theme={theme} className={s.game} />
       <TopBar theme={theme} drawer={drawer} toggleDrawer={() => setDrawer(!drawer)} />
       {drawer && <Sidebar theme={theme} close={() => setDrawer(false)} />}
       {panel === 'board' && <CheerBoard />}

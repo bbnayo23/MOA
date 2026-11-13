@@ -10,7 +10,8 @@ export const camping: ThemeConfig = {
   background: {
     size: 8,
     sky: ['#6f6cc4', '#8a7fd3', '#a891dd', '#c4a3e0', '#e2b3d6', '#f7c7c4'],
-    hills: ['#a596d8', '#8379c4'],
+    grass: '#a9dca3',
+    floor: 'grass',
     ground: ['#b8e6b0', '#a9dca3'],
     side: ['#c99b7a', '#b5876a'],
     night: true,

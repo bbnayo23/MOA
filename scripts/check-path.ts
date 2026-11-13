@@ -1,6 +1,6 @@
 // Runnable check for walking around furniture: `pnpm check`
 import assert from 'node:assert/strict';
-import { findPath, isClear, isFree, type Footprint } from '../src/game/path.ts';
+import { findPath, isClear, isFree, type Footprint } from '../src/world/path.ts';
 
 const N = 8;
 const table: Footprint = { tx: 4, ty: 4, r: 0.6 };

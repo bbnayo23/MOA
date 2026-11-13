@@ -1,6 +1,6 @@
-import { ART } from '../../art/props';
-import type { Tile } from '../../game/iso';
-import { isFree, type Footprint } from '../../game/path';
+import { KINDS } from '../../world/kinds';
+import type { Tile } from '../../world/space';
+import { isFree, type Footprint } from '../../world/path';
 import { camping } from './camping';
 import { church } from './church';
 import { gym } from './gym';
@@ -37,10 +37,10 @@ export const THEME_CONFIGS: Partial<Record<ThemeId, ThemeConfig>> = {
 };
 
 /** Dev-time sanity check for hand-written theme data. */
-/** Floor blocked by the theme's furniture and scenery (see `foot` in art/props.ts). */
+/** Floor blocked by the theme's furniture and scenery (see `foot` in world/kinds.ts). */
 export function footprintsOf(t: ThemeConfig): Footprint[] {
   return [...t.decorations, ...t.interactionObjects].flatMap(({ kind, at }) =>
-    ART[kind].foot ? [{ ...at, r: ART[kind].foot! }] : [],
+    KINDS[kind].foot ? [{ ...at, r: KINDS[kind].foot! }] : [],
   );
 }
 

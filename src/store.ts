@@ -67,10 +67,7 @@ export const useMoa = create<MoaState>()(
       go: (screen) => set({ screen }),
       showPreview: (preview) => set({ preview }),
       setNickname: (nickname) => set((s) => ({ me: { ...s.me, nickname } })),
-      setLook: (patch) => {
-        set((s) => ({ me: { ...s.me, look: { ...s.me.look, ...patch } } }));
-        toGame.emit('look', { playerId: 'me', look: get().me.look });
-      },
+      setLook: (patch) => set((s) => ({ me: { ...s.me, look: { ...s.me.look, ...patch } } })),
       enterTheme: (themeId) =>
         set({ themeId, screen: 'world', messages: [], selectedObject: null, currentAction: null, preview: null }),
       visit: (id) => (THEME_CONFIGS[id] ? get().enterTheme(id) : set({ preview: id })),

@@ -1,6 +1,8 @@
 # MOA · 우리의 순간이 모이는 곳
 
-친한 친구들끼리 미니미를 꾸미고, 테마 공간에 모여 채팅하고 함께 노는 프라이빗 2D 소셜 월드.
+친한 친구들끼리 미니미를 꾸미고, 테마 공간에 모여 채팅하고 함께 노는 프라이빗 3D 소셜 월드.
+
+스택: React 19 + TypeScript · Three.js + React Three Fiber (+ drei) · Zustand · SCSS Modules · Vite
 
 ```bash
 pnpm install
@@ -42,7 +44,7 @@ MOA
     │   ├─ 테마 건물 8채: 간판 · 테마 색 지붕 (아직 안 만든 테마는 회색 + 🔒 → 미리보기)
     │   └─ 분수 · 벤치 (앉기 · 인사 · 춤)
     ├─ 테마 공간 8곳: 🏕️ 캠핑장 · ⛪ 교회 · 🏊 수영장 · 🎾 테니스장 · 🏋️ 헬스장 · 📚 도서관 · 🛍️ 쇼핑몰 · 🍝 레스토랑
-    ├─ 전체 화면: Phaser 월드 (맵이 화면을 꽉 채움, 좁은 화면에선 카메라가 나를 따라감)
+    ├─ 전체 화면: 3D 월드 (원근 쿼터뷰 카메라가 나를 부드럽게 따라감, 맵 밖으로는 안 나감)
     └─ 월드 위에 떠 있는 UI
         ├─ 상단 바: ☰ · 로고 · 공간 이름/접속 인원 · ⛲ 광장으로 · 내 캐릭터(꾸미기)
         ├─ ☰ 서랍: 공간 이동(광장 + 8개) · 친구 목록 · 추천 코디
@@ -77,16 +79,18 @@ src/
 │     ├─ index.ts          등록부: PLAYABLE, THEMES(광장 건물 순서), THEME_CONFIGS
 │     ├─ plaza.ts          테마 목록으로 광장을 만드는 makePlaza
 │     └─ seats.ts          가구 뒤 좌석 헬퍼
-├─ art/                   ← 픽셀 아트 생성 (에셋 파일 없음)
-│  ├─ pix.ts              픽셀 그리드 + 자동 외곽선 + 캔버스 페인트
-│  ├─ avatar.ts           (외형, 포즈) → 캐릭터 픽셀
-│  ├─ props.ts            모닥불·텐트·그릴·나무 등 오브젝트
-│  └─ ground.ts           아이소메트릭 배경
-├─ game/                  ← Phaser 동작 (스타일 값 없음)
-│  ├─ iso.ts              타일 ↔ 화면 좌표, 카메라가 담을 영역
+├─ world/                 ← 3D 월드 (React Three Fiber)
+│  ├─ space.ts            타일 ↔ 월드 좌표 (x = tx·T, z = ty·T), 이동 속도, 카메라 방향
+│  ├─ sim.ts              월드 규칙: 걷기·길찾기·행동·문·더미 친구 AI (렌더러와 무관한 순수 TS)
 │  ├─ path.ts             가구 발판(원) 피해 걷기: 이동 가능 판정 + 길찾기 (순수 함수)
-│  ├─ Avatar.ts           스프라이트 + 닉네임 + 말풍선 + 애니메이션 재생
-│  └─ WorldScene.ts       ThemeConfig 하나로 어떤 테마든 구성하는 씬
+│  ├─ kinds.ts            오브젝트 종류 + 물리 정보(막는 반경 foot, 불빛 light)
+│  ├─ models.tsx          종류별 3D 모델 (temp = 아직 블록 대역)
+│  ├─ Avatar3D.tsx        3D 캐릭터 (외형 → 메시) + 포즈 → 관절 애니메이션
+│  ├─ Stage.tsx           조명·바닥(러그·길·코트 라인)·실내 벽/창·야외 들판/나무/꽃·입자
+│  ├─ World.tsx           캔버스 조립: 카메라, 입력(방향키·탭), 오브젝트, 캐릭터, 라벨
+│  ├─ labels.ts           닉네임·말풍선·간판을 3D 위치에 맞춰 띄우는 DOM 레이어
+│  └─ toon.ts             카툰(셀) 셰이딩 재질 · 캔버스 텍스처
+├─ art/                   ← UI 아이콘용 2D 캐릭터 렌더러 (3D 썸네일로 교체 예정)
 ├─ hooks/                 ← 기능: React 쪽 로직 (구독·이펙트·핸들러)
 │  ├─ useWorldSession.ts  게임 이벤트 → 스토어, 더미 친구, 공간 이동 목록
 │  ├─ useActionBar.ts     표시할 행동 목록, 실행
@@ -96,9 +100,9 @@ src/
 ├─ styles/                ← 스타일: 보이는 것 전부
 │  ├─ global.scss         디자인 토큰 (CSS 변수) + 리셋
 │  ├─ *.module.scss       화면별 스타일 (common = 버튼·칩·카드·로고)
-│  ├─ game.ts             Phaser 텍스트·말풍선·조명·입자 스타일 (토큰에서 읽음)
+│  ├─ World.module.scss   월드 위 라벨: 닉네임·말풍선·간판
 │  └─ fonts.ts            픽셀 폰트 등록
-├─ bridge.ts              React ↔ Phaser 타입 지정 채널
+├─ bridge.ts              React ↔ 3D 월드 타입 지정 채널
 ├─ store.ts               Zustand (화면, 내 캐릭터, 채팅, 선택 상태)
 └─ mock.ts                더미 친구 2명 + 자동 채팅 (실시간 서버 자리)
 ```
@@ -106,42 +110,45 @@ src/
 **기능 / 스타일 분리 규칙**
 - `ui/*.tsx`는 마크업과 `className`만 갖습니다. 상태 구독·이펙트·이벤트 로직은 `hooks/`로.
 - 색·폰트·여백 같은 값은 `styles/`에만 둡니다. 데이터에서 오는 색(테마 하늘색, 색상 옵션)은 `style={{ '--stage-bg': … }}`처럼 CSS 변수로만 넘기고 실제 적용은 SCSS가 합니다.
-- Phaser 코드(`game/`)도 `styles/game.ts`에서 스타일을 가져옵니다. 색은 `global.scss` 토큰을 읽으므로 UI와 게임이 한 팔레트를 씁니다.
-- 예외: `art/`의 픽셀 아트 팔레트는 그림 자체라서 그대로 둡니다.
+- 월드 위 글자(닉네임·말풍선·간판)는 3D가 아니라 DOM이라 `World.module.scss`와 토큰으로 스타일합니다.
+- 예외: 3D 모델과 캐릭터의 재질 색(`world/`)은 그림 자체라서 코드에 둡니다.
 
 ## 4. 핵심 설계
 
-**캐릭터 하나, 렌더러 하나.** `renderAvatar(look, pose)`가 픽셀 그리드를 만들고, 같은 결과를 React `<canvas>`(꾸미기 화면·친구 목록)와 Phaser `CanvasTexture`(월드)에 그립니다. 외형이 바뀌면 둘 다 그대로 따라옵니다.
+**3D 월드.** 테마 데이터는 타일 좌표(tx, ty)로 배치하고, 월드는 그 격자를 바닥에 눕힙니다(`x = tx·T`, `z = ty·T`). 카메라는 +x +z 대각선에서 원근 쿼터뷰로 내려다보고, 모든 모델은 기본으로 카메라 쪽을 봅니다. 그래서 2D 시절의 배치·좌석·벽 위치가 그대로 3D에 맞습니다. 규칙(`sim.ts`)은 렌더러를 모르고, 화면(`World.tsx`)은 매 프레임 그 상태를 읽어 그립니다.
+
+**카툰 렌더링.** 모든 재질은 3단계 셀 셰이딩(`toon.ts`), 톤 매핑 없이(`flat`) 파스텔 색 그대로, 해와 하늘빛 + 부드러운 그림자. 밤 테마는 달빛 + 모닥불·랜턴 불빛.
+
+**에셋 등급.** `models.tsx`에서 `temp: true`인 종류는 블록 대역(개발 모드에서 라벨에 `임시` 표시), 나머지는 코드로 만든 스타일라이즈드 모델입니다. 최종 GLB 모델은 같은 로컬 좌표(바닥 y=0, 앞면 +z)로 교체합니다.
 
 **행동 ≠ 애니메이션.**
 
 ```
 ActionId ('roast')  →  ActionDef { anim: 'campfire', durationMs? }   (actions.ts)
 AnimKey ('campfire') →  { fps, frames: Pose[] }                       (anims.ts)
-Pose                →  픽셀                                           (art/avatar.ts)
+Pose                →  관절 각도 (프레임 사이 보간)                  (world/Avatar3D.tsx)
 ```
 
 어디서 행동하는지는 테마가 정합니다. 오브젝트의 `actions`에 들어 있으면 그 오브젝트의 빈 `spots`로 걸어가서 실행하고, 아니면 제자리에서 실행합니다. 같은 행동을 주는 오브젝트가 여러 개면(교회 긴 의자 6개) 빈자리가 있는 가장 가까운 것으로 가고, 오브젝트를 클릭해서 고른 경우엔 그 오브젝트로 갑니다. `opens: 'board'` 같은 행동은 실행 중에 React 패널을 엽니다.
 
-**테마 = 데이터.** `ThemeConfig { themeId, name, background, spawnPosition, availableActions, interactionObjects, recommendedOutfits, decorations }`. `WorldScene`에는 테마별 분기가 없습니다. 광장도 테마 하나이고, 건물은 `enter: themeId`를 가진 오브젝트입니다(`THEMES` 목록에서 자동 생성). 새 테마를 `PLAYABLE`에 넣으면 광장 건물의 🔒이 자동으로 풀립니다. 개발 모드에서는 `checkThemes()`가 스폰/스팟 위치와 행동 참조를 검사합니다.
+**테마 = 데이터.** `ThemeConfig { themeId, name, background, spawnPosition, availableActions, interactionObjects, recommendedOutfits, decorations }`. 월드 코드에는 테마별 분기가 없습니다. 광장도 테마 하나이고, 건물은 `enter: themeId`를 가진 오브젝트입니다(`THEMES` 목록에서 자동 생성). 새 테마를 `PLAYABLE`에 넣으면 광장 건물의 🔒이 자동으로 풀립니다. 개발 모드에서는 `checkThemes()`가 스폰/스팟 위치와 행동 참조를 검사합니다.
 
-**React ↔ Phaser는 `bridge.ts`로만 통신합니다.**
+**React ↔ 3D 월드는 `bridge.ts`로만 통신합니다.**
 
 | 방향 | 이벤트 | 내용 |
 |---|---|---|
-| React → Phaser | `act` | 내 캐릭터 행동 실행 (`objectId`로 대상 지정 가능) |
+| React → 월드 | `act` | 내 캐릭터 행동 실행 (`objectId`로 대상 지정 가능) |
 | | `stop` | 행동 중지 (패널 닫기) |
 | | `chat` | 말풍선 표시 |
-| | `look` | 외형 변경 반영 |
-| Phaser → React | `objectClick` | 오브젝트 행동 메뉴 열기 |
+| 월드 → React | `objectClick` | 오브젝트 행동 메뉴 열기 |
 | | `actionChange` | 행동 바 활성 표시 |
 | | `portal` | 건물 문 앞 도착 → 입장 또는 미리보기 |
 
 ## 5. 새 테마 추가하기
 
-1. `anims.ts`에 필요한 애니메이션 추가 (예: `swim`), 필요하면 `art/avatar.ts`에 포즈/소품 추가
+1. `anims.ts`에 필요한 애니메이션 추가 (예: `swim`), 새 포즈 값이면 `world/Avatar3D.tsx`의 `targets()`에 관절 각도 추가
 2. `actions.ts`에 행동 추가
-3. `art/props.ts`에 오브젝트 아트 추가 (`foot` = 막는 바닥 반경, 앉거나 올라서는 물건은 생략)
+3. `world/kinds.ts`에 종류 추가 (`foot` = 막는 바닥 반경, 앉거나 올라서는 물건은 생략) + `world/models.tsx`에 3D 모델
 4. `data/themes/<테마>.ts`에 `ThemeConfig` 작성 → `index.ts`의 `PLAYABLE`과 `THEMES`에 넣으면 끝 (광장 건물·사이드바가 자동으로 열림)
    - 패널이 필요하면 행동에 `opens`를 달고 `hooks/`에 로직, `ui/Panels.tsx`에 마크업, `styles/Panels.module.scss`에 스타일
    - 배경 옵션: 야외는 `night`(별·달) · `hills` · `flowers`, 실내는 `walls`(스테인드글라스 창) · `rugs`(바닥 러너), 공통으로 `motes`(반딧불·먼지 입자)
@@ -160,6 +167,9 @@ Pose                →  픽셀                                           (art/a
 - [x] **테니스장**: 서브·스윙·랠리 모션(라켓), 대각선 네트, 랠리 미니게임(타이밍, 갈수록 빨라짐 · `pnpm check`로 규칙 검사)
 - [x] **쇼핑몰**: 옷걸이·피팅룸·전신 거울, 런웨이 러그, 옷 구경·try_on(빙글)·거울 포즈 모션, 피팅룸 패널(코디 6종을 내 캐릭터로 미리보기 → 바로 갈아입기, 코디 공유, 직접 꾸미기)
 - [x] **앱(PWA)**: 홈 화면 설치(매니페스트·아이콘), 설치 버튼 / iOS 안내, 서비스 워커로 즉시 실행·오프라인 실행
+- [x] **3D 월드 기반**: Phaser 2D → React Three Fiber. 원근 쿼터뷰 추적 카메라(경계 제한), 카툰 셰이딩·그림자, 3D 캐릭터(포즈 데이터 → 관절 보간), 광장 3D 모델(건물·분수·벤치·나무·덤불·화분·바위), 실내 벽·스테인드글라스 창, 야외 들판·나무·꽃, 탭/방향키 이동·충돌·길찾기 유지
+- [ ] 테마별 3D 모델 (현재 `temp` 블록 대역) · 손에 드는 소품 · 근접 상호작용 버튼 · 수영장 물
+- [ ] 3D 캐릭터 꾸미기 화면 (회전 미리보기, 얼굴형·코) · UI 아이콘 3D 썸네일
 - [ ] Supabase: 프로필 저장(현재 localStorage), Realtime 채널로 위치·행동·채팅 동기화 (`mock.ts` 교체)
 - [x] **전체 화면 + 모바일**: 월드가 화면을 꽉 채우고 UI는 그 위에 떠 있음. 폰(세로·가로)에선 한 열 레이아웃, 카메라가 나를 따라감, 고해상도(DPR) 렌더링
 - [x] **클릭·탭 이동**: 바닥을 누르면 그 자리로 걸어감(맵 밖은 가장자리로), 누른 자리에 링 표시, 터치하면 채팅 키보드 닫힘

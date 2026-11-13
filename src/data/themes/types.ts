@@ -1,6 +1,5 @@
-import type { Background } from '../../art/ground';
-import type { ArtKind } from '../../art/props';
-import type { Tile } from '../../game/iso';
+import type { ArtKind } from '../../world/kinds';
+import type { Tile } from '../../world/space';
 import type { ActionId } from '../actions';
 import type { CharacterLook } from '../character';
 
@@ -8,6 +7,34 @@ export type ThemeId = 'plaza' | 'camping' | 'church' | 'pool' | 'tennis' | 'gym'
 
 /** Where everyone lands first; every other theme is a building in it. */
 export const HUB: ThemeId = 'plaza';
+
+/** How a theme's space looks: map size, colours, and outdoor / indoor dressing. */
+export interface Background {
+  /** Map is size × size tiles. */
+  size: number;
+  /** Sky / backdrop colours, top → horizon. */
+  sky: string[];
+  /** Floor colours: checker tiles, or soft patches on a `grass` floor. */
+  ground: [string, string];
+  /** Paved / tiled (default) or a grassy field. */
+  floor?: 'tiles' | 'grass';
+  /** Platform side colours under an indoor floor. */
+  side: [left: string, right: string];
+  // outdoor
+  /** Night: moonlight, darker sky. */
+  night?: boolean;
+  /** Grass of the open land around the map (outdoor themes have one; indoor ones have walls). */
+  grass?: string;
+  /** Flower colours sprinkled on the grass. */
+  flowers?: string[];
+  // indoor
+  /** Back walls (along tx = 0 and ty = 0) with arched windows. */
+  walls?: { left: string; right: string; trim: string; glass: string[] };
+  /** Floor runners between two map points (paths, court lines, pool water…). */
+  rugs?: { from: Tile; to: Tile; width: number; color: string; border: string }[];
+  /** Floating light particles (fireflies, dust). */
+  motes?: number;
+}
 
 /** Enough to show a theme as a building / preview. */
 export interface ThemeMeta {

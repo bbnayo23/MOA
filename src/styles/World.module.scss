@@ -1,0 +1,115 @@
+// Labels pinned over the 3D world (see world/labels.ts): name tags, speech bubbles, signs.
+// Screen-sized DOM, so they read the same at any zoom. Each one's bottom-centre sits on its anchor.
+
+.labels {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+
+  > * {
+    position: absolute;
+    left: 0;
+    top: 0;
+    visibility: hidden; // until the first frame places it
+    will-change: transform;
+  }
+}
+
+.tag {
+  display: block;
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  background: var(--c-tag);
+  color: var(--c-ink);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: var(--shadow-s);
+}
+
+.me {
+  background: var(--c-primary-deep);
+  color: var(--c-on-primary);
+}
+
+.bubble {
+  position: relative;
+  max-width: 180px;
+  margin-bottom: 8px; // room for the tail
+  padding: 6px 11px;
+  border: 2px solid var(--c-lavender);
+  border-radius: var(--r-m);
+  background: var(--c-surface);
+  color: var(--c-ink);
+  font-size: 13px;
+  line-height: 1.35;
+  text-align: center;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  box-shadow: var(--shadow-m);
+  animation: pop 0.18s cubic-bezier(0.3, 1.6, 0.6, 1);
+
+  // tail
+  &::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: -7px;
+    width: 10px;
+    height: 10px;
+    translate: -50% 0;
+    rotate: 45deg;
+    border: solid var(--c-lavender);
+    border-width: 0 2px 2px 0;
+    background: var(--c-surface);
+  }
+}
+
+.emoji {
+  padding: 2px 8px;
+  font-size: 26px;
+}
+
+@keyframes pop {
+  from {
+    scale: 0.6;
+  }
+}
+
+.label,
+.sign {
+  display: block;
+  padding: 3px 9px;
+  border-radius: var(--r-s);
+  background: var(--c-surface);
+  color: var(--c-ink);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: var(--shadow-s);
+}
+
+// doors' signs are always up, and tapping one walks you to that door
+.sign {
+  border: 2px solid var(--c-line);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  pointer-events: auto;
+
+  &:hover {
+    border-color: var(--c-primary);
+  }
+}
+
+// marks a stand-in model (dev builds only)
+.temp {
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: var(--r-pill);
+  background: var(--c-butter);
+  font-size: 10px;
+  font-style: normal;
+}

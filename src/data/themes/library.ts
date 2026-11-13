@@ -1,4 +1,4 @@
-import type { Tile } from '../../game/iso';
+import type { Tile } from '../../world/space';
 import { behind } from './seats';
 import type { InteractionObject, ThemeConfig } from './types';
 

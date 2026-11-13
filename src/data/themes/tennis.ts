@@ -1,4 +1,4 @@
-import type { Tile } from '../../game/iso';
+import type { Tile } from '../../world/space';
 import type { InteractionObject, ThemeConfig } from './types';
 
 // Court runs along tx (1.4 → 6.6), ty 2.4 → 5.6; the net crosses the middle at tx = 4.
@@ -20,7 +20,8 @@ export const tennis: ThemeConfig = {
   background: {
     size: 8,
     sky: ['#9fd4ff', '#b3dcff', '#c8e4ff', '#dcecff', '#eef3ff', '#fff3ec'],
-    hills: ['#c6e6cf', '#acd9b9'],
+    grass: '#bde3b4',
+    floor: 'grass',
     ground: ['#c9ebc1', '#bde3b4'],
     side: ['#c99b7a', '#b5876a'],
     flowers: ['#ffffff', '#fff1a8'],

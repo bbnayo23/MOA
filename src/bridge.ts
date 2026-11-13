@@ -1,18 +1,16 @@
 import type { ActionId } from './data/actions';
-import type { CharacterLook } from './data/character';
 import type { ThemeId } from './data/themes';
 
-/** React → Phaser commands. */
+/** React → world commands. */
 export interface ToGame {
   /** Do an action; without objectId the nearest object offering it is used. */
   act: { actionId: ActionId; objectId?: string };
   /** Stop whatever my avatar is doing. */
   stop: null;
   chat: { playerId: string; text: string };
-  look: { playerId: string; look: CharacterLook };
 }
 
-/** Phaser → React events. */
+/** World → React events. */
 export interface FromGame {
   /** An interaction object was clicked (its id). */
   objectClick: string;

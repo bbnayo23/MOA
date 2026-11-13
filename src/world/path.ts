@@ -1,4 +1,4 @@
-import type { Tile } from './iso';
+import type { Tile } from './space';
 
 /** Floor an object stands on, as a circle in tile space. Feet can't enter it. */
 export interface Footprint {

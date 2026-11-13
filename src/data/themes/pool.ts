@@ -1,5 +1,5 @@
 import { POOL_WATER } from '../../art/avatar';
-import type { Tile } from '../../game/iso';
+import type { Tile } from '../../world/space';
 import type { InteractionObject, ThemeConfig } from './types';
 
 const onTop = (at: Tile): Tile => ({ tx: at.tx + 0.05, ty: at.ty + 0.05 });
@@ -20,7 +20,7 @@ export const pool: ThemeConfig = {
   background: {
     size: 8,
     sky: ['#8fd3ff', '#a6dcff', '#bde5ff', '#d4eeff', '#e8f6ff', '#f5fbff'],
-    hills: ['#bfe6c9', '#a6dcb4'],
+    grass: '#bfe6c9',
     ground: ['#fdf8ef', '#f3ead9'],
     side: ['#e0cdb0', '#cdb898'],
     rugs: [
