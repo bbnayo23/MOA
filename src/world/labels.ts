@@ -28,7 +28,11 @@ export class Labels {
         continue;
       }
       el.style.visibility = 'visible';
-      el.style.transform = `translate(${(((v.x + 1) / 2) * width).toFixed(1)}px, ${(((1 - v.y) / 2) * height).toFixed(1)}px) translate(-50%, -100%)`;
+      let x = ((v.x + 1) / 2) * width;
+      // on screen but hanging over the side (a long bubble by the edge): nudge it back in whole
+      const half = el.offsetWidth / 2 + 6;
+      if (x > 0 && x < width) x = Math.min(width - half, Math.max(half, x));
+      el.style.transform = `translate(${x.toFixed(1)}px, ${(((1 - v.y) / 2) * height).toFixed(1)}px) translate(-50%, -100%)`;
     }
   }
 }

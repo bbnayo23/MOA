@@ -33,18 +33,19 @@
   color: var(--c-on-primary);
 }
 
+// as wide as its words (up to a few lines' worth), sitting just above the name tag
 .bubble {
-  position: relative;
-  max-width: 180px;
-  margin-bottom: 8px; // room for the tail
+  max-width: min(240px, 70vw);
+  translate: 0 -29px; // the tag's height + the tail
   padding: 6px 11px;
   border: 2px solid var(--c-lavender);
   border-radius: var(--r-m);
   background: var(--c-surface);
   color: var(--c-ink);
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.35;
   text-align: center;
+  text-wrap: pretty; // no lone word on the last line
   word-break: keep-all;
   overflow-wrap: anywhere;
   box-shadow: var(--shadow-m);

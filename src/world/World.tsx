@@ -76,7 +76,7 @@ export function World({ theme, className }: { theme: ThemeConfig; className?: st
   const above = (o: InteractionObject) => (): [number, number, number] => [o.at.tx * T, MODELS[o.kind].h + 0.3, o.at.ty * T];
   // door signs hang on the front wall above the door, where they stay in view
   const onFront = (o: InteractionObject) => (): [number, number, number] => [(o.at.tx + 0.42) * T, 2.15, (o.at.ty + 0.42) * T];
-  const head = (a: Agent, up = 0) => (): [number, number, number] => [a.pos.tx * T, 1.58 + sinkOf(a) + up, a.pos.ty * T];
+  const head = (a: Agent) => (): [number, number, number] => [a.pos.tx * T, 1.58 + sinkOf(a), a.pos.ty * T];
 
   return (
     <div className={className}>
@@ -138,7 +138,7 @@ export function World({ theme, className }: { theme: ThemeConfig; className?: st
           if (!text) return null;
           const emoji = /^[\p{Extended_Pictographic}️‍\s]+$/u.test(text);
           return (
-            <p key={`${a.player.id}${text}`} ref={labels.bind(`bubble:${a.player.id}`, head(a, 0.32))} className={emoji ? `${s.bubble} ${s.emoji}` : s.bubble}>
+            <p key={`${a.player.id}${text}`} ref={labels.bind(`bubble:${a.player.id}`, head(a))} className={emoji ? `${s.bubble} ${s.emoji}` : s.bubble}>
               {text}
             </p>
           );
