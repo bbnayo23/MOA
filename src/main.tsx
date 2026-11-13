@@ -6,6 +6,8 @@ import './styles/fonts';
 import './styles/global.scss';
 
 if (import.meta.env.DEV) checkThemes();
+// installable app: offline-capable shell (public/sw.js); dev stays uncached
+if (import.meta.env.PROD && 'serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

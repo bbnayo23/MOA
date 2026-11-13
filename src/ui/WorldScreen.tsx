@@ -9,6 +9,7 @@ import c from '../styles/common.module.scss';
 import s from '../styles/WorldScreen.module.scss';
 import { AvatarCanvas } from './AvatarCanvas';
 import { GameCanvas } from './GameCanvas';
+import { InstallButton } from './InstallButton';
 import { CheerBoard, FocusTimer, MenuPanel, RallyGame, ThemePreview, Wardrobe } from './Panels';
 
 const EMOTES = ['👋', '❤️', '😆', '😮', '✨'];
@@ -133,6 +134,8 @@ function Sidebar({ theme, close }: { theme: ThemeConfig; close: () => void }) {
           </div>
         </section>
       )}
+
+      <InstallButton />
     </aside>
   );
 }

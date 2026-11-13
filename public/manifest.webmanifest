@@ -1,0 +1,16 @@
+{
+  "name": "MOA · 우리의 순간이 모이는 곳",
+  "short_name": "MOA",
+  "description": "친한 친구들끼리 모이는 2D 픽셀 소셜 월드",
+  "lang": "ko",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f4effd",
+  "theme_color": "#f4effd",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

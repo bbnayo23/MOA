@@ -5,6 +5,7 @@ import { LABELS, LOOK_OPTIONS, PRESETS, randomLook, type CharacterLook } from '.
 import { HUB } from '../data/themes';
 import { useMoa } from '../store';
 import { AvatarCanvas } from './AvatarCanvas';
+import { InstallButton } from './InstallButton';
 import c from '../styles/common.module.scss';
 import s from '../styles/CreateScreen.module.scss';
 
@@ -32,6 +33,7 @@ export function CreateScreen() {
         <h1 className={c.logo}>
           MOA <small>우리의 순간이 모이는 곳</small>
         </h1>
+        <InstallButton />
         <span className={s.step}>나만의 미니미 만들기</span>
       </header>
 

@@ -19,6 +19,10 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--sp-2);
+
+  h1 {
+    margin-right: auto; // everything else packs to the right
+  }
 }
 
 .step {
@@ -29,6 +33,10 @@
   border-radius: var(--r-pill);
   background: var(--c-surface);
   border: 1px solid var(--c-line);
+
+  @media (max-width: 720px) {
+    display: none; // decorative; phones keep the header to one line
+  }
 }
 
 .body {

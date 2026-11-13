@@ -102,3 +102,10 @@
     height: 40px;
   }
 }
+
+// small helper text (e.g. how to add MOA to the home screen)
+.note {
+  font-size: var(--fs-xs);
+  color: var(--c-ink-soft);
+  word-break: keep-all;
+}
