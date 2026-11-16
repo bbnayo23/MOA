@@ -73,6 +73,8 @@ export function useRealtime() {
         motions.set(p.id, motion);
         show(p);
       },
+      // anything I sent before the channel was up didn't go anywhere: show myself now
+      joined: () => mine && link.send(mine),
       denied: (place) => {
         const s = useMoa.getState();
         if (roomOf(s).id !== place) return;

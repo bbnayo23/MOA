@@ -36,6 +36,11 @@ export function WorldScreen() {
   const [drawer, setDrawer] = useState(false);
   const [sheet, setSheet] = useState<Sheet>(null);
   const roomId = useMoa((st) => roomOf(st).id);
+  // the whisper window and the right-hand panels share that side: one up at a time
+  const dmUp = useSocial((x) => x.dm.open && !x.dm.min);
+  useEffect(() => {
+    if (dmUp) setSheet(null);
+  }, [dmUp]);
   useEffect(() => fromGame.on('playerClick', (id) => useSocial.setState({ profile: id })), []);
   // came in by an invite link (…/?invite=<id>): take it up, then tidy the address
   useEffect(() => {
@@ -47,7 +52,10 @@ export function WorldScreen() {
   if (!theme) return null;
   const hub = theme.themeId === HUB;
   const close = () => setSheet(null);
-  const toggle = (which: Sheet) => setSheet(sheet === which ? null : which);
+  const toggle = (which: Sheet) => {
+    if (dmUp && which !== sheet) useSocial.setState((x) => ({ dm: { ...x.dm, min: true } })); // fold the whispers down
+    setSheet(sheet === which ? null : which);
+  };
 
   return (
     <div className={s.layout} style={{ '--stage-bg': theme.background.sky[0] } as CSSProperties}>
@@ -58,7 +66,7 @@ export function WorldScreen() {
       <TopBar theme={theme} drawer={drawer} toggleDrawer={() => setDrawer(!drawer)} open={toggle} />
       <ZoomControls />
       {drawer && <Sidebar theme={theme} close={() => setDrawer(false)} />}
-      {sheet === 'lobby' && <Lobby close={close} invite={() => setSheet('invite')} />}
+      {sheet === 'lobby' && <Lobby close={close} invite={() => toggle('invite')} />}
       {sheet === 'alerts' && <Alerts close={close} />}
       {sheet === 'invite' && <InvitePanel close={close} />}
       {sheet === 'settings' && <SettingsPanel close={close} />}

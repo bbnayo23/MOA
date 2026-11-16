@@ -29,6 +29,7 @@ pnpm check       # 랠리 · 길찾기 · 카메라 · 번역 · 방 규칙 + �
 2. SQL Editor에서 `supabase/migrations/`의 SQL을 번호 순서대로 한 번씩 실행
    - `0001_profiles_realtime.sql`: 프로필 테이블 + RLS + 멤버 전용 realtime 채널
    - `0002_social.sql`: 설정(언어·자동 번역·귓속말 받기), 개인 공간, 그룹 방, 친구, 차단, 초대, 입장권, 내보내기, 귓속말 + 누가 어느 공간에 들어갈 수 있는지(서버 판단)
+   - `0003_own_space.sql`: 갓 만든 계정도 첫 저장 전부터 자기 공간에 들어갈 수 있게
 3. Authentication → Sign In / Providers에서 **Allow anonymous sign-ins** 켜기 — 주소로 들어오면 그 브라우저에 계정이 저절로 생깁니다(이메일·로그인 화면 없음)
 4. Authentication → Sign In / Providers → Email에서 **Confirm email** 끄기 — ⚙️ 설정에서 아이디·비밀번호를 만들면 로그아웃 후나 다른 기기에서도 같은 계정으로 로그인 (메일은 보내지 않음)
 5. Realtime → Settings에서 **Allow public access**를 끄기 (비공개 채널만)

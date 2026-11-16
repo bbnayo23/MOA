@@ -79,7 +79,7 @@ export function Lobby({ close, invite }: { close: () => void; invite: () => void
                         autoFocus
                         type="password"
                         value={l.knock.password}
-                        placeholder={l.knock.wrong ? '비밀번호가 달라요' : '비밀번호'}
+                        placeholder={l.knock.wrong ? '비밀번호가 다르거나 지금은 들어갈 수 없어요' : '비밀번호'}
                         aria-label={`${r.name} 비밀번호`}
                         onChange={(e) => l.setKnockPassword(e.target.value)}
                       />

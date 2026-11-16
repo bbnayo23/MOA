@@ -3,7 +3,7 @@
 // then walks through the permission rules as three different people.
 import { PGlite } from '@electric-sql/pglite';
 import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 
 const MIG = new URL('../supabase/migrations/', import.meta.url);
@@ -24,8 +24,8 @@ await db.exec(`
   alter default privileges in schema public grant all on tables to anon, authenticated;
   alter default privileges in schema public grant all on functions to anon, authenticated;
 `);
-await db.exec(readFileSync(new URL('0001_profiles_realtime.sql', MIG), 'utf8'));
-await db.exec(readFileSync(new URL('0002_social.sql', MIG), 'utf8'));
+// every migration, in order — as they're run in the Supabase SQL editor
+for (const f of readdirSync(MIG).filter((f) => f.endsWith('.sql')).sort()) await db.exec(readFileSync(new URL(f, MIG), 'utf8'));
 
 const A = '00000000-0000-0000-0000-00000000000a', B = '00000000-0000-0000-0000-00000000000b', C = '00000000-0000-0000-0000-00000000000c';
 for (const [id, n] of [[A, '에이'], [B, '비'], [C, '씨']]) {
@@ -58,6 +58,10 @@ assert.equal((await as(A, `select visibility from spaces where owner_id = $1`, [
 // friends-only space: B (not a friend) can't come in; A always can
 assert.equal(await can(A, `space:${A}`), true);
 assert.equal(await can(B, `space:${A}`), false); ok('friends-only space: a stranger is kept out');
+const D = '00000000-0000-0000-0000-00000000000d'; // brand new: no profile (so no space row) yet
+await db.query(`insert into auth.users values ($1)`, [D]);
+assert.equal(await can(D, `space:${D}`), true);
+assert.equal(await can(A, `space:${D}`), false); ok('my own space is mine from the very first moment');
 // someone else can't invite into A's space; A can
 await fails(C, `insert into invites (place, place_name, theme_id, to_id) values ($1, 'x', 'plaza', $2)`, [`space:${A}`, B], 'C invites into A\'s space');
 const [inv] = await as(A, `insert into invites (place, place_name, theme_id, to_id) values ($1, '에이의 공간', 'plaza', $2) returning id`, [`space:${A}`, B]);

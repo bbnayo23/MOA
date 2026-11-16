@@ -54,6 +54,8 @@ export interface LinkHandlers {
   /** Everyone online, me included, whenever that changes. */
   presence: (all: Presence[]) => void;
   message: (msg: Message) => void;
+  /** In this place's channel now: what I send reaches everyone there. */
+  joined: () => void;
   /** The server wouldn't let me into this place. */
   denied: (place: string) => void;
   /** Connected or not (it reconnects by itself). */
@@ -136,6 +138,7 @@ function supabaseLink(me: Presence, on: LinkHandlers): Link {
       (status, err) => {
         if (want !== topic) return;
         placeLive = status === 'SUBSCRIBED';
+        if (placeLive) on.joined();
         // refused by the realtime policy (not just a dropped connection, which retries by itself)
         if (status === 'CHANNEL_ERROR' && /unauthori[sz]ed|permission/i.test(err?.message ?? '')) on.denied(topic);
       },

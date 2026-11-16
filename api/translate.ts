@@ -3,7 +3,8 @@
 //   DEEPL_API_KEY set → DeepL (free plan: 500,000 chars/month, stops at the limit, never bills)
 //   otherwise         → MyMemory (no key, small shared daily limit)
 
-declare const process: { env: Record<string, string | undefined> };
+/** Environment variables (Vercel's, or .env under `pnpm dev`). */
+const env = () => (globalThis as unknown as { process: { env: Record<string, string | undefined> } }).process.env;
 
 const LANGS = ['ko', 'en', 'ja'];
 const MAX = 500; // characters per line
@@ -15,8 +16,8 @@ const recent = new Map<string, number[]>();
 
 /** The Supabase user behind this bearer token (cached for 5 min), or null. */
 async function member(auth: string | null): Promise<string | null> {
-  const url = process.env.VITE_SUPABASE_URL;
-  const key = process.env.VITE_SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  const { VITE_SUPABASE_URL: url, VITE_SUPABASE_ANON_KEY, VITE_SUPABASE_PUBLISHABLE_KEY } = env();
+  const key = VITE_SUPABASE_ANON_KEY ?? VITE_SUPABASE_PUBLISHABLE_KEY;
   if (!url || !key) return 'dev'; // no Supabase (local mode): nobody to check against
   if (!auth?.startsWith('Bearer ')) return null;
   const hit = members.get(auth);
@@ -76,7 +77,7 @@ export async function POST(request: Request): Promise<Response> {
   if (known) return Response.json({ text: known });
   if (!allowed(id)) return Response.json({ error: 'too many' }, { status: 429 });
   try {
-    const deeplKey = process.env.DEEPL_API_KEY;
+    const deeplKey = env().DEEPL_API_KEY;
     const out = deeplKey ? await deepl(deeplKey, text, from as string, to as string) : await mymemory(text, from as string, to as string);
     if (cache.size > 5000) cache.clear(); // ponytail: per-instance memory cache; a DB table if it ever matters
     cache.set(key, out);
