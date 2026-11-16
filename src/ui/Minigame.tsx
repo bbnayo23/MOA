@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { toGame } from '../bridge';
 import { GAMES } from '../data/games';
-import { exit, join, ready, rematch, records, start, useGame, watch, type Match } from '../games/session';
+import { useShallow } from 'zustand/react/shallow';
+import { ask, exit, join, ready, rematch, records, start, useGame, watch, type Match } from '../games/session';
 import { ranking } from '../games/swim';
 import { SwimGame } from '../games/SwimGame';
 import { TennisGame } from '../games/TennisGame';
-import { useMoa } from '../store';
+import { roomOf, useMoa } from '../store';
 import c from '../styles/common.module.scss';
 import p from '../styles/Panels.module.scss';
 import s from '../styles/Minigame.module.scss';
@@ -59,6 +60,10 @@ export function GameLobby({ invite }: { invite: () => void }) {
   const host = m.host === myId;
   const mine = m.seats.find((x) => x.id === myId);
   const allReady = m.seats.length >= def.min && m.seats.every((x) => x.ready);
+  // people here (this room, any space in it) who aren't at the table: ask them over
+  const here = useMoa(useShallow((st) => st.peers.filter((x) => x.room.id === roomOf(st).id && x.id !== st.me.id)));
+  const free = here.filter((x) => !m.seats.some((seat) => seat.id === x.id));
+  const room = m.seats.length < def.max;
   return (
     <section className={`${c.card} ${p.panel} ${s.lobby}`} aria-label={`${def.name} 대기실`}>
       <header>
@@ -112,6 +117,24 @@ export function GameLobby({ invite }: { invite: () => void }) {
             💌 친구 초대
           </button>
         </div>
+      )}
+      {host && m.phase === 'lobby' && room && free.length > 0 && (
+        <>
+          <p className={p.tagline}>여기 있는 사람에게 한 판 신청해 보세요</p>
+          <ul className={s.seats}>
+            {free.map((x) => {
+              const asked = m.asked?.includes(x.id);
+              return (
+                <li key={x.id}>
+                  {x.nickname}
+                  <button className={asked ? c.btn : c.primary} disabled={asked} onClick={() => ask(m.game, x.id)}>
+                    {asked ? '신청함 ✓' : `${def.icon} 신청`}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </>
       )}
       {best.length > 0 && (
         <p className={s.records}>

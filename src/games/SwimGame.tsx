@@ -1,9 +1,11 @@
 import { Canvas, useFrame } from '@react-three/fiber';
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import * as THREE from 'three';
 import s from '../styles/Minigame.module.scss';
 import { AvatarBody, useAvatarPose, useJoints } from '../world/Avatar3D';
-import { toon } from '../world/toon';
+import { MODELS } from '../world/models';
+import { Sky } from '../world/Stage';
+import { canvasTexture, shimmer, toon } from '../world/toon';
 import { useTaps } from './controls';
 import { ev, finish, onEvent, type Match } from './session';
 import { BEAT, CUTOFF, cpuStrokes, LENGTH, newSwimmer, seeded, stroke, strokeQuality, swimFor, type Arm, type Swimmer } from './swim';
@@ -153,65 +155,250 @@ function Follow({ lanes, mine, step }: { lanes: Lane[]; mine: number; step: (dt:
     const z = -lanes[who].sw.d;
     const x = (who - (lanes.length - 1) / 2) * LANE;
     at.current.lerp(new THREE.Vector3(x, 0, z), 1 - Math.exp(-dt * 4));
-    camera.position.set(at.current.x + 4.5, 6.5, at.current.z + 7.5);
-    camera.lookAt(at.current.x, 0, at.current.z - 4);
+    // from the side and a little behind: the strokes, and the water ahead
+    camera.position.set(at.current.x + 5.2, 4.6, at.current.z + 5.5);
+    camera.lookAt(at.current.x - 0.3, -0.4, at.current.z - 3.5);
   });
   return null;
 }
 
+const DEPTH = 1.4;
+/** The basin's inside: from the start wall (z = 0.3) to the finish wall. */
+const START_Z = 0.3;
+const END_Z = -LENGTH - 0.3;
+
+/** Square tiles with grout, `n` per world unit across a `w` × `h` face. */
+const tiles = (fill: string, grout: string, w: number, h: number, n = 2) =>
+  canvasTexture(32, 32, (ctx) => {
+    ctx.fillStyle = grout;
+    ctx.fillRect(0, 0, 32, 32);
+    ctx.fillStyle = fill;
+    ctx.fillRect(1, 1, 30, 30);
+  }, [w * n, h * n]);
+
+
 function Pool({ lanes }: { lanes: number }) {
   const w = lanes * LANE;
+  const L = START_Z - END_Z;
+  const look = useMemo(() => {
+    // the basin: a box seen from inside (walls + floor), tiled; the deck: tiles round a hole for it
+    // seen from inside (BackSide), so the near wall and the open top drop out by themselves
+    const wall = (a: number, b: number) => new THREE.MeshStandardMaterial({ map: tiles('#a9e2f6', '#8fd2ef', a, b), roughness: 0.6, side: THREE.BackSide });
+    const basin = [wall(L, DEPTH), wall(L, DEPTH), wall(1, 1), wall(w, L), wall(w, DEPTH), wall(w, DEPTH)];
+    // flat rings: the deck round the pool's hole, grass round the deck
+    const rect = (x0: number, y0: number, x1: number, y1: number) => [new THREE.Vector2(x0, y0), new THREE.Vector2(x1, y0), new THREE.Vector2(x1, y1), new THREE.Vector2(x0, y1)];
+    const ring = (outer: THREE.Vector2[], hole: THREE.Vector2[]) => {
+      const shape = new THREE.Shape(outer);
+      shape.holes.push(new THREE.Path(hole));
+      return new THREE.ShapeGeometry(shape);
+    };
+    const deckEdge = rect(-w / 2 - 14, -24, w / 2 + 14, L + 10);
+    const deckTex = tiles('#fbf4e8', '#e8dcc8', 1, 1, 1);
+    const floorLight = shimmer(0.5, [w / 3, L / 3]);
+    floorLight.offset.set(0.3, 0.1);
+    const water = new THREE.MeshStandardMaterial({ color: '#36b3ea', transparent: true, opacity: 0.5, roughness: 0.12, metalness: 0.05, depthWrite: false });
+    const glints = new THREE.MeshBasicMaterial({ map: shimmer(0.4, [w / 3, L / 3]), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+    return {
+      basin,
+      deck: ring(deckEdge, rect(-w / 2, 0, w / 2, L)),
+      grass: ring(rect(-150, -150, 150, 150), deckEdge),
+      deckMat: toon('#ffffff', deckTex, 'deck'),
+      caustics: [floorLight, shimmer(0.35, [w / 3, L / 3])].map((map) => new THREE.MeshBasicMaterial({ map, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })),
+      water,
+      glints,
+    };
+  }, [w, L]);
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime;
+    look.caustics[0].map!.offset.set(t * 0.04, t * 0.03);
+    look.caustics[1].map!.offset.set(-t * 0.03, t * 0.05);
+    look.glints.map!.offset.set(t * 0.02, -t * 0.04);
+  });
+  const ropes = useRef<THREE.InstancedMesh>(null);
+  const beads = Math.round(L / 0.32);
+  useLayoutEffect(() => {
+    const mesh = ropes.current;
+    if (!mesh) return;
+    const m = new THREE.Matrix4(), c = new THREE.Color();
+    for (let r = 0; r <= lanes; r++)
+      for (let b = 0; b < beads; b++) {
+        const i = r * beads + b, z = START_Z - (b + 0.5) * (L / beads);
+        m.makeRotationX(Math.PI / 2).setPosition((r - lanes / 2) * LANE, 0.04, z);
+        mesh.setMatrixAt(i, m);
+        // red near the walls, then blue and white
+        const nearWall = z > -5 || z < -LENGTH + 5;
+        mesh.setColorAt(i, c.set(nearWall ? '#ff6b7a' : b % 2 ? '#ffffff' : '#3f8fe0'));
+      }
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  }, [lanes, beads, L]);
   return (
     <>
-      <hemisphereLight args={['#fffaf0', '#8fd0f5', 1.4]} />
-      <directionalLight position={[8, 14, 6]} intensity={1.5} />
-      <color attach="background" args={['#a6dcff']} />
-      {/* deck, water, start and finish walls, lane ropes */}
-      <mesh rotation-x={-Math.PI / 2} position={[0, -0.02, -LENGTH / 2]} material={toon('#fdf8ef')}>
-        <planeGeometry args={[w + 14, LENGTH + 20]} />
+      <Sky colors={['#6fc2ff', '#93d2ff', '#b6e2ff', '#d7f0ff', '#f2faff']} />
+      <hemisphereLight args={['#fff8ec', '#9fdcf5', 1.5]} />
+      <directionalLight position={[9, 16, 6]} intensity={2.2} color="#fff3df" castShadow shadow-mapSize={[2048, 2048]} shadow-radius={4} shadow-camera-left={-20} shadow-camera-right={20} shadow-camera-top={20} shadow-camera-bottom={-20} />
+      {/* deck round the pool, grass beyond */}
+      <mesh geometry={look.deck} material={look.deckMat} rotation-x={-Math.PI / 2} position={[0, 0, START_Z]} receiveShadow />
+      <mesh geometry={look.grass} rotation-x={-Math.PI / 2} position={[0, -0.01, START_Z]} material={toon('#a9db92')} />
+      {/* the basin, with lane stripes and dancing light on its floor */}
+      <mesh material={look.basin} position={[0, -DEPTH / 2, (START_Z + END_Z) / 2]}>
+        <boxGeometry args={[w, DEPTH, L]} />
       </mesh>
-      <mesh rotation-x={-Math.PI / 2} position={[0, 0.02, -LENGTH / 2]}>
-        <planeGeometry args={[w, LENGTH + 1]} />
-        <meshBasicMaterial color="#7cc8f2" transparent opacity={0.85} />
-      </mesh>
-      {[0.5, -LENGTH - 0.5].map((z) => (
-        <mesh key={z} position={[0, 0.15, z]} material={toon('#ffffff')}>
-          <boxGeometry args={[w + 0.4, 0.3, 0.4]} />
+      {Array.from({ length: lanes }, (_, i) => (
+        <group key={i} position={[(i - (lanes - 1) / 2) * LANE, -DEPTH + 0.01, 0]}>
+          <mesh rotation-x={-Math.PI / 2} position-z={-LENGTH / 2} material={toon('#2f6fb5')}>
+            <planeGeometry args={[0.28, LENGTH - 3.6]} />
+          </mesh>
+          {[-1.8, -LENGTH + 1.8].map((z) => (
+            <mesh key={z} rotation-x={-Math.PI / 2} position-z={z} material={toon('#2f6fb5')}>
+              <planeGeometry args={[1.0, 0.28]} />
+            </mesh>
+          ))}
+        </group>
+      ))}
+      {look.caustics.map((m, i) => (
+        <mesh key={i} material={m} rotation-x={-Math.PI / 2} position={[0, -DEPTH + 0.02 + i * 0.005, (START_Z + END_Z) / 2]}>
+          <planeGeometry args={[w, L]} />
         </mesh>
       ))}
-      <mesh rotation-x={-Math.PI / 2} position={[0, 0.03, -LENGTH]} material={toon('#ff8fab')}>
-        <planeGeometry args={[w, 0.25]} />
+      {/* the water: see-through, glinting */}
+      <mesh material={look.water} rotation-x={-Math.PI / 2} position={[0, -0.06, (START_Z + END_Z) / 2]}>
+        <planeGeometry args={[w, L]} />
       </mesh>
-      {Array.from({ length: lanes + 1 }, (_, i) => (
-        <mesh key={i} rotation-x={Math.PI / 2} position={[(i - lanes / 2) * LANE, 0.06, -LENGTH / 2]} material={toon(i % 2 ? '#ff8fab' : '#ffffff')}>
-          <cylinderGeometry args={[0.06, 0.06, LENGTH + 1, 6]} />
+      <mesh material={look.glints} rotation-x={-Math.PI / 2} position={[0, -0.05, (START_Z + END_Z) / 2]}>
+        <planeGeometry args={[w, L]} />
+      </mesh>
+      {/* coping round the edge, touch pads at the finish */}
+      {(
+        [
+          [0, START_Z + 0.2, w + 0.8, 0.4],
+          [0, END_Z - 0.2, w + 0.8, 0.4],
+          [-w / 2 - 0.2, (START_Z + END_Z) / 2, 0.4, L],
+          [w / 2 + 0.2, (START_Z + END_Z) / 2, 0.4, L],
+        ] as const
+      ).map(([x, z, sx, sz], i) => (
+        <mesh key={i} position={[x, 0.04, z]} material={toon('#ffffff')} receiveShadow castShadow>
+          <boxGeometry args={[sx, 0.12, sz]} />
         </mesh>
+      ))}
+      <instancedMesh ref={ropes} args={[undefined, undefined, (lanes + 1) * beads]} material={toon('#ffffff', undefined, 'bead')}>
+        <cylinderGeometry args={[0.07, 0.07, 0.26, 8]} />
+      </instancedMesh>
+      {/* starting blocks, numbered by colour; flags across, 5 m from each end */}
+      {Array.from({ length: lanes }, (_, i) => (
+        <group key={i} position={[(i - (lanes - 1) / 2) * LANE, 0, START_Z + 0.75]}>
+          <mesh position-y={0.3} material={toon('#ffffff')} castShadow>
+            <boxGeometry args={[0.8, 0.6, 0.7]} />
+          </mesh>
+          <mesh position={[0, 0.62, -0.05]} rotation-x={-0.15} material={toon(['#ff8fab', '#ffd166', '#7cc4f0', '#9fe0b8'][i % 4])} castShadow>
+            <boxGeometry args={[0.78, 0.06, 0.66]} />
+          </mesh>
+        </group>
+      ))}
+      {[-5, -LENGTH + 5].map((z) => (
+        <Bunting key={z} z={z} width={w + 2} />
+      ))}
+      {/* poolside: loungers under parasols, trees */}
+      {[-14, -8, -2].map((z) => (
+        <group key={z} position={[w / 2 + 2.6, 0, z]} rotation-y={-Math.PI / 2}>
+          <MODELS.lounger.Model />
+        </group>
+      ))}
+      {[-11, -5].map((z) => (
+        <group key={z} position={[w / 2 + 3.6, 0, z]}>
+          <MODELS.parasol.Model />
+        </group>
+      ))}
+      {[[-w / 2 - 6, -20], [-w / 2 - 6.5, -9], [-w / 2 - 6, 2], [w / 2 + 6, -22], [w / 2 + 6.5, 4]].map(([x, z], i) => (
+        <group key={i} position={[x, 0, z]} scale={1.3}>
+          <MODELS.tree.Model />
+        </group>
       ))}
     </>
   );
 }
 
+/** A line of little triangle flags across the pool. */
+function Bunting({ z, width }: { z: number; width: number }) {
+  const n = Math.round(width / 0.5);
+  const flag = useMemo(() => {
+    const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-0.18, 0, 0), new THREE.Vector3(0.18, 0, 0), new THREE.Vector3(0, -0.4, 0)]);
+    g.computeVertexNormals();
+    return g;
+  }, []);
+  return (
+    <group position={[0, 2.6, z]}>
+      {[-1, 1].map((k) => (
+        <mesh key={k} position={[(k * width) / 2, -1.3, 0]} material={toon('#d7dbe2')}>
+          <cylinderGeometry args={[0.04, 0.04, 2.6, 6]} />
+        </mesh>
+      ))}
+      <mesh rotation-z={Math.PI / 2} material={toon('#ffffff')}>
+        <cylinderGeometry args={[0.01, 0.01, width, 4]} />
+      </mesh>
+      {Array.from({ length: n }, (_, i) => (
+        <mesh key={i} geometry={flag} position={[-width / 2 + (i + 0.5) * (width / n), 0, 0]}>
+          <meshBasicMaterial color={['#ff8fab', '#ffd166', '#7cc4f0', '#9fe0b8'][i % 4]} side={THREE.DoubleSide} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+const DROPS = 7;
+
+/**
+ * A swimmer: face down doing the crawl while they swim (arms wheeling with their
+ * speed, a flutter kick), sitting up in a ring before the start and after the finish.
+ * Each stroke throws up a splash.
+ */
 function SwimmerFigure({ look, lane, x }: { look: Match['seats'][number]['look']; lane: Lane; x: number }) {
   const joints = useJoints();
   const root = useRef<THREE.Group>(null);
-  const splash = useRef<THREE.Mesh>(null);
-  useAvatarPose(joints, look, () => (lane.sw.time !== null || lane.sw.v < 0.15 ? 'tube' : 'swim'));
-  useFrame(() => {
+  const body = useRef<THREE.Group>(null);
+  const drops = useRef<THREE.Group>(null);
+  const st = useRef({ phase: 0, prone: 0 }).current;
+  const swimming = () => lane.sw.time === null && lane.sw.v >= 0.15;
+  useAvatarPose(joints, look, () => (swimming() ? 'swim' : 'tube'));
+  // after the pose (registered first): lay them down and wheel the arms
+  useFrame((_, dtRaw) => {
+    const dt = Math.min(dtRaw, 0.1);
+    st.prone += ((swimming() ? 1 : 0) - st.prone) * (1 - Math.exp(-dt * 6));
+    st.phase += dt * (2.2 + lane.sw.v * 2.4);
     root.current?.position.set(x, 0, -lane.sw.d);
-    const k = Math.max(0, 1 - (now() - lane.splashAt) / 0.4);
-    if (splash.current) {
-      splash.current.visible = k > 0;
-      splash.current.scale.setScalar(0.4 + (1 - k) * 0.9);
-      (splash.current.material as THREE.MeshBasicMaterial).opacity = 0.7 * k;
+    body.current?.rotation.set(st.prone * 1.42, 0, 0);
+    body.current?.position.set(0, -0.12 * st.prone, -0.5 * st.prone);
+    const j = joints;
+    if (st.prone > 0.5 && j.sink.current && j.armL.current && j.armR.current && j.legL.current && j.legR.current) {
+      j.sink.current.position.set(0, 0, 0);
+      j.armL.current.rotation.set(st.phase % (Math.PI * 2), 0, 0.15);
+      j.armR.current.rotation.set((st.phase + Math.PI) % (Math.PI * 2), 0, -0.15);
+      j.legL.current.rotation.x = Math.sin(st.phase * 3) * 0.35;
+      j.legR.current.rotation.x = -Math.sin(st.phase * 3) * 0.35;
     }
+    // a splash: drops thrown up and out, falling back
+    const t = (now() - lane.splashAt) / 0.55;
+    drops.current?.children.forEach((d, i) => {
+      d.visible = t < 1;
+      if (t >= 1) return;
+      const a = (i / DROPS) * Math.PI * 2;
+      d.position.set(Math.cos(a) * 0.55 * t, 0.15 + 1.3 * t - 1.6 * t * t, 0.7 + Math.sin(a) * 0.45 * t);
+      d.scale.setScalar(1 - t * 0.6);
+    });
   });
   return (
     <group ref={root} rotation={[0, Math.PI, 0]}>
-      <AvatarBody look={look} joints={joints} />
-      <mesh ref={splash} rotation-x={-Math.PI / 2} position={[0, 0.1, 0.2]}>
-        <ringGeometry args={[0.35, 0.6, 20]} />
-        <meshBasicMaterial color="#ffffff" transparent opacity={0} />
-      </mesh>
+      <group ref={body}>
+        <AvatarBody look={look} joints={joints} />
+      </group>
+      <group ref={drops}>
+        {Array.from({ length: DROPS }, (_, i) => (
+          <mesh key={i} visible={false}>
+            <sphereGeometry args={[0.07, 8, 6]} />
+            <meshBasicMaterial color="#ffffff" transparent opacity={0.85} />
+          </mesh>
+        ))}
+      </group>
     </group>
   );
 }

@@ -49,7 +49,7 @@ function scatter(seedText: string): ThemeConfig['decorations'] {
     const r = rnd();
     // on the camera's side of the space nothing tall, so it never hides anyone
     const front = at.tx + at.ty > SIZE;
-    out.push({ kind: front ? (r < 0.7 ? 'bush' : 'rock') : r < 0.55 ? 'pine' : r < 0.85 ? 'bush' : 'rock', at });
+    out.push({ kind: front ? (r < 0.7 ? 'bush' : 'rock') : r < 0.35 ? 'tree' : r < 0.55 ? 'pine' : r < 0.85 ? 'bush' : 'rock', at });
   }
   return out;
 }

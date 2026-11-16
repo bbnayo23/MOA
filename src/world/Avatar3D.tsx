@@ -21,6 +21,17 @@ const SCARF = '#ff8a8a';
 const RIBBON = '#ff8fab';
 const WHITE = '#fffdf8';
 
+/** A little heart (eyes when in love), 1 unit across, facing +z. */
+const HEART = (() => {
+  const h = new THREE.Shape();
+  h.moveTo(0, -0.45);
+  h.bezierCurveTo(-0.15, -0.3, -0.55, -0.05, -0.5, 0.2);
+  h.bezierCurveTo(-0.45, 0.5, -0.08, 0.5, 0, 0.22);
+  h.bezierCurveTo(0.08, 0.5, 0.45, 0.5, 0.5, 0.2);
+  h.bezierCurveTo(0.55, -0.05, 0.15, -0.3, 0, -0.45);
+  return new THREE.ShapeGeometry(h, 8);
+})();
+
 // proportions
 const HIP_Y = 0.38;
 const SHOULDER_Y = 0.7;
@@ -48,6 +59,9 @@ export interface Joints {
   eyesOpen: RefObject<THREE.Group | null>;
   eyesClosed: RefObject<THREE.Group | null>;
   eyesHappy: RefObject<THREE.Group | null>;
+  /** Moods: hearts, and wide eyes. */
+  eyesLove: RefObject<THREE.Group | null>;
+  eyesWide: RefObject<THREE.Group | null>;
   mouthLook: RefObject<THREE.Group | null>;
   mouthOpen: RefObject<THREE.Group | null>;
 }
@@ -56,7 +70,7 @@ export function useJoints(): Joints {
   return {
     sink: useRef(null), upper: useRef(null), head: useRef(null),
     armL: useRef(null), armR: useRef(null), legL: useRef(null), legR: useRef(null),
-    eyesOpen: useRef(null), eyesClosed: useRef(null), eyesHappy: useRef(null),
+    eyesOpen: useRef(null), eyesClosed: useRef(null), eyesHappy: useRef(null), eyesLove: useRef(null), eyesWide: useRef(null),
     mouthLook: useRef(null), mouthOpen: useRef(null),
   };
 }
@@ -88,18 +102,21 @@ export function AvatarBody({ look, joints }: { look: CharacterLook; joints: Join
   const hair = toon(look.hairColor);
   const shoes = toon(look.shoes);
   const longSleeves = look.top === 'hoodie' || look.top === 'jacket';
+  // a dress is top and bottom in one: bare legs under a flared skirt in its colour
+  const dress = look.top === 'dress';
+  const legWear = dress ? 'bare' : look.bottom;
   const head = FACE_SCALE[look.face];
 
   useLayoutEffect(() => castShadows(root.current));
 
   const leg = (side: 1 | -1) => (
     <group ref={side === 1 ? joints.legL : joints.legR} position={[0.1 * side, HIP_Y, 0]}>
-      {look.bottom === 'shorts' && (
+      {legWear === 'shorts' && (
         <mesh material={bottom} position={[0, -0.07, 0]}>
           <cylinderGeometry args={[0.085, 0.085, 0.12, 12]} />
         </mesh>
       )}
-      <mesh material={look.bottom === 'pants' ? bottom : skin} position={[0, -0.16, 0]}>
+      <mesh material={legWear === 'pants' ? bottom : skin} position={[0, -0.16, 0]}>
         <capsuleGeometry args={[0.07, 0.18, 4, 12]} />
       </mesh>
       <mesh material={shoes} position={[0, -0.31, 0.035]} scale={[0.1, 0.07, 0.14]}>
@@ -131,7 +148,11 @@ export function AvatarBody({ look, joints }: { look: CharacterLook; joints: Join
         <WaterProps />
         <group ref={joints.upper}>
           {/* hips */}
-          {look.bottom === 'skirt' ? (
+          {dress ? (
+            <mesh material={top} position={[0, HIP_Y + 0.02, 0]}>
+              <cylinderGeometry args={[0.16, 0.3, 0.3, 24]} />
+            </mesh>
+          ) : look.bottom === 'skirt' ? (
             <mesh material={bottom} position={[0, HIP_Y + 0.05, 0]}>
               <cylinderGeometry args={[0.17, 0.27, 0.22, 20]} />
             </mesh>
@@ -169,6 +190,19 @@ export function AvatarBody({ look, joints }: { look: CharacterLook; joints: Join
             </group>
             {look.accessory === 'glasses' && <Glasses head={head} />}
             <HeadProps />
+            {look.accessory === 'flower' && (
+              // a flower tucked over the ear
+              <group position={[0.3, HEAD_Y + 0.13, 0.1]} rotation={[0, 0.9, 0]}>
+                {Array.from({ length: 5 }, (_, i) => (
+                  <mesh key={i} material={toon('#ff8fab')} position={[Math.cos((i / 5) * Math.PI * 2) * 0.05, Math.sin((i / 5) * Math.PI * 2) * 0.05, 0]} scale={[1, 1, 0.5]}>
+                    <sphereGeometry args={[0.042, 10, 8]} />
+                  </mesh>
+                ))}
+                <mesh material={toon('#ffd166')} position={[0, 0, 0.02]}>
+                  <sphereGeometry args={[0.028, 10, 8]} />
+                </mesh>
+              </group>
+            )}
             {look.accessory === 'star' && (
               <mesh material={toon(STAR)} position={[0.25, HEAD_Y + 0.2, 0.18]} rotation={[0, 0.6, 0.3]} scale={[1, 1, 0.45]}>
                 <octahedronGeometry args={[0.07]} />
@@ -182,6 +216,20 @@ export function AvatarBody({ look, joints }: { look: CharacterLook; joints: Join
 }
 
 function TopDetails({ look, topDark }: { look: CharacterLook; topDark: THREE.Material }) {
+  if (look.top === 'dress')
+    return (
+      <>
+        {/* a ribbon belt with a bow at the back */}
+        <mesh material={toon(WHITE)} position={[0, 0.47, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.165, 0.022, 8, 24]} />
+        </mesh>
+        {[-1, 1].map((s) => (
+          <mesh key={s} material={toon(WHITE)} position={[0.05 * s, 0.47, -0.17]} rotation={[0, 0, (Math.PI / 2) * -s]} scale={[1, 1, 0.5]}>
+            <coneGeometry args={[0.04, 0.09, 10]} />
+          </mesh>
+        ))}
+      </>
+    );
   if (look.top === 'hoodie')
     return (
       <>
@@ -263,6 +311,26 @@ function Face({ look, joints, head }: { look: CharacterLook; joints: Joints; hea
           <mesh key={s} material={toon(INK)} position={[EYE_X * s, y - 0.01, ez]}>
             <boxGeometry args={[0.075, 0.014, 0.012]} />
           </mesh>
+        ))}
+      </group>
+      <group ref={joints.eyesLove} visible={false}>
+        {[-1, 1].map((s) => (
+          <mesh key={s} geometry={HEART} material={glow('#ff4d6d')} position={[EYE_X * s, y, ez + 0.006]} scale={0.1} />
+        ))}
+      </group>
+      <group ref={joints.eyesWide} visible={false}>
+        {[-1, 1].map((s) => (
+          <group key={s} position={[EYE_X * s, y + 0.008, ez - 0.006]}>
+            <mesh material={toon(INK)} scale={[0.058, 0.074, 0.03]}>
+              <sphereGeometry args={[1, 14, 12]} />
+            </mesh>
+            <mesh material={toon(WHITE)} position={[0.018, 0.026, 0.026]}>
+              <sphereGeometry args={[0.02, 8, 6]} />
+            </mesh>
+            <mesh material={toon(WHITE)} position={[-0.016, -0.02, 0.026]}>
+              <sphereGeometry args={[0.009, 8, 6]} />
+            </mesh>
+          </group>
         ))}
       </group>
       <group ref={joints.eyesHappy} visible={eyes === 'happy'}>
@@ -367,6 +435,20 @@ function Hat({ look }: { look: CharacterLook }) {
         </mesh>
         <mesh material={toon(WHITE)} position={[0, 0.45, 0]}>
           <sphereGeometry args={[0.08, 12, 10]} />
+        </mesh>
+      </group>
+    );
+  if (look.hat === 'sunhat')
+    return (
+      <group position={[0, 0.16, 0]} rotation={[-0.12, 0, 0]}>
+        <mesh material={toon('#f3d48b')} position={[0, 0, 0]}>
+          <cylinderGeometry args={[0.56, 0.56, 0.025, 36]} />
+        </mesh>
+        <mesh material={toon('#f3d48b')} position={[0, 0.13, 0]}>
+          <cylinderGeometry args={[0.32, 0.39, 0.26, 28]} />
+        </mesh>
+        <mesh material={color} position={[0, 0.05, 0]}>
+          <cylinderGeometry args={[0.395, 0.395, 0.07, 28]} />
         </mesh>
       </group>
     );
@@ -647,7 +729,19 @@ export const SIT_BACK = 0.22;
  * Drives the joints every frame from an animation key (frames from anims.ts,
  * eased between) — or a procedural cycle while walking.
  */
-export function useAvatarPose(joints: Joints, look: CharacterLook, anim: () => string) {
+/** A passing feeling on the face (from an emoji in chat): it beats the animation's eyes / mouth. */
+export type Mood = 'love' | 'wow' | 'laugh' | 'happy';
+
+const MOODS: [Mood, RegExp][] = [
+  ['love', /❤|💕|💖|💗|💓|😍|🥰|😘|♥/u],
+  ['wow', /😮|😲|😯|😱|😳|🤩|‼|❗|헐|대박/u],
+  ['laugh', /😆|😂|🤣|😄|😁|ㅋㅋ|ㅎㅎ/u],
+  ['happy', /😊|🙂|😀|✨|🎉|👋|👏/u],
+];
+/** What a chat line does to the speaker's face, if anything. */
+export const moodOf = (text: string): Mood | null => MOODS.find(([, re]) => re.test(text))?.[0] ?? null;
+
+export function useAvatarPose(joints: Joints, look: CharacterLook, anim: () => string, mood: () => Mood | null = () => null) {
   const state = useRef({ elapsed: 0, frame: 0, anim: '', phase: 0 });
   useFrame((_, dtRaw) => {
     const dt = Math.min(dtRaw, 0.1);
@@ -681,15 +775,19 @@ export function useAvatarPose(joints: Joints, look: CharacterLook, anim: () => s
       j.sink.current.position.y = damp(j.sink.current.position.y, t.sink + (pose.hop ?? 0), k);
       j.sink.current.position.z = damp(j.sink.current.position.z, t.back, k);
     }
-    // the pose can close / squint the eyes and open the mouth; otherwise the look decides
-    const eyes = pose.eyes ?? (look.eyes === 'happy' ? 'happy' : look.eyes === 'sleepy' ? 'closed' : undefined);
-    if (j.eyesOpen.current && j.eyesClosed.current && j.eyesHappy.current) {
+    // a mood first; then the pose can close / squint the eyes and open the mouth; otherwise the look decides
+    const m = mood();
+    const eyes =
+      m === 'love' ? 'love' : m === 'wow' ? 'wide' : m ? 'happy' : (pose.eyes ?? (look.eyes === 'happy' ? 'happy' : look.eyes === 'sleepy' ? 'closed' : undefined));
+    if (j.eyesOpen.current && j.eyesClosed.current && j.eyesHappy.current && j.eyesLove.current && j.eyesWide.current) {
       j.eyesClosed.current.visible = eyes === 'closed';
       j.eyesHappy.current.visible = eyes === 'happy';
+      j.eyesLove.current.visible = eyes === 'love';
+      j.eyesWide.current.visible = eyes === 'wide';
       j.eyesOpen.current.visible = !eyes;
     }
     if (j.mouthOpen.current && j.mouthLook.current) {
-      const open = pose.mouth === 'open' || look.mouth === 'open';
+      const open = m === 'wow' || m === 'laugh' || pose.mouth === 'open' || look.mouth === 'open';
       j.mouthOpen.current.visible = open;
       j.mouthLook.current.visible = !open;
     }

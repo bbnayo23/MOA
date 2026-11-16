@@ -1,6 +1,6 @@
 /** Every kind of object a theme can place. Each has a 3D model in models/. */
 export type ArtKind =
-  | 'pine' | 'bush' | 'rock' | 'log' | 'tent' | 'campfire' | 'grill' | 'lantern'
+  | 'pine' | 'tree' | 'lamp' | 'bush' | 'rock' | 'log' | 'tent' | 'campfire' | 'grill' | 'lantern'
   | 'pew' | 'altar' | 'candles' | 'board' | 'plant'
   | 'building' | 'fountain'
   | 'bookshelf' | 'table' | 'desk'
@@ -18,6 +18,8 @@ export type ArtKind =
  */
 export const KINDS: Record<ArtKind, { foot?: number; light?: string; face?: number }> = {
   pine: { foot: 0.3 },
+  tree: { foot: 0.35 },
+  lamp: { foot: 0.15 },
   bush: { foot: 0.3 },
   rock: { foot: 0.25 },
   log: {},

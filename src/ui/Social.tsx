@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { GAMES } from '../data/games';
 import { HUB, THEME_CONFIGS, THEMES } from '../data/themes';
 import { useAlerts, useInvitePanel, useProfileCard, useSettings, useWhispers } from '../hooks/useSocialPanels';
 import { DM_POLICY, useSocial, VISIBILITY, type DmPolicy, type Visibility } from '../net/social';
@@ -59,6 +60,12 @@ export function ProfileCard() {
             🏠 공간 방문
           </button>
         )}
+        {card.canAsk &&
+          Object.values(GAMES).map((g) => (
+            <button key={g.id} className={c.btn} onClick={() => card.challenge(g.id)}>
+              {g.icon} {g.name.split(' ')[0]} 신청
+            </button>
+          ))}
         {card.canInvite && !card.blocked && (
           <button className={c.btn} onClick={card.invite}>
             🚪 여기로 초대

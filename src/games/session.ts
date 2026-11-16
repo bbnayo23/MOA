@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { CharacterLook } from '../data/character';
 import { GAMES, type GameId } from '../data/games';
+import type { ThemeId } from '../data/themes';
 import { supabase } from '../net/supabase';
 import { roomOf, useMoa } from '../store';
 
@@ -43,6 +44,8 @@ export interface Match extends Table {
   verdict: 'local' | 'pending' | 'done' | 'disputed' | null;
   /** Players who dropped out mid-game. */
   left: string[];
+  /** Who the host has asked over (so the lobby can say so). */
+  asked?: string[];
 }
 
 /** Over the place's channel. */
@@ -53,14 +56,21 @@ export type GameMsg =
   | { k: 'leave'; mid: string }
   | { k: 'ready'; mid: string; on: boolean }
   | { k: 'start'; mid: string; seed: number; seats: Seat[]; serverId: string | null }
-  | { k: 'ev'; mid: string; seq: number; data: unknown };
+  | { k: 'ev'; mid: string; seq: number; data: unknown }
+  /** "Play with me?": a host asks one person in the room (any space in it) to their table; `nope` is their "not now". */
+  | { k: 'ask'; to: string; t: Table; theme: ThemeId }
+  | { k: 'nope'; mid: string };
+
+export type Ask = Table & { theme: ThemeId };
 
 interface GameState {
   tables: Record<string, Table & { seen: number }>;
   match: Match | null;
+  /** Tables I've been asked to (and the space they're in), newest last. */
+  asks: Ask[];
 }
 
-export const useGame = create<GameState>()(() => ({ tables: {}, match: null }));
+export const useGame = create<GameState>()(() => ({ tables: {}, match: null, asks: [] }));
 const set = useGame.setState;
 const get = useGame.getState;
 
@@ -78,12 +88,12 @@ const patch = (m: Partial<Match>) => set((s) => (s.match ? { match: { ...s.match
 /** The realtime link hands over its send (useRealtime). */
 export const bindGameLink = (send: (g: GameMsg) => void) => (sendRaw = send);
 
+const tableOf = ({ mid, game, host, seats, phase }: Match): Table => ({ mid, game, host, seats, status: phase === 'lobby' ? 'open' : 'playing' });
+
 /** Tell the space about my table (also every few seconds, for people who walk in later). */
 function announce() {
   const m = get().match;
-  if (!m || !isHost()) return;
-  const { mid, game, host, seats } = m;
-  sendRaw({ k: 'table', t: { mid, game, host, seats, status: m.phase === 'lobby' ? 'open' : 'playing' } });
+  if (m && isHost()) sendRaw({ k: 'table', t: tableOf(m) });
 }
 
 function heartbeat(on: boolean) {
@@ -98,6 +108,37 @@ export function host(game: GameId) {
   set({ match: { mid: crypto.randomUUID(), game, host: me().id, seats: [mySeat(true)], status: 'open', role: 'player', phase: 'lobby', seed: 0, startAt: 0, serverId: null, scores: null, verdict: null, left: [] } });
   announce();
   heartbeat(true);
+}
+
+/**
+ * Ask someone here to play: opens my table for that game first if I have none.
+ * False when I'm busy with something else (another game, or one under way).
+ */
+export function ask(game: GameId, to: string) {
+  if (!get().match) host(game);
+  const m = get().match!;
+  if (m.game !== game || !isHost() || m.phase !== 'lobby') return false;
+  sendRaw({ k: 'ask', to, t: tableOf(m), theme: useMoa.getState().themeId! });
+  patch({ asked: [...new Set([...(m.asked ?? []), to])] });
+  return true;
+}
+
+/** A table I said yes to in another space: I'm on my way, and sit down when it next shows up there. */
+let headingTo: { mid: string; until: number } | null = null;
+
+/** Yes (take a seat — going over to its space first) or not now (the host hears so) to a table I was asked to. */
+export function answer(a: Ask, yes: boolean) {
+  set((s) => ({ asks: s.asks.filter((x) => x.mid !== a.mid) }));
+  if (!yes) return sendRaw({ k: 'nope', mid: a.mid });
+  const st = useMoa.getState();
+  if (a.theme === st.themeId) return join(get().tables[a.mid] ?? a);
+  headingTo = { mid: a.mid, until: Date.now() + 10_000 };
+  st.enterTheme(a.theme);
+  setTimeout(() => {
+    if (headingTo?.mid !== a.mid) return;
+    headingTo = null;
+    useMoa.getState().system(`${GAMES[a.game].icon} 그 게임은 이미 끝났나 봐요.`);
+  }, 10_000);
 }
 
 export function join(t: Table) {
@@ -186,8 +227,23 @@ export function exit() {
 export function receive(from: string, g: GameMsg) {
   const m = get().match;
   switch (g.k) {
+    case 'ask':
+      if (g.to === me().id && !m) set((s) => ({ asks: [...s.asks.filter((a) => a.mid !== g.t.mid), { ...g.t, theme: g.theme }] }));
+      return;
+    case 'nope':
+      if (m?.mid === g.mid && isHost()) {
+        const who = useMoa.getState().peers.find((p) => p.id === from)?.nickname ?? '상대';
+        useMoa.getState().system(`${GAMES[m.game].icon} ${who}님은 다음에 같이 하재요.`);
+        patch({ asked: (m.asked ?? []).filter((id) => id !== from) });
+      }
+      return;
     case 'table': {
       set((s) => ({ tables: { ...s.tables, [g.t.mid]: { ...g.t, seen: Date.now() } } }));
+      if (!m && headingTo?.mid === g.t.mid) {
+        headingTo = null;
+        if (g.t.status === 'open') join(g.t);
+        return;
+      }
       if (m?.mid !== g.t.mid || isHost()) return;
       // the host's word on who's seated; a lobby I'm not in any more (full, or sent away): leave it
       if (m.role === 'player' && m.phase === 'lobby' && !g.t.seats.some((s) => s.id === me().id)) {
@@ -198,7 +254,7 @@ export function receive(from: string, g: GameMsg) {
       return;
     }
     case 'close':
-      set((s) => ({ tables: Object.fromEntries(Object.entries(s.tables).filter(([k]) => k !== g.mid)) }));
+      set((s) => ({ tables: Object.fromEntries(Object.entries(s.tables).filter(([k]) => k !== g.mid)), asks: s.asks.filter((a) => a.mid !== g.mid) }));
       if (m?.mid === g.mid && !isHost()) {
         set({ match: null });
         useMoa.getState().system('🏁 호스트가 게임을 닫았어요.');
@@ -222,6 +278,7 @@ export function receive(from: string, g: GameMsg) {
  */
 export function present(ids: string[]) {
   const here = new Set([...ids, me().id]);
+  // (asks can come from anywhere in the room: they keep till answered, or the toast times out)
   set((s) => ({ tables: Object.fromEntries(Object.entries(s.tables).filter(([, t]) => here.has(t.host) && Date.now() - t.seen < 10_000)) }));
   const m = get().match;
   if (!m) return;

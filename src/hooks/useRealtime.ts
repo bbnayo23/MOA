@@ -65,7 +65,8 @@ export function useRealtime() {
           return;
         }
         if (msg.type === 'game') {
-          if (msg.themeId === s.themeId && !blocked(msg.id)) receive(msg.id, msg.g);
+          // a game's table lives in its space; an ask (and its answer) reaches anywhere in the room
+          if ((msg.themeId === s.themeId || msg.g.k === 'ask' || msg.g.k === 'nope') && !blocked(msg.id)) receive(msg.id, msg.g);
           return;
         }
         const p = peers.get(msg.id);

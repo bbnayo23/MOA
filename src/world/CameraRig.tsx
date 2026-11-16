@@ -40,6 +40,12 @@ export function CameraRig({ sim, me }: { sim: Sim; me: Agent }) {
   const c = useRef<Cam>({ zoom: 1, zoomTo: 1, min: 0.5, focus: null, pan: new THREE.Vector3(), anchor: null, homing: false, dragging: false }).current;
   const reported = useRef('');
   const fitted = useRef('');
+  // a new space: start on me, not wherever the view was dragged to in the last one
+  useEffect(() => {
+    c.pan.set(0, 0, 0);
+    c.focus = null;
+    c.anchor = null;
+  }, [sim, c]);
   // the ground the camera may show: the map, or outdoors the round land around it (`fit`: its edge)
   const ground = useMemo(() => {
     const S = sim.size * T, mid = new THREE.Vector3(S / 2, 0, S / 2);

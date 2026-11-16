@@ -7,10 +7,10 @@ export const NOSES = ['none', 'dot', 'button'] as const;
 export const HAIR_STYLES = ['short', 'bob', 'long', 'spiky', 'buns'] as const;
 export const EYE_TYPES = ['round', 'dot', 'happy', 'sleepy'] as const;
 export const MOUTH_TYPES = ['smile', 'cat', 'open', 'flat'] as const;
-export const TOP_STYLES = ['tee', 'stripe', 'hoodie', 'jacket'] as const;
+export const TOP_STYLES = ['tee', 'stripe', 'hoodie', 'jacket', 'dress'] as const;
 export const BOTTOM_STYLES = ['pants', 'shorts', 'skirt'] as const;
-export const HAT_STYLES = ['none', 'cap', 'beanie', 'ribbon'] as const;
-export const ACCESSORIES = ['none', 'glasses', 'star', 'scarf'] as const;
+export const HAT_STYLES = ['none', 'cap', 'beanie', 'ribbon', 'sunhat'] as const;
+export const ACCESSORIES = ['none', 'glasses', 'star', 'scarf', 'flower'] as const;
 
 export interface CharacterLook {
   skin: string;
@@ -64,10 +64,10 @@ export const LABELS: Record<string, string> = {
   round: '동글', dot: '콩알', happy: '웃는 눈', sleepy: '졸린 눈',
   smile: '미소', cat: '고양이', open: '활짝', flat: '시크',
   short: '숏컷', bob: '단발', long: '긴 머리', spiky: '삐죽', buns: '똥머리',
-  tee: '티셔츠', stripe: '스트라이프', hoodie: '후디', jacket: '재킷',
+  tee: '티셔츠', stripe: '스트라이프', hoodie: '후디', jacket: '재킷', dress: '원피스',
   pants: '바지', shorts: '반바지', skirt: '치마',
-  none: '없음', cap: '캡모자', beanie: '비니', ribbon: '리본',
-  glasses: '안경', star: '별 핀', scarf: '목도리',
+  none: '없음', cap: '캡모자', beanie: '비니', ribbon: '리본', sunhat: '밀짚모자',
+  glasses: '안경', star: '별 핀', scarf: '목도리', flower: '꽃 핀',
 };
 
 export const PRESETS: { name: string; look: CharacterLook }[] = [

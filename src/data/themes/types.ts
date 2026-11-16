@@ -32,8 +32,8 @@ export interface Background {
   // indoor
   /** Back walls (along tx = 0 and ty = 0) with arched windows. */
   walls?: { left: string; right: string; trim: string; glass: string[] };
-  /** Floor runners between two map points (paths, court lines, pool water…). */
-  rugs?: { from: Tile; to: Tile; width: number; color: string; border: string }[];
+  /** Floor runners between two map points (paths, court lines, pool water…); `stone`: cobbles in that colour. */
+  rugs?: { from: Tile; to: Tile; width: number; color: string; border: string; stone?: boolean }[];
   /** A pool: a rippling water surface over this stretch (same shape as a rug). */
   water?: { from: Tile; to: Tile; width: number };
   /** Floating light particles (fireflies, dust). */

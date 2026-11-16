@@ -1,17 +1,15 @@
 import * as THREE from 'three';
 
-/** Cel-shading ramp: three soft bands (shade / mid / lit) instead of smooth falloff. */
-const RAMP = new THREE.DataTexture(new Uint8Array([120, 195, 255]), 3, 1, THREE.RedFormat);
-RAMP.minFilter = RAMP.magFilter = THREE.NearestFilter;
-RAMP.needsUpdate = true;
-
 const cache = new Map<string, THREE.Material>();
 
-/** Shared cartoon material per colour (and optional texture). Never dispose these. */
+/**
+ * Shared soft material per colour (and optional texture): smooth shading with a
+ * gentle sheen, like painted vinyl toys. Never dispose these.
+ */
 export function toon(color: string, map?: THREE.Texture, key = '') {
   const id = `${color}|${key}`;
   let m = cache.get(id);
-  if (!m) cache.set(id, (m = new THREE.MeshToonMaterial({ color, gradientMap: RAMP, ...(map && { map }) })));
+  if (!m) cache.set(id, (m = new THREE.MeshStandardMaterial({ color, roughness: 0.72, metalness: 0, ...(map && { map }) })));
   return m;
 }
 
@@ -41,6 +39,23 @@ export function canvasTexture(w: number, h: number, draw: (ctx: CanvasRenderingC
   }
   return tex;
 }
+
+/** Wavy bright lines, tiling: light dancing on a pool floor, glints on water. */
+export const shimmer = (alpha: number, repeat: [number, number]) =>
+  canvasTexture(128, 128, (ctx) => {
+    ctx.strokeStyle = `rgba(255,255,255,${alpha})`;
+    ctx.lineWidth = 2.5;
+    for (let k = 0; k < 6; k++)
+      for (const across of [true, false]) {
+        ctx.beginPath();
+        for (let u = 0; u <= 128; u += 4) {
+          const v = k * (128 / 6) + Math.sin((u / 128) * Math.PI * 4 + k * (across ? 1 : 2)) * 6;
+          if (across) ctx.lineTo(u, v);
+          else ctx.lineTo(v, u);
+        }
+        ctx.stroke();
+      }
+  }, repeat);
 
 /** Turn on shadows for every mesh under `root`. */
 export function castShadows(root: THREE.Object3D | null, receive = false) {

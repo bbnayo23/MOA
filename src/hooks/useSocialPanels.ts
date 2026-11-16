@@ -1,7 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { toGame } from '../bridge';
+import type { GameId } from '../data/games';
 import { HUB, THEME_CONFIGS, type ThemeId } from '../data/themes';
+import { ask } from '../games/session';
 import { ownRoom, spaceOwner, type Room } from '../net/rooms';
 import {
   acceptFriend,
@@ -123,6 +125,12 @@ export function useProfileCard() {
       useMoa.getState().system(`👢 ${p.nickname}님을 내보냈어요 (30분 동안 못 들어와요).`);
     },
     toggleBlock: () => void (blocked ? unblock(id) : block(id)),
+    // here with me: ask them to a game (opens my table for it)
+    canAsk: inMyPlace && !blocked,
+    challenge: (game: GameId) => {
+      close();
+      if (!ask(game, id)) useMoa.getState().system('🎲 하던 게임을 마치고 신청해 주세요.');
+    },
   };
 }
 

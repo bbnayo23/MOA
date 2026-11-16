@@ -11,7 +11,7 @@ import type { Motion } from '../net/link';
 import { supabase } from '../net/supabase';
 import { roomOf, useMoa } from '../store';
 import s from '../styles/World.module.scss';
-import { AvatarBody, SIT_BACK, SIT_UP, useAvatarPose, useJoints } from './Avatar3D';
+import { AvatarBody, moodOf, SIT_BACK, SIT_UP, useAvatarPose, useJoints, type Mood } from './Avatar3D';
 import { gesture } from './camera';
 import { CameraRig } from './CameraRig';
 import { KINDS, type ArtKind } from './kinds';
@@ -58,6 +58,7 @@ export function World({ theme, className, paused = false }: { theme: ThemeConfig
   const [far, setFar] = useState(false);
   useEffect(() => fromGame.on('zoomLevel', (z) => setFar(z.pct < 50)), []);
   const bubbles = useBubbles();
+  const moods = useMoods();
   const [hover, setHover] = useState<InteractionObject | null>(null);
   const [near, setNear] = useState<InteractionObject | null>(null);
   const indoor = !!theme.background.walls;
@@ -104,7 +105,7 @@ export function World({ theme, className, paused = false }: { theme: ThemeConfig
           .filter((o) => MODELS[o.kind].seats)
           .flatMap((o) => o.spots.map((at, i) => <Seat key={`${o.id}${i}`} at={at} facing={o.at} />))}
         {agents.map((a) => (
-          <Character key={a.player.id} agent={a} look={a.isMe ? meLook : a.player.look} />
+          <Character key={a.player.id} agent={a} look={a.isMe ? meLook : a.player.look} mood={() => moods(a.player.id)} />
         ))}
         <TapMarker sim={sim} />
         <CameraRig sim={sim} me={me} />
@@ -198,6 +199,23 @@ function walkTo(sim: Sim, me: Agent, t: Tile) {
   sim.walkTo(me, t);
 }
 
+/** A face to go with what someone just said (❤️ → heart eyes, 😮 → wide eyes …), for a few seconds. */
+function useMoods() {
+  const moods = useMemo(() => new Map<string, { mood: Mood; until: number }>(), []);
+  useEffect(
+    () =>
+      toGame.on('chat', ({ playerId, text }) => {
+        const mood = moodOf(text);
+        if (mood) moods.set(playerId, { mood, until: performance.now() + 3200 });
+      }),
+    [moods],
+  );
+  return (id: string) => {
+    const m = moods.get(id);
+    return m && m.until > performance.now() ? m.mood : null;
+  };
+}
+
 /** What each player said last, for a few seconds. */
 function useBubbles() {
   const [bubbles, setBubbles] = useState<Record<string, string>>({});
@@ -286,10 +304,10 @@ function Glow({ color, y }: { color: string; y: number }) {
 
 // ── characters ────────────────────────────────────────────────
 
-function Character({ agent, look }: { agent: Agent; look: CharacterLook }) {
+function Character({ agent, look, mood }: { agent: Agent; look: CharacterLook; mood: () => Mood | null }) {
   const joints = useJoints();
   const root = useRef<THREE.Group>(null);
-  useAvatarPose(joints, look, () => agent.anim);
+  useAvatarPose(joints, look, () => agent.anim, mood);
   useFrame((_, dt) => {
     const g = root.current;
     if (!g) return;

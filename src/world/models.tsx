@@ -46,8 +46,8 @@ const Ball = ({ r, p, c, s, lit }: { r: number; p?: V3; c: string; s?: V3; lit?:
 
 const WOOD = '#c58f63';
 const WOOD_DARK = '#a8734d';
-const LEAF = '#9edbb8';
-const LEAF_DARK = '#7cc3a0';
+const LEAF = '#9fd98c';
+const LEAF_DARK = '#7cc479';
 const STONE = '#d6d0e2';
 const CREAM = '#fff8ee';
 const METAL = '#d7dbe2';
@@ -183,6 +183,31 @@ const Pine: FC = () => (
         <coneGeometry args={[r * 1.35, h, 14]} />
       </mesh>
     ))}
+  </group>
+);
+
+/** A round, leafy shade tree: puffs of leaves on a short trunk. */
+const Tree: FC = () => (
+  <group>
+    <Cyl r={0.2} top={0.13} h={1.4} p={[0, 0.7, 0]} c="#a97b59" seg={10} />
+    {([[0, 1.85, 0, 0.82], [0.58, 1.55, 0.18, 0.58], [-0.56, 1.6, 0.12, 0.6], [0.12, 1.55, 0.58, 0.56], [-0.1, 1.62, -0.55, 0.6], [0.22, 2.42, 0.08, 0.52]] as const).map(
+      ([x, y, z, r], i) => (
+        <Ball key={i} r={r} p={[x, y, z]} c={i % 2 ? LEAF_DARK : LEAF} />
+      ),
+    )}
+  </group>
+);
+
+/** A street lamp with a warm globe. */
+const Lamp: FC = () => (
+  <group>
+    <Cyl r={0.13} top={0.09} h={0.2} p={[0, 0.1, 0]} c={IRON} />
+    <Cyl r={0.045} h={2.1} p={[0, 1.15, 0]} c={IRON} seg={8} />
+    <Box s={[0.3, 0.06, 0.3]} p={[0, 2.22, 0]} c={IRON} />
+    <Ball r={0.17} p={[0, 2.42, 0]} c="#fff1c4" lit />
+    <mesh material={toon(IRON)} position={[0, 2.65, 0]}>
+      <coneGeometry args={[0.24, 0.18, 8]} />
+    </mesh>
   </group>
 );
 
@@ -651,6 +676,8 @@ export const MODELS: Record<ArtKind, ModelDef> = {
   plant: { h: 1.2, Model: Plant },
   rock: { h: 0.5, Model: Rock },
   pine: { h: 2.5, Model: Pine },
+  tree: { h: 2.9, Model: Tree },
+  lamp: { h: 2.7, Model: Lamp },
   log: { h: 0.4, Model: Log },
   tent: { h: 2.0, Model: Tent },
   campfire: { h: 0.9, Model: Campfire },

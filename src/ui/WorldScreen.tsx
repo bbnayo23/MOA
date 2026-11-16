@@ -3,7 +3,8 @@ import { useShallow } from 'zustand/react/shallow';
 import { fromGame } from '../bridge';
 import type { CharacterLook } from '../data/character';
 import { HUB, type ThemeConfig, type ThemeId } from '../data/themes';
-import { useGame } from '../games/session';
+import { GAMES } from '../data/games';
+import { answer, useGame } from '../games/session';
 import { useActionBar } from '../hooks/useActionBar';
 import { useChat } from '../hooks/useChat';
 import { useRoomList } from '../hooks/useLobby';
@@ -86,6 +87,7 @@ export function WorldScreen() {
         </>
       )}
       <InviteToast />
+      <GameAskToast />
       <ProfileCard />
       <Whispers />
       <Notice />
@@ -248,6 +250,32 @@ function InviteToast() {
         }}
       >
         거절
+      </button>
+    </div>
+  );
+}
+
+/** "Play with me?": someone here asked me to their table. Unanswered, it's a "not now" after 30 s. */
+function GameAskToast() {
+  const a = useGame((g) => g.asks.at(-1));
+  const name = useMoa((st) => (a ? st.peers.find((x) => x.id === a.host)?.nickname : undefined));
+  useEffect(() => {
+    if (!a) return;
+    const t = setTimeout(() => answer(a, false), 30_000);
+    return () => clearTimeout(t);
+  }, [a]);
+  if (!a) return null;
+  const def = GAMES[a.game];
+  return (
+    <div className={s.invite} role="alertdialog" aria-label="경기 신청">
+      <p>
+        {def.icon} <b>{name ?? a.seats[0]?.nickname}</b>님이 <b>{def.name}</b> 한 판을 신청했어요!
+      </p>
+      <button className={c.primary} onClick={() => answer(a, true)}>
+        수락
+      </button>
+      <button className={c.btn} onClick={() => answer(a, false)}>
+        다음에
       </button>
     </div>
   );

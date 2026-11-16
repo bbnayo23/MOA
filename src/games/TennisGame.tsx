@@ -2,8 +2,11 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import s from '../styles/Minigame.module.scss';
+import { PIXEL_FONT } from '../styles/fonts';
 import { AvatarBody, useAvatarPose, useJoints } from '../world/Avatar3D';
-import { toon } from '../world/toon';
+import { MODELS } from '../world/models';
+import { Sky } from '../world/Stage';
+import { canvasTexture, toon } from '../world/toon';
 import { useHeld } from './controls';
 import { ev, finish, onEvent, type Match } from './session';
 import { seeded } from './swim';
@@ -161,8 +164,9 @@ export function TennisGame({ match, meId }: { match: Match; meId: string }) {
   const serving = side !== null && !live.flight && live.score.server === side && !live.over;
   return (
     <div className={s.game}>
-      <Canvas flat shadows="percentage" dpr={[1, 2]} camera={{ fov: 40, position: side === null ? [12, 10, 0] : [0, 6.4, HALF_L + 7.5], near: 0.5, far: 120 }}>
+      <Canvas flat shadows="percentage" dpr={[1, 2]} camera={{ fov: 40, position: side === null ? [12, 10, 0] : [0, 5.6, HALF_L + 7], near: 0.5, far: 160 }}>
         <Court />
+        <Scoreboard names={[name(me), name(them)]} points={[hud.score.points[me], hud.score.points[them]]} />
         <group rotation={[0, side === 1 ? Math.PI : 0, 0]}>
           {match.seats.map((p, i) => (
             <Player key={p.id} look={p.look} side={i as Side} live={live} />
@@ -209,7 +213,23 @@ function Tick({ step, look }: { step: (dt: number) => void; look: boolean }) {
   return null;
 }
 
+// court colours: a blue hard court on a mint apron, in a park
+const SURFACE = '#5b9de0';
+const APRON = '#78c49b';
+const FENCE = '#3f6b5a';
+
+/** A see-through grid (the net, the fence's chain-link). */
+const meshTexture = (line: string, repeat: [number, number]) =>
+  canvasTexture(32, 32, (ctx) => {
+    ctx.strokeStyle = line;
+    ctx.lineWidth = 3;
+    ctx.strokeRect(0, 0, 32, 32);
+  }, repeat);
+
 function Court() {
+  const net = useMemo(() => new THREE.MeshBasicMaterial({ map: meshTexture('#2f3a4a', [HALF_W * 5, 3]), transparent: true, alphaTest: 0.3, side: THREE.DoubleSide }), []);
+  const fence = useMemo(() => new THREE.MeshBasicMaterial({ map: meshTexture(FENCE, [16, 4]), transparent: true, alphaTest: 0.3, side: THREE.DoubleSide }), []);
+  const FW = HALF_W + 3.2, FB = HALF_L + 3.4; // the fence: sides and the far end (the near end is open, so nothing hides you)
   const lines: [number, number, number, number][] = [
     // x, z, width, depth
     [0, HALF_L, HALF_W * 2 + 0.1, 0.1],
@@ -222,34 +242,127 @@ function Court() {
   ];
   return (
     <>
-      <hemisphereLight args={['#fff6e8', '#9ad3a5', 1.3]} />
-      <directionalLight position={[6, 12, 8]} intensity={1.6} castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-10} shadow-camera-right={10} shadow-camera-top={10} shadow-camera-bottom={-10} />
-      <color attach="background" args={['#bfe6ff']} />
-      <mesh rotation-x={-Math.PI / 2} position-y={-0.01} receiveShadow material={toon('#bde3b4')}>
-        <planeGeometry args={[60, 60]} />
+      <Sky colors={['#7cc3ff', '#9fd2ff', '#bfe0ff', '#dcedff', '#f4f7ff']} />
+      <hemisphereLight args={['#fff4e2', '#8fcf9f', 1.45]} />
+      <directionalLight position={[5, 14, 10]} intensity={2.3} color="#fff1dc" castShadow shadow-mapSize={[2048, 2048]} shadow-radius={4} shadow-camera-left={-14} shadow-camera-right={14} shadow-camera-top={14} shadow-camera-bottom={-14} />
+      {/* park grass, the apron, the court and its lines */}
+      <mesh rotation-x={-Math.PI / 2} position-y={-0.02} receiveShadow material={toon('#a9db92')}>
+        <planeGeometry args={[200, 200]} />
       </mesh>
-      <mesh rotation-x={-Math.PI / 2} receiveShadow material={toon('#7fc9a6')}>
-        <planeGeometry args={[HALF_W * 2 + 2, HALF_L * 2 + 3]} />
+      <mesh rotation-x={-Math.PI / 2} position-y={-0.01} receiveShadow material={toon(APRON)}>
+        <planeGeometry args={[FW * 2, FB * 2]} />
+      </mesh>
+      <mesh rotation-x={-Math.PI / 2} receiveShadow material={toon(SURFACE)}>
+        <planeGeometry args={[HALF_W * 2 + 0.1, HALF_L * 2 + 0.1]} />
       </mesh>
       {lines.map(([x, z, w, d], i) => (
-        <mesh key={i} rotation-x={-Math.PI / 2} position={[x, 0.01, z]} material={toon('#ffffff')}>
+        <mesh key={i} rotation-x={-Math.PI / 2} position={[x, 0.01, z]} receiveShadow material={toon('#ffffff')}>
           <planeGeometry args={[w, d]} />
         </mesh>
       ))}
-      {/* the net: posts, a white band, the mesh */}
+      {/* the net: posts, the mesh, a white band on top */}
       {[-1, 1].map((k) => (
-        <mesh key={k} position={[k * (HALF_W + 0.4), 0.55, 0]} castShadow material={toon('#6d6a7c')}>
+        <mesh key={k} position={[k * (HALF_W + 0.4), 0.55, 0]} castShadow material={toon('#4b5368')}>
           <cylinderGeometry args={[0.07, 0.07, 1.1, 10]} />
         </mesh>
       ))}
-      <mesh position={[0, 0.5, 0]}>
-        <boxGeometry args={[HALF_W * 2 + 0.8, 0.9, 0.02]} />
-        <meshBasicMaterial color="#2f3a4a" transparent opacity={0.35} />
+      <mesh position={[0, 0.5, 0]} material={net} castShadow>
+        <planeGeometry args={[HALF_W * 2 + 0.8, 0.9]} />
       </mesh>
-      <mesh position={[0, 0.97, 0]} material={toon('#ffffff')}>
+      <mesh position={[0, 0.97, 0]} material={toon('#ffffff')} castShadow>
         <boxGeometry args={[HALF_W * 2 + 0.8, 0.08, 0.05]} />
       </mesh>
+      {/* chain-link fence on posts */}
+      {(
+        [
+          [0, -FB, FW * 2, 0],
+          [-FW, 0, FB * 2, Math.PI / 2],
+          [FW, 0, FB * 2, Math.PI / 2],
+        ] as const
+      ).map(([x, z, len, turn], i) => (
+        <group key={i} position={[x, 0, z]} rotation-y={turn}>
+          <mesh position-y={1.1} material={fence}>
+            <planeGeometry args={[len, 2.2]} />
+          </mesh>
+          {Array.from({ length: Math.round(len / 2.4) + 1 }, (_, k) => (
+            <mesh key={k} position={[-len / 2 + (k * len) / Math.round(len / 2.4), 1.15, 0]} material={toon(FENCE)} castShadow>
+              <cylinderGeometry args={[0.05, 0.05, 2.3, 6]} />
+            </mesh>
+          ))}
+        </group>
+      ))}
+      <Stands z={-FB - 1.6} />
+      {/* a park all round */}
+      {[[-FW - 3, -6], [-FW - 2.5, 2], [FW + 3, -4], [FW + 2.6, 4.5], [-7, -FB - 6], [7.5, -FB - 5.5], [-FW - 4, 9], [FW + 4, 10]].map(([x, z], i) => (
+        <group key={i} position={[x, 0, z]} scale={1.2 + (i % 3) * 0.15}>
+          {i % 3 === 2 ? <MODELS.pine.Model /> : <MODELS.tree.Model />}
+        </group>
+      ))}
     </>
+  );
+}
+
+/** Tiered seats behind the far end, in the theme's colours. */
+function Stands({ z }: { z: number }) {
+  const colors = ['#ff9db5', '#ffd27a', '#8fd0f5', '#b5e8c9', '#cbb8ff'];
+  return (
+    <group position={[0, 0, z]}>
+      {[0, 1, 2].map((row) => (
+        <group key={row} position={[0, 0, -row * 0.9]}>
+          <mesh position={[0, 0.25 + row * 0.45, 0]} material={toon('#e9e2f2')} castShadow receiveShadow>
+            <boxGeometry args={[12, 0.5 + row * 0.9, 0.9]} />
+          </mesh>
+          {Array.from({ length: 12 }, (_, k) => (
+            <mesh key={k} position={[-5.5 + k, 0.62 + row * 0.9, 0.05]} material={toon(colors[(k + row) % colors.length])} castShadow>
+              <boxGeometry args={[0.7, 0.24, 0.6]} />
+            </mesh>
+          ))}
+        </group>
+      ))}
+    </group>
+  );
+}
+
+/** The big board over the stands: both names and points, redrawn when the score changes. */
+function Scoreboard({ names, points }: { names: [string, string]; points: [number, number] }) {
+  const tex = useMemo(() => canvasTexture(512, 224, () => {}), []);
+  const key = `${names.join('|')}|${points.join(':')}`;
+  useEffect(() => {
+    const ctx = (tex.image as HTMLCanvasElement).getContext('2d')!;
+    ctx.fillStyle = '#2f3550';
+    ctx.fillRect(0, 0, 512, 224);
+    ctx.fillStyle = '#ffd166';
+    ctx.font = `28px ${PIXEL_FONT}, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText('MOA OPEN', 256, 40);
+    names.forEach((n, i) => {
+      const y = 100 + i * 80;
+      ctx.fillStyle = i ? '#ffffff' : '#ffb3c6';
+      ctx.textAlign = 'left';
+      ctx.font = `36px ${PIXEL_FONT}, sans-serif`;
+      ctx.fillText(n.slice(0, 8), 36, y + 12);
+      ctx.textAlign = 'right';
+      ctx.font = `64px ${PIXEL_FONT}, sans-serif`;
+      ctx.fillText(String(points[i]), 476, y + 22);
+    });
+    tex.needsUpdate = true;
+  }, [key]); // names / points, by value
+  return (
+    // over the far left corner, turned to the court (the score's in the HUD too)
+    <group position={[-7.4, 0, -HALF_L - 4.6]} rotation-y={0.5}>
+      {[-2.6, 2.6].map((x) => (
+        <mesh key={x} position={[x, 1.9, -0.1]} material={toon('#4b5368')}>
+          <boxGeometry args={[0.18, 3.8, 0.18]} />
+        </mesh>
+      ))}
+      <mesh position={[0, 3.4, 0]} material={toon('#4b5368')}>
+        <boxGeometry args={[5.6, 2.6, 0.2]} />
+      </mesh>
+      <mesh position={[0, 3.4, 0.11]}>
+        <planeGeometry args={[5.3, 2.3]} />
+        <meshBasicMaterial map={tex} toneMapped={false} />
+      </mesh>
+    </group>
   );
 }
 
@@ -265,27 +378,52 @@ function Player({ look, side, live }: { look: Match['seats'][number]['look']; si
   );
 }
 
+const TRAIL = 6;
+
+/** The ball, a fading trail behind it, its shadow, and a ring where it's headed (the receiver's spot to reach). */
 function Ball({ live }: { live: Live }) {
   const ball = useRef<THREE.Mesh>(null);
   const shadow = useRef<THREE.Mesh>(null);
-  useFrame(() => {
+  const aim = useRef<THREE.Mesh>(null);
+  const trail = useRef<THREE.Group>(null);
+  const past = useRef<THREE.Vector3[]>([]);
+  useFrame(({ clock }) => {
     const f = live.flight;
-    const on = !!f;
-    if (ball.current) ball.current.visible = on;
-    if (shadow.current) shadow.current.visible = on;
-    if (!f) return;
+    for (const r of [ball, shadow, aim, trail]) if (r.current) r.current.visible = !!f;
+    if (!f) return void (past.current = []);
     const p = ballAt(f, now() - live.t0);
     ball.current?.position.set(p.x, p.h, p.z);
     shadow.current?.position.set(p.x, 0.02, p.z);
+    // it lands on the far baseline from whoever hit it
+    aim.current?.position.set(f.to, 0.025, (f.by === 0 ? -1 : 1) * HALF_L);
+    aim.current?.scale.setScalar(1 + Math.sin(clock.elapsedTime * 10) * 0.12);
+    past.current = [new THREE.Vector3(p.x, p.h, p.z), ...past.current].slice(0, TRAIL);
+    trail.current?.children.forEach((c, i) => {
+      const at = past.current[i + 1];
+      c.visible = !!at;
+      if (at) c.position.copy(at);
+    });
   });
   return (
     <>
       <mesh ref={ball} castShadow material={toon('#e9f55c')}>
-        <sphereGeometry args={[0.14, 16, 12]} />
+        <sphereGeometry args={[0.15, 16, 12]} />
       </mesh>
+      <group ref={trail}>
+        {Array.from({ length: TRAIL - 1 }, (_, i) => (
+          <mesh key={i} scale={1 - (i + 1) / TRAIL}>
+            <sphereGeometry args={[0.13, 10, 8]} />
+            <meshBasicMaterial color="#fbffc2" transparent opacity={0.5 - i * 0.08} depthWrite={false} />
+          </mesh>
+        ))}
+      </group>
       <mesh ref={shadow} rotation-x={-Math.PI / 2}>
         <circleGeometry args={[0.16, 16]} />
         <meshBasicMaterial color="#000000" transparent opacity={0.25} />
+      </mesh>
+      <mesh ref={aim} rotation-x={-Math.PI / 2}>
+        <ringGeometry args={[0.32, 0.42, 28]} />
+        <meshBasicMaterial color="#ffe14d" transparent opacity={0.85} depthWrite={false} />
       </mesh>
     </>
   );
