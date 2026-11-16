@@ -3,6 +3,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { fromGame } from '../bridge';
 import type { CharacterLook } from '../data/character';
 import { HUB, type ThemeConfig, type ThemeId } from '../data/themes';
+import { useGame } from '../games/session';
 import { useActionBar } from '../hooks/useActionBar';
 import { useChat } from '../hooks/useChat';
 import { useRoomList } from '../hooks/useLobby';
@@ -22,6 +23,7 @@ import { ZOOM } from '../world/camera';
 import { World } from '../world/World';
 import { InstallButton } from './InstallButton';
 import { CheerBoard, FocusTimer, Lobby, MenuPanel, RallyGame, ThemePreview, Wardrobe } from './Panels';
+import { GameLobby, GameStage, GameTables } from './Minigame';
 import { Alerts, InvitePanel, Notice, ProfileCard, SettingsPanel, Whispers } from './Social';
 
 const EMOTES = ['👋', '❤️', '😆', '😮', '✨'];
@@ -36,6 +38,7 @@ export function WorldScreen() {
   const [drawer, setDrawer] = useState(false);
   const [sheet, setSheet] = useState<Sheet>(null);
   const roomId = useMoa((st) => roomOf(st).id);
+  const game = useGame((g) => g.match?.phase ?? null);
   // the whisper window and the right-hand panels share that side: one up at a time
   const dmUp = useSocial((x) => x.dm.open && !x.dm.min);
   useEffect(() => {
@@ -60,7 +63,7 @@ export function WorldScreen() {
   return (
     <div className={s.layout} style={{ '--stage-bg': theme.background.sky[0] } as CSSProperties}>
       {/* a fresh world per room: only its people are in it */}
-      <World key={roomId} theme={theme} className={s.game} />
+      <World key={roomId} theme={theme} className={s.game} paused={!!game && game !== 'lobby'} />
       {/* moving to another space or room: the new one fades in from its sky */}
       <div key={`${roomId}:${theme.themeId}`} className={s.curtain} aria-hidden />
       <TopBar theme={theme} drawer={drawer} toggleDrawer={() => setDrawer(!drawer)} open={toggle} />
@@ -70,7 +73,10 @@ export function WorldScreen() {
       {sheet === 'alerts' && <Alerts close={close} />}
       {sheet === 'invite' && <InvitePanel close={close} />}
       {sheet === 'settings' && <SettingsPanel close={close} />}
-      {!sheet && (
+      {!sheet && game === 'lobby' && <GameLobby invite={() => toggle('invite')} />}
+      {game && game !== 'lobby' && <GameStage />}
+      {!game && <GameTables />}
+      {!sheet && !game && (
         <>
           {panel === 'board' && <CheerBoard />}
           {panel === 'timer' && <FocusTimer />}

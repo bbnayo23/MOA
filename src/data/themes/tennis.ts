@@ -15,7 +15,7 @@ export const tennis: ThemeConfig = {
   name: '테니스장',
   emoji: '🎾',
   tagline: '랠리 한 판 어때?',
-  activities: ['서브', '스윙', '랠리', '친구와 미니게임'],
+  activities: ['서브', '스윙', '랠리', '랠리 연습', '테니스 경기 (1:1 · 컴퓨터)'],
   color: '#f2a37e',
   background: {
     size: 8,
@@ -33,11 +33,11 @@ export const tennis: ThemeConfig = {
     ],
   },
   spawnPosition: { tx: 6.9, ty: 6.9 },
-  availableActions: ['serve', 'swing', 'rally', 'minigame', 'sit', 'wave'],
+  availableActions: ['tennisMatch', 'serve', 'swing', 'rally', 'minigame', 'sit', 'wave', 'jump'],
   interactionObjects: [
     {
       id: 'net', kind: 'net', label: '테니스 코트', icon: '🎾', at: { tx: 4.0, ty: 4.0 },
-      actions: ['serve', 'swing', 'rally', 'minigame'],
+      actions: ['tennisMatch', 'serve', 'swing', 'rally', 'minigame'],
       // baselines: two at the far end, two at the near end
       spots: [{ tx: 6.0, ty: 3.4 }, { tx: 2.0, ty: 4.6 }, { tx: 6.0, ty: 4.6 }, { tx: 2.0, ty: 3.4 }],
     },

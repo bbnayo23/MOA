@@ -7,6 +7,8 @@ export interface Pose {
   bob?: number;
   /** Upper-body sideways offset in art pixels (side bends). */
   lean?: number;
+  /** The whole body off the ground (world units): a jump. */
+  hop?: number;
   legs?: 'stand' | 'stepA' | 'stepB' | 'sit' | 'swim';
   arms?: 'down' | 'waveA' | 'waveB' | 'up' | 'front' | 'pray';
   eyes?: 'closed' | 'happy';
@@ -28,14 +30,14 @@ export interface Anim {
 
 // Grouped by the theme that introduced them; new themes add theirs here.
 export type AnimKey =
-  | 'idle' | 'walk' | 'sit' | 'wave' | 'dance'
+  | 'idle' | 'walk' | 'sit' | 'wave' | 'dance' | 'jump'
   | 'campfire' | 'cook'
   | 'pray' | 'candle' | 'write'
   | 'read' | 'study'
   | 'eat' | 'drink' | 'talk'
   | 'workout' | 'run' | 'stretch' | 'squat'
   | 'swim' | 'tube' | 'splash'
-  | 'swing' | 'serve' | 'rally'
+  | 'swing' | 'serve' | 'rally' | 'ready'
   | 'browse' | 'tryOn' | 'pose';
 
 const SIT = { legs: 'sit' } as const;
@@ -54,6 +56,19 @@ export const ANIMS: Record<AnimKey, Anim> = {
   walk: { fps: 8, frames: [{ legs: 'stepA' }, { bob: -1 }, { legs: 'stepB' }, { bob: -1 }] },
   sit: { fps: 2, frames: [SIT, SIT, SIT, SIT, { ...SIT, eyes: 'closed' }, SIT] },
   wave: { fps: 5, frames: [{ arms: 'waveA', eyes: 'happy' }, { arms: 'waveB', eyes: 'happy' }] },
+  // crouch, spring up arms high, hang, come down, land
+  jump: {
+    fps: 7,
+    frames: [
+      { bob: 2 },
+      { hop: 0.35, arms: 'up', eyes: 'happy' },
+      { hop: 0.6, arms: 'up', eyes: 'happy', mouth: 'open' },
+      { hop: 0.45, arms: 'up', eyes: 'happy' },
+      { hop: 0.1 },
+      { bob: 2 },
+      {},
+    ],
+  },
   dance: {
     fps: 5,
     frames: [
@@ -138,6 +153,8 @@ export const ANIMS: Record<AnimKey, Anim> = {
       { arms: 'front', prop: 'racketFwd' },
     ],
   },
+  // racket up, on the toes, waiting for the ball (the tennis minigame)
+  ready: { fps: 4, frames: [{ arms: 'front', prop: 'racketFwd' }, { arms: 'front', prop: 'racketFwd', bob: 1 }] },
   // ready stance, ball comes in, return it
   rally: {
     fps: 4,

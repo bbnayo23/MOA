@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { fromGame, toGame } from '../bridge';
+import { bindGameLink, leaveSpace, present, receive } from '../games/session';
 import { openLink, type Message, type Motion, type Presence } from '../net/link';
 import { bumped, roomsOf } from '../net/rooms';
 import { useSocial } from '../net/social';
@@ -40,6 +41,7 @@ export function useRealtime() {
         for (const [id, was] of peers) if (here(was) && !here(next.get(id))) toGame.emit('peerLeave', id);
         peers = next;
         s.setPeers([...next.values()]);
+        present([...next.values()].filter(here).map((p) => p.id));
         if (newcomer && mine) link.send(mine); // let them see me right away
         // someone else's room that's now over its limit, and I came in last: back home
         const room = roomsOf(all).find((r) => r.id === roomOf(s).id);
@@ -60,6 +62,10 @@ export function useRealtime() {
             s.setRoom(null);
             s.system('🚪 주인이 공간에서 내보냈어요. 내 공간으로 돌아왔어요.');
           }
+          return;
+        }
+        if (msg.type === 'game') {
+          if (msg.themeId === s.themeId && !blocked(msg.id)) receive(msg.id, msg.g);
           return;
         }
         const p = peers.get(msg.id);
@@ -85,6 +91,10 @@ export function useRealtime() {
       taken: () => useMoa.getState().setTaken(true),
     });
     link.enter(roomOf(useMoa.getState()).id);
+    bindGameLink((g) => {
+      const s = useMoa.getState();
+      link.send({ type: 'game', id: s.me.id, roomId: roomOf(s).id, themeId: s.themeId!, g });
+    });
 
     /** Say a line to my place: as written first, then once per other language there (each reader picks theirs). */
     const say = (mid: string, text: string) => {
@@ -130,13 +140,17 @@ export function useRealtime() {
     // moving to another space or room, or changing clothes / name / language: update presence
     const unsub = useMoa.subscribe((s, prev) => {
       const moved = s.themeId !== prev.themeId || roomOf(s).id !== roomOf(prev).id;
-      if (moved) mine = null;
+      if (moved) {
+        mine = null;
+        leaveSpace(); // a game table here stays here
+      }
       if (roomOf(s).id !== roomOf(prev).id) link.enter(roomOf(s).id);
       if (s.themeId && (moved || s.me !== prev.me || s.lang !== prev.lang || s.spaceName !== prev.spaceName)) link.track(presenceOf(s));
     });
     return () => {
       offs.forEach((off) => off());
       unsub();
+      leaveSpace();
       link.close();
       useMoa.getState().setPeers([]);
     };

@@ -27,7 +27,8 @@ import { castShadows, glow } from './toon';
  * world → React events go through bridge.ts; the rules live in Sim, this file
  * only draws it. Name tags, bubbles and signs are DOM labels over the canvas.
  */
-export function World({ theme, className }: { theme: ThemeConfig; className?: string }) {
+/** `paused`: a minigame covers the world — stop drawing it (and walking in it) meanwhile. */
+export function World({ theme, className, paused = false }: { theme: ThemeConfig; className?: string; paused?: boolean }) {
   const meLook = useMoa((st) => st.me.look);
   const peers = useMoa((st) => st.peers);
   const roomId = useMoa((st) => roomOf(st).id);
@@ -90,7 +91,7 @@ export function World({ theme, className }: { theme: ThemeConfig; className?: st
 
   return (
     <div className={className}>
-      <Canvas flat shadows="percentage" dpr={[1, 2]} camera={{ fov: 32, near: 0.5, far: 200 }}>
+      <Canvas flat shadows="percentage" dpr={[1, 2]} camera={{ fov: 32, near: 0.5, far: 200 }} frameloop={paused ? 'never' : 'always'}>
         <Driver sim={sim} me={me} />
         <Stage bg={theme.background} onTap={(t) => walkTo(sim, me, t)} />
         {theme.decorations.map((d, i) => (
@@ -189,7 +190,7 @@ function Sign({ o, inside, anchor, onPick }: { o: InteractionObject; inside: { n
 /** Swimmers sit low in the water, sitters a touch lower: keep tags on their heads. */
 const sinkOf = (a: Agent) => {
   const legs = ANIMS[a.anim].frames[0].legs;
-  return legs === 'swim' ? -0.62 : legs === 'sit' ? SIT_UP : 0;
+  return legs === 'swim' ? -0.62 : legs === 'sit' ? SIT_UP : a.anim === 'jump' ? 0.55 : 0; // a jump: the tag goes up with them
 };
 
 function walkTo(sim: Sim, me: Agent, t: Tile) {

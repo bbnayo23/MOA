@@ -154,5 +154,43 @@ assert.equal(await listen(B, `user:${B}`), 1);
 assert.equal(await listen(B, `user:${A}`), 0);
 ok("a person's own channel is theirs alone");
 
+// minigame matches: the server keeps a result only if it makes sense and the players agree
+const age = (id: string, secs: number) => db.query(`update matches set started_at = now() - make_interval(secs => $2) where id = $1`, [id, secs]);
+const report = async (who: string, id: string, scores: object) =>
+  (await as(who, `select public.report_match($1, $2::jsonb) s`, [id, JSON.stringify(scores)]))[0].s;
+const startMatch = async (who: string, game: string, place: string, players: string[]) =>
+  (await as(who, `select public.start_match($1, $2, $3::uuid[]) id`, [game, place, `{${players.join(',')}}`]))[0].id;
+await fails(C, `select public.start_match('tennis', $1, $2::uuid[])`, [`room:${secret}`, `{${C},${A}}`], 'a match where not everyone may be');
+await fails(A, `select public.start_match('tennis', $1, $2::uuid[])`, [`room:${room}`, `{${B},${C}}`], 'start a match I am not in');
+const solo = await startMatch(A, 'swim', `space:${A}`, [A]);
+assert.equal(await report(A, solo, { [A]: 8.1, cpu1: 13 }), 'disputed', 'an 8 s swim reported 0 s after the start');
+const swim = await startMatch(A, 'swim', `space:${A}`, [A]);
+await age(swim, 20);
+assert.equal(await report(A, swim, { [A]: 12.5, cpu1: 14.2, cpu2: null }), 'done');
+ok('swim: a time faster than the race has run is refused; a real one is kept');
+const match = await startMatch(A, 'tennis', `room:${room}`, [A, B]);
+await age(match, 40);
+await fails(C, `select public.report_match($1, '{}'::jsonb)`, [match], 'report a match I did not play');
+assert.equal(await report(B, match, { [A]: 5, [B]: 3 }), 'pending');
+assert.equal(await report(A, match, { [A]: 5, [B]: 3 }), 'done');
+ok('tennis: kept once both players report the same score');
+const fight = await startMatch(A, 'tennis', `room:${room}`, [A, B]);
+await age(fight, 40);
+await report(A, fight, { [A]: 5, [B]: 2 });
+assert.equal(await report(B, fight, { [A]: 2, [B]: 5 }), 'disputed');
+ok('tennis: players who disagree → disputed, nothing kept');
+const quick = await startMatch(A, 'tennis', `room:${room}`, [A, B]);
+await age(quick, 6);
+assert.equal(await report(A, quick, { [A]: 5, [B]: 4 }), 'disputed');
+ok('tennis: nine points in six seconds is refused');
+const bogus = await startMatch(A, 'tennis', `room:${room}`, [A, B]);
+await age(bogus, 60);
+assert.equal(await report(A, bogus, { [A]: 9, [B]: 0 }), 'disputed');
+ok('tennis: more than five points is refused');
+await fails(A, `insert into matches (game, place, players) values ('tennis', 'x', '{}')`, [], 'write a match row directly');
+assert.deepEqual((await as(C, `select * from public.game_records('swim')`)).map((r) => [r.nickname, Number(r.value)]), [['에이', 12.5]]);
+assert.deepEqual((await as(C, `select * from public.game_records('tennis')`)).map((r) => [r.nickname, Number(r.value)]), [['에이', 1]]);
+ok('records: fastest swims, most tennis wins');
+
 console.log(out.join('\n'));
 console.log('all permission rules ok');

@@ -1,0 +1,304 @@
+// Minigames over the world: open tables, the lobby, and the game itself
+// (countdown, scene, HUD, touch pad, results). The chat dock stays usable below.
+
+$phone: 720px;
+
+%row-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: var(--sp-2) var(--sp-3);
+    border: 2px solid var(--c-line);
+    border-radius: var(--r-m);
+    background: var(--c-surface);
+    font-size: var(--fs-s);
+  }
+}
+
+// games others have opened here (doubled class: beats the layout's `> *` positioning)
+.tables.tables {
+  position: absolute;
+  top: calc(max(var(--sp-3), env(safe-area-inset-top)) + 64px);
+  left: 50%;
+  z-index: 2;
+  translate: -50% 0;
+  width: min(420px, calc(100% - 2 * var(--sp-3)));
+  @extend %row-list;
+
+  li {
+    box-shadow: var(--shadow-m);
+
+    > span {
+      flex: 1;
+      min-width: 0;
+    }
+
+    > button {
+      flex: none;
+      height: 32px;
+      padding: 0 var(--sp-3);
+    }
+  }
+}
+
+// ── lobby ──
+.lobby {
+  overflow-y: auto;
+}
+
+.how {
+  padding-left: var(--sp-4);
+  font-size: var(--fs-s);
+  color: var(--c-ink-soft);
+  list-style: disc;
+  line-height: 1.6;
+}
+
+.seats {
+  @extend %row-list;
+
+  em {
+    margin-left: auto;
+    font-style: normal;
+    font-size: var(--fs-xs);
+    color: var(--c-ink-soft);
+  }
+
+  .ok {
+    color: var(--c-online);
+    font-weight: 700;
+  }
+
+  .empty {
+    border-style: dashed;
+    color: var(--c-ink-soft);
+  }
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+
+  button {
+    flex: 1 1 auto;
+    height: 40px;
+  }
+}
+
+.records {
+  font-size: var(--fs-xs);
+  color: var(--c-ink-soft);
+
+  span + span::before {
+    content: ' · ';
+  }
+}
+
+// ── the game: over the world, above the dock ──
+.stage.stage {
+  grid-row: 2;
+  grid-column: 1 / -1;
+  position: relative;
+  z-index: 2;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: var(--r-l);
+  box-shadow: var(--shadow-m);
+  background: #bfe6ff;
+
+  @media (max-width: $phone) {
+    grid-row: 2;
+  }
+}
+
+.game {
+  position: absolute;
+  inset: 0;
+
+  canvas {
+    touch-action: none;
+  }
+}
+
+.quit {
+  position: absolute;
+  top: var(--sp-2);
+  right: var(--sp-2);
+  height: 34px;
+  padding: 0 var(--sp-3);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.85);
+  font-weight: 700;
+  font-size: var(--fs-xs);
+}
+
+// score / race order, top centre and top left
+.board {
+  position: absolute;
+  top: var(--sp-2);
+  left: 50%;
+  translate: -50% 0;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 6px var(--sp-4);
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: var(--shadow-s);
+  font-size: var(--fs-s);
+  font-weight: 700;
+  white-space: nowrap;
+
+  b {
+    font-family: var(--font-pixel);
+    font-size: var(--fs-l);
+    color: var(--c-primary-deep);
+  }
+}
+
+.ranks {
+  position: absolute;
+  top: var(--sp-2);
+  left: var(--sp-2);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 150px;
+  padding: var(--sp-2);
+  border-radius: var(--r-m);
+  background: rgba(255, 255, 255, 0.9);
+  font-size: var(--fs-xs);
+
+  li {
+    display: flex;
+    gap: 6px;
+  }
+
+  span {
+    margin-left: auto;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.say {
+  position: absolute;
+  top: 56px;
+  left: 50%;
+  translate: -50% 0;
+  padding: 0 var(--sp-3);
+  border-radius: var(--r-pill);
+  background: rgba(59, 49, 80, 0.75);
+  color: #fff;
+  font-size: var(--fs-s);
+  font-weight: 700;
+  white-space: nowrap;
+
+  &:empty {
+    display: none;
+  }
+}
+
+// touch controls (the keys do the same)
+.pad {
+  position: absolute;
+  left: var(--sp-2);
+  right: var(--sp-2);
+  bottom: var(--sp-2);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  user-select: none;
+  -webkit-user-select: none;
+
+  button {
+    height: 56px;
+    min-width: 72px;
+    padding: 0 var(--sp-4);
+    border: 0;
+    border-radius: var(--r-l);
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: var(--shadow-m);
+    font-size: var(--fs-m);
+    font-weight: 700;
+    touch-action: none;
+
+    &:active {
+      scale: 0.96;
+    }
+  }
+
+  .big {
+    margin-left: auto;
+    min-width: 120px;
+    background: var(--c-primary);
+    color: var(--c-on-primary);
+  }
+}
+
+// how good the last stroke was
+.beat {
+  flex: 1;
+  height: 14px;
+  border-radius: var(--r-pill);
+  background: linear-gradient(90deg, var(--c-mint) calc(var(--q, 0) * 100%), rgba(255, 255, 255, 0.85) 0);
+  font-size: 0;
+  box-shadow: var(--shadow-s);
+}
+
+.count {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-pixel);
+  font-size: 72px;
+  color: #fff;
+  text-shadow: 0 4px 0 var(--c-primary-deep);
+  pointer-events: none;
+}
+
+.results {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  width: min(340px, calc(100% - 2 * var(--sp-3)));
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+
+  h2 {
+    text-align: center;
+    font-family: var(--font-pixel);
+    font-size: var(--fs-l);
+    font-weight: 400;
+  }
+
+  ol {
+    @extend %row-list;
+  }
+
+  li span {
+    margin-left: auto;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .me {
+    border-color: var(--c-primary);
+  }
+}
+
+.verdict {
+  text-align: center;
+  font-size: var(--fs-xs);
+  color: var(--c-ink-soft);
+}

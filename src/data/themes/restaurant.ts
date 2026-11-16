@@ -38,7 +38,7 @@ export const restaurant: ThemeConfig = {
     walls: { left: '#fff6f0', right: '#ffe9e1', trim: '#e98a7a', glass: ['#ffe8b8', '#ffd6e0'] },
   },
   spawnPosition: { tx: 6.4, ty: 6.4 },
-  availableActions: ['order', 'eat', 'drink', 'talk', 'wave'],
+  availableActions: ['order', 'eat', 'drink', 'talk', 'wave', 'jump'],
   interactionObjects: [
     {
       id: 'counter', kind: 'counter', label: '주문 카운터', icon: '🧾', at: { tx: 3.0, ty: 0.75 },

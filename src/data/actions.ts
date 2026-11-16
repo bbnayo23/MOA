@@ -1,4 +1,5 @@
 import type { AnimKey } from './anims';
+import type { GameId } from './games';
 
 /** What a character *does*. Which object it happens at is decided per theme. */
 export interface ActionDef {
@@ -9,22 +10,25 @@ export interface ActionDef {
   durationMs?: number;
   /** UI panel that opens while *I* am doing this. */
   opens?: 'board' | 'timer' | 'menu' | 'rally' | 'wardrobe' | 'chat';
+  /** Opens a table for this minigame (others in the space can join or watch). */
+  game?: GameId;
 }
 
 export type ActionId =
-  | 'sit' | 'wave' | 'dance'
+  | 'sit' | 'wave' | 'dance' | 'jump'
   | 'fireGaze' | 'roast' | 'bbq' | 'rest'
   | 'pray' | 'lightCandle' | 'cheer'
   | 'read' | 'study' | 'focus'
   | 'order' | 'eat' | 'drink' | 'talk'
   | 'dumbbell' | 'treadmill' | 'stretch' | 'squat'
   | 'swim' | 'tube' | 'splash'
-  | 'serve' | 'swing' | 'rally' | 'minigame'
+  | 'serve' | 'swing' | 'rally' | 'minigame' | 'tennisMatch' | 'swimRace'
   | 'browse' | 'fitting' | 'pose';
 
 export const ACTIONS: Record<ActionId, ActionDef> = {
   sit: { label: '앉기', icon: '🪑', anim: 'sit' },
   wave: { label: '인사하기', icon: '👋', anim: 'wave', durationMs: 2400 },
+  jump: { label: '점프', icon: '⤴️', anim: 'jump', durationMs: 1000 },
   dance: { label: '춤추기', icon: '💃', anim: 'dance' },
   fireGaze: { label: '불멍', icon: '🔥', anim: 'sit' },
   roast: { label: '마시멜로 굽기', icon: '🍡', anim: 'campfire' },
@@ -50,7 +54,9 @@ export const ACTIONS: Record<ActionId, ActionDef> = {
   serve: { label: '서브', icon: '🎾', anim: 'serve' },
   swing: { label: '스윙', icon: '🏸', anim: 'swing' },
   rally: { label: '랠리', icon: '🔁', anim: 'rally' },
-  minigame: { label: '미니게임', icon: '🏆', anim: 'rally', opens: 'rally' },
+  minigame: { label: '랠리 연습', icon: '🔁', anim: 'rally', opens: 'rally' },
+  tennisMatch: { label: '테니스 경기', icon: '🏆', anim: 'ready', game: 'tennis' },
+  swimRace: { label: '수영 레이스', icon: '🏁', anim: 'swim', game: 'swim' },
   browse: { label: '옷 구경', icon: '👀', anim: 'browse' },
   fitting: { label: '피팅룸', icon: '👗', anim: 'tryOn', opens: 'wardrobe' },
   pose: { label: '거울 포즈', icon: '📸', anim: 'pose' },

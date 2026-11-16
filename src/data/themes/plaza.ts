@@ -44,7 +44,7 @@ export function makePlaza(themes: ThemeMeta[], isOpen: (id: ThemeId) => boolean)
       motes: 0xffd6e0,
     },
     spawnPosition: { tx: 4.75, ty: 4.75 }, // just in front of the fountain, buildings in view
-    availableActions: ['sit', 'wave', 'dance'],
+    availableActions: ['sit', 'wave', 'jump', 'dance'],
     interactionObjects: [
       ...buildings,
       bench('bench-l', { tx: 2.7, ty: 5.1 }),

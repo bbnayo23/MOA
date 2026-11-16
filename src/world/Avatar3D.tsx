@@ -678,7 +678,7 @@ export function useAvatarPose(joints: Joints, look: CharacterLook, anim: () => s
       j.upper.current.rotation.z = damp(j.upper.current.rotation.z, t.lean, k);
     }
     if (j.sink.current) {
-      j.sink.current.position.y = damp(j.sink.current.position.y, t.sink, k);
+      j.sink.current.position.y = damp(j.sink.current.position.y, t.sink + (pose.hop ?? 0), k);
       j.sink.current.position.z = damp(j.sink.current.position.z, t.back, k);
     }
     // the pose can close / squint the eyes and open the mouth; otherwise the look decides

@@ -31,7 +31,7 @@ export const gym: ThemeConfig = {
     rugs: [{ from: { tx: 3.6, ty: 4.0 }, to: { tx: 6.0, ty: 1.6 }, width: 1.6, color: '#d3cdea', border: '#b3abd3' }],
   },
   spawnPosition: { tx: 6.0, ty: 6.0 },
-  availableActions: ['dumbbell', 'treadmill', 'stretch', 'squat', 'wave'],
+  availableActions: ['dumbbell', 'treadmill', 'stretch', 'squat', 'wave', 'jump'],
   interactionObjects: [
     treadmill('treadmill-1', { tx: 0.6, ty: 2.0 }),
     treadmill('treadmill-2', { tx: 0.6, ty: 3.9 }),

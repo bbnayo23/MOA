@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { fromGame } from '../bridge';
 import { ACTIONS } from '../data/actions';
 import { HUB, THEMES, THEME_CONFIGS, type ThemeId } from '../data/themes';
+import { host } from '../games/session';
 import { startMockFriends } from '../mock';
 import { supabase } from '../net/supabase';
 import { useMoa } from '../store';
@@ -17,7 +18,11 @@ export function useWorldSession() {
     const st = useMoa.getState();
     const offs = [
       fromGame.on('objectClick', st.selectObject),
-      fromGame.on('actionChange', st.setCurrentAction),
+      fromGame.on('actionChange', (id) => {
+        st.setCurrentAction(id);
+        const game = id && ACTIONS[id].game;
+        if (game) host(game); // a table for it, right here
+      }),
       fromGame.on('portal', st.visit),
     ];
     return () => offs.forEach((off) => off());

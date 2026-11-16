@@ -2,6 +2,7 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { ActionId } from '../data/actions';
 import type { AnimKey } from '../data/anims';
 import type { CharacterLook } from '../data/character';
+import type { GameMsg } from '../games/session';
 import type { ThemeId } from '../data/themes';
 import type { Tile } from '../world/space';
 import type { Room } from './rooms';
@@ -37,6 +38,8 @@ export type Message =
   | { type: 'tr'; id: string; roomId: string; themeId: ThemeId; mid: string; lang: Lang; text: string }
   /** The owner sent `to` out of this place. */
   | { type: 'kick'; id: string; roomId: string; to: string }
+  /** Minigames: tables, seats, starts and in-game events (games/session.ts). */
+  | { type: 'game'; id: string; roomId: string; themeId: ThemeId; g: GameMsg }
   // without a server only: invitations go over the tabs' channel (with one, they're rows in `invites`)
   | { type: 'invite'; id: string; to: string; nickname: string; room: Room; themeId: ThemeId };
 

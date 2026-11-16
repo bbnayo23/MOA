@@ -31,7 +31,7 @@ export const library: ThemeConfig = {
     motes: 0xfff8e1,
   },
   spawnPosition: { tx: 6.0, ty: 6.0 },
-  availableActions: ['read', 'study', 'focus', 'sit', 'wave'],
+  availableActions: ['read', 'study', 'focus', 'sit', 'wave', 'jump'],
   interactionObjects: [
     table('table-l', { tx: 3.4, ty: 4.6 }),
     table('table-r', { tx: 4.9, ty: 3.1 }),

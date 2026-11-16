@@ -37,7 +37,7 @@ export const mall: ThemeConfig = {
     motes: 0xffe0ec,
   },
   spawnPosition: { tx: 6.6, ty: 6.6 },
-  availableActions: ['browse', 'fitting', 'pose', 'wave', 'dance'],
+  availableActions: ['browse', 'fitting', 'pose', 'wave', 'jump', 'dance'],
   interactionObjects: [
     rack('rack-1', { tx: 0.6, ty: 2.0 }),
     rack('rack-2', { tx: 0.6, ty: 4.2 }),

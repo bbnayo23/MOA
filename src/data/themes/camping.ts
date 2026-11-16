@@ -19,7 +19,7 @@ export const camping: ThemeConfig = {
     motes: 0xfff3a0,
   },
   spawnPosition: { tx: 5.6, ty: 5.6 },
-  availableActions: ['fireGaze', 'roast', 'bbq', 'rest', 'sit', 'wave', 'dance'],
+  availableActions: ['fireGaze', 'roast', 'bbq', 'rest', 'sit', 'wave', 'jump', 'dance'],
   interactionObjects: [
     {
       id: 'campfire', kind: 'campfire', label: '모닥불', icon: '🔥', at: { tx: 4.2, ty: 4.2 },
