@@ -53,6 +53,9 @@ export function World({ theme, className }: { theme: ThemeConfig; className?: st
   const [, recast] = useState(0);
   const agents = [...sim.agents.values()];
   const labels = useMemo(() => new Labels(), []);
+  // zoomed well out the space is small on screen: signs shrink to their icon, other tags hide
+  const [far, setFar] = useState(false);
+  useEffect(() => fromGame.on('zoomLevel', (z) => setFar(z.pct < 50)), []);
   const bubbles = useBubbles();
   const [hover, setHover] = useState<InteractionObject | null>(null);
   const [near, setNear] = useState<InteractionObject | null>(null);
@@ -107,7 +110,7 @@ export function World({ theme, className }: { theme: ThemeConfig; className?: st
         <LabelSync labels={labels} />
       </Canvas>
 
-      <div className={s.labels}>
+      <div className={far ? `${s.labels} ${s.far}` : s.labels}>
         {theme.interactionObjects
           .filter((o) => o.enter)
           .map((o) => (
@@ -166,8 +169,9 @@ function Sign({ o, inside, anchor, onPick }: { o: InteractionObject; inside: { n
           {names.length > 3 && ` 외 ${names.length - 3}명`}
         </p>
       )}
-      <button className={s.sign} onClick={onPick}>
-        {o.icon} {o.label}
+      <button className={s.sign} onClick={onPick} aria-label={names.length ? `${o.label} ${names.length}명` : o.label}>
+        {o.icon}
+        <span> {o.label}</span>
         {names.length > 0 && <b>{names.length}</b>}
       </button>
     </div>

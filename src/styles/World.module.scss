@@ -1,6 +1,16 @@
 // Labels pinned over the 3D world (see world/labels.ts): name tags, speech bubbles, signs.
 // Screen-sized DOM, so they read the same at any zoom. Each one's bottom-centre sits on its anchor.
 
+// zoomed well out: signs shrink to their icon (still tappable), others' tags and who's-inside hide
+.far {
+  .sign span,
+  .inside,
+  .label,
+  .tag:not(.me) {
+    display: none;
+  }
+}
+
 .labels {
   position: absolute;
   inset: 0;
