@@ -13,7 +13,7 @@ const rooms = roomsOf([
   p('solo', 0, 'library', ownRoom({ id: 'solo', nickname: '혼자' })),
   p('b', 2, 'pool'),
 ]);
-assert.deepEqual(rooms.map((r) => r.id), ['solo', 'r1'], 'oldest room first');
+assert.deepEqual(rooms.map((r) => r.id), ['space:solo', 'r1'], 'oldest room first');
 const r1 = rooms[1];
 assert.deepEqual(r1.members.map((m) => m.id), ['a', 'b', 'c'], 'members by arrival (host first)');
 assert.equal(r1.themeId, 'pool', 'you land where most of them are');
@@ -23,5 +23,8 @@ assert.equal(rooms[0].listed, false, 'your own space is not on the list');
 // two people take the 10th seat at once: the later one goes
 const full = roomsOf(Array.from({ length: ROOM_MAX + 1 }, (_, i) => p(`m${i}`, i, 'plaza')))[0];
 assert.ok(!bumped(full, 'm9') && bumped(full, 'm10'));
+// a room made for 4: the 5th goes
+const four = roomsOf(Array.from({ length: 5 }, (_, i) => p(`f${i}`, i, 'plaza', { ...party, max: 4 })))[0];
+assert.ok(!bumped(four, 'f3') && bumped(four, 'f4'));
 
 console.log('room rules ok');

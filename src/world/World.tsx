@@ -138,11 +138,18 @@ export function World({ theme, className }: { theme: ThemeConfig; className?: st
             )}
           </div>
         )}
-        {agents.map((a) => (
-          <span key={a.player.id} ref={labels.bind(`tag:${a.player.id}`, head(a))} className={a.isMe ? `${s.tag} ${s.me}` : s.tag}>
-            {a.player.nickname}
-          </span>
-        ))}
+        {agents.map((a) =>
+          a.isMe ? (
+            <span key={a.player.id} ref={labels.bind(`tag:${a.player.id}`, head(a))} className={`${s.tag} ${s.me}`}>
+              {a.player.nickname}
+            </span>
+          ) : (
+            // a name tag is the easy thing to tap on a phone: their card
+            <button key={a.player.id} ref={labels.bind(`tag:${a.player.id}`, head(a))} className={s.tag} onClick={() => fromGame.emit('playerClick', a.player.id)}>
+              {a.player.nickname}
+            </button>
+          ),
+        )}
         {/* oldest first, so the latest line is drawn on top where bubbles overlap */}
         {Object.entries(bubbles).map(([id, text]) => {
           const a = sim.agents.get(id);
@@ -289,8 +296,17 @@ function Character({ agent, look }: { agent: Agent; look: CharacterLook }) {
     const turn = Math.atan2(Math.sin(agent.heading - g.rotation.y), Math.cos(agent.heading - g.rotation.y));
     g.rotation.y += turn * (1 - Math.exp(-Math.min(dt, 0.1) * 12));
   });
+  // someone else: tap them for their card (on release, and only a tap — not a drag / pinch)
+  const handlers = !agent.isMe && {
+    onClick: (e: { stopPropagation: () => void }) => {
+      e.stopPropagation();
+      if (!gesture.dragged) fromGame.emit('playerClick', agent.player.id);
+    },
+    onPointerOver: () => (document.body.style.cursor = 'pointer'),
+    onPointerOut: () => (document.body.style.cursor = ''),
+  };
   return (
-    <group ref={root} position={[agent.pos.tx * T, 0, agent.pos.ty * T]} rotation={[0, agent.heading, 0]}>
+    <group ref={root} position={[agent.pos.tx * T, 0, agent.pos.ty * T]} rotation={[0, agent.heading, 0]} {...handlers}>
       <AvatarBody look={look} joints={joints} />
     </group>
   );

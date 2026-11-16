@@ -19,6 +19,34 @@
   }
 }
 
+.login {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+
+  input {
+    height: 44px;
+    padding: 0 var(--sp-3);
+    border: 2px solid var(--c-line);
+    border-radius: var(--r-m);
+    background: var(--c-surface-soft);
+
+    &:focus {
+      outline: none;
+      border-color: var(--c-primary);
+    }
+  }
+}
+
+// on the create screen: "already have an ID?"
+.again {
+  border: 0;
+  background: none;
+  color: var(--c-ink-soft);
+  font-size: var(--fs-s);
+  text-decoration: underline;
+}
+
 .error {
   padding: var(--sp-2) var(--sp-3);
   border-radius: var(--r-m);

@@ -66,6 +66,23 @@ $phone: 720px;
   }
 }
 
+// over the world for a moment after moving (doubled class: beats `.layout > *`)
+.curtain.curtain {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--stage-bg, var(--c-bg));
+  pointer-events: none;
+  animation: lift 0.7s ease-out forwards;
+}
+
+@keyframes lift {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
 // ── zoom ──────────────────────────────────
 
 .zoom {
@@ -210,6 +227,16 @@ $phone: 720px;
 
 .live {
   flex: none;
+
+  // lost the connection: it's coming back by itself
+  &.off {
+    color: var(--c-primary-deep);
+
+    &::before {
+      background: var(--c-butter);
+    }
+  }
+
   font-size: var(--fs-xs);
   color: var(--c-ink-soft);
 
@@ -233,6 +260,42 @@ $phone: 720px;
 
   button {
     padding: 0 var(--sp-3);
+  }
+}
+
+// 🔔 💌 ⚙️ in the top bar, with a count when something's waiting
+.icon {
+  position: relative;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--c-surface-soft);
+  font-size: 17px;
+
+  &[aria-pressed='true'] {
+    background: #f1eaff;
+  }
+
+  b {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: var(--r-pill);
+    background: var(--c-primary-deep);
+    color: #fff;
+    font-size: 11px;
+    line-height: 18px;
+  }
+
+  @media (max-width: $phone) {
+    width: 34px;
+    height: 34px;
+    font-size: 15px;
   }
 }
 
@@ -316,12 +379,45 @@ $phone: 720px;
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  padding: 4px var(--sp-1);
+  padding: 2px 0;
   font-size: var(--fs-s);
 
   small {
     color: var(--c-ink-soft);
   }
+}
+
+// a person: tap for their card
+.who {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 36px;
+  padding: 0 var(--sp-1);
+  border: 0;
+  border-radius: var(--r-s);
+  background: none;
+  text-align: left;
+
+  &:not(:disabled):hover {
+    background: var(--c-surface-soft);
+  }
+
+  &:disabled {
+    cursor: default;
+    color: inherit;
+  }
+}
+
+.away {
+  opacity: 0.55;
+}
+
+.hintRow {
+  color: var(--c-ink-soft);
+  font-size: var(--fs-xs) !important;
 }
 
 .inviteBtn {
@@ -589,8 +685,10 @@ $phone: 720px;
 }
 
 // the bubble-language picker, at the end of the emote row
-.lang {
+// 💬 everyone / 💌 one person, at the end of the emote row
+.mode {
   margin-left: auto;
+  max-width: 140px;
   height: 32px;
   padding: 0 var(--sp-2);
   border: 2px solid var(--c-line);
@@ -606,20 +704,8 @@ $phone: 720px;
   }
 }
 
-// what the bubble will say, while typing
-.preview {
-  flex-basis: 100%;
-  padding: var(--sp-1) var(--sp-3);
-  border-radius: var(--r-m);
-  background: var(--c-surface-soft);
-  font-size: var(--fs-s);
-  word-break: keep-all;
-  overflow-wrap: anywhere;
-
-  span {
-    margin-right: var(--sp-1);
-    color: var(--c-accent);
-    font-size: var(--fs-xs);
-    font-weight: 700;
-  }
+// whispering: the box turns lavender, like the whisper window
+.whisper input {
+  border-color: var(--c-lavender);
+  background: #f6f1ff;
 }

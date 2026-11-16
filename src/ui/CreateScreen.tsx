@@ -2,12 +2,15 @@ import { useState, type CSSProperties } from 'react';
 import type { AnimKey } from '../data/anims';
 import { LABELS, LOOK_OPTIONS, PRESETS, randomLook, type CharacterLook } from '../data/character';
 import { HUB } from '../data/themes';
+import { supabase } from '../net/supabase';
 import { useMoa } from '../store';
 import { AvatarPreview } from '../world/Preview';
 import { AvatarImage } from './AvatarImage';
 import { InstallButton } from './InstallButton';
+import { LoginForm } from './OfflineScreen';
 import c from '../styles/common.module.scss';
 import s from '../styles/CreateScreen.module.scss';
+import o from '../styles/OfflineScreen.module.scss';
 
 const TABS = ['얼굴', '헤어', '옷', '소품'] as const;
 const PREVIEW: [AnimKey, string][] = [
@@ -25,6 +28,7 @@ export function CreateScreen() {
   const { setLook, setNickname, go, enterTheme } = useMoa.getState();
   const [tab, setTab] = useState<(typeof TABS)[number]>('얼굴');
   const [anim, setAnim] = useState<AnimKey>('idle');
+  const [login, setLogin] = useState(false);
   const ready = me.nickname.trim().length > 0;
   const done = () => (returning ? go('world') : enterTheme(HUB));
 
@@ -62,6 +66,15 @@ export function CreateScreen() {
           <button className={c.primary} disabled={!ready} onClick={done}>
             {returning ? '월드로 돌아가기' : '모아 광장으로 입장'} →
           </button>
+          {supabase &&
+            !returning &&
+            (login ? (
+              <LoginForm />
+            ) : (
+              <button className={o.again} onClick={() => setLogin(true)}>
+                이미 아이디가 있어요 · 로그인
+              </button>
+            ))}
         </section>
 
         <section className={`${c.card} ${s.editor}`}>

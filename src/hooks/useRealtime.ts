@@ -2,12 +2,14 @@ import { useEffect } from 'react';
 import { fromGame, toGame } from '../bridge';
 import { openLink, type Message, type Motion, type Presence } from '../net/link';
 import { bumped, roomsOf } from '../net/rooms';
+import { useSocial } from '../net/social';
+import { langOf, translate, type Lang } from '../net/translate';
 import { presenceOf, roomOf, useMoa } from '../store';
 
 /**
- * While I'm in the world: tell everyone where I am and what I'm doing, and
- * bring everyone else in my room and space into it (positions, actions, chat).
- * Invitations to me come in here too.
+ * While I'm in the world: tell everyone where I am (presence), and in my place's
+ * channel what I'm doing and saying; bring everyone else in my room and space
+ * into it (positions, actions, chat — translated into my language as it comes).
  */
 export function useRealtime() {
   useEffect(() => {
@@ -23,6 +25,7 @@ export function useRealtime() {
       const m = motions.get(p.id);
       if (m) toGame.emit('peer', { player: { id: p.id, nickname: p.nickname, look: p.look }, ...m });
     };
+    const blocked = (id: string) => useSocial.getState().blocks.includes(id);
 
     const link = openLink(presenceOf(useMoa.getState()), {
       presence: (all) => {
@@ -38,11 +41,11 @@ export function useRealtime() {
         peers = next;
         s.setPeers([...next.values()]);
         if (newcomer && mine) link.send(mine); // let them see me right away
-        // someone else's room that's now over the limit, and I came in last: back home
+        // someone else's room that's now over its limit, and I came in last: back home
         const room = roomsOf(all).find((r) => r.id === roomOf(s).id);
-        if (s.room && s.room.id !== s.me.id && room && bumped(room, s.me.id)) {
+        if (s.room && room && bumped(room, s.me.id)) {
           s.setRoom(null);
-          s.system('방이 가득 차서(10명) 내 공간으로 돌아왔어요.');
+          s.system(`방이 가득 차서(${room.max ?? 10}명) 내 공간으로 돌아왔어요.`);
         }
       },
       message: (msg) => {
@@ -51,14 +54,51 @@ export function useRealtime() {
           if (msg.to === s.me.id) s.setInvite({ from: msg.nickname, room: msg.room, themeId: msg.themeId });
           return;
         }
+        if (msg.roomId !== roomOf(s).id) return;
+        if (msg.type === 'kick') {
+          if (msg.to === s.me.id) {
+            s.setRoom(null);
+            s.system('🚪 주인이 공간에서 내보냈어요. 내 공간으로 돌아왔어요.');
+          }
+          return;
+        }
         const p = peers.get(msg.id);
-        if (!p || msg.roomId !== roomOf(s).id || msg.themeId !== s.themeId) return;
-        if (msg.type === 'chat') return s.say(p, msg.text, msg.original);
-        const { type: _t, id: _i, themeId: _th, ...motion } = msg;
+        if (!p || msg.themeId !== s.themeId || blocked(p.id)) return;
+        if (msg.type === 'chat') return s.say(p, msg.text, msg.mid);
+        if (msg.type === 'tr') {
+          if (msg.lang === s.lang && s.autoTranslate) s.translated(msg.mid, msg.text);
+          return;
+        }
+        const { type: _t, id: _i, themeId: _th, roomId: _r, ...motion } = msg;
         motions.set(p.id, motion);
         show(p);
       },
+      denied: (place) => {
+        const s = useMoa.getState();
+        if (roomOf(s).id !== place) return;
+        s.setRoom(null);
+        s.system('🔒 들어갈 수 없는 곳이에요. 내 공간으로 돌아왔어요.');
+      },
+      status: (live) => useMoa.getState().setOnline(live),
+      taken: () => useMoa.getState().setTaken(true),
     });
+    link.enter(roomOf(useMoa.getState()).id);
+
+    /** Say a line to my place: as written first, then once per other language there (each reader picks theirs). */
+    const say = (mid: string, text: string) => {
+      const s = useMoa.getState();
+      const where = { id: s.me.id, roomId: roomOf(s).id, themeId: s.themeId! };
+      const from = langOf(text);
+      link.send({ type: 'chat', ...where, mid, text, lang: from });
+      const langs = new Set<Lang>([...peers.values()].filter(here).map((p) => p.lang));
+      for (const to of langs) {
+        if (!from || to === from) continue;
+        translate(text, to).then(
+          (out) => out !== text && link.send({ type: 'tr', ...where, mid, lang: to, text: out }),
+          () => {}, // they get the original
+        );
+      }
+    };
 
     const offs = [
       // my moves (from the world) and my words (from anywhere) go out
@@ -68,20 +108,29 @@ export function useRealtime() {
         link.send(mine);
         s.setLast({ themeId: s.themeId!, pos: motion.pos });
       }),
-      toGame.on('chat', ({ playerId, text, original }) => {
+      toGame.on('chat', ({ playerId, text, mid }) => {
         const s = useMoa.getState();
-        if (playerId === s.me.id) link.send({ type: 'chat', id: playerId, roomId: roomOf(s).id, themeId: s.themeId!, text, original });
+        const line = s.messages.find((m) => m.mid === mid);
+        // mine, and not a re-showing of a line already sent
+        if (playerId === s.me.id && mid && line && !line.original) say(mid, text);
       }),
+      // the owner sent someone out (the server already keeps them out): tell them to go now
+      toGame.on('kick', (to) => {
+        const s = useMoa.getState();
+        link.send({ type: 'kick', id: s.me.id, roomId: roomOf(s).id, to });
+      }),
+      // without a server, invitations go between the tabs
       toGame.on('invite', (to) => {
         const s = useMoa.getState();
         link.send({ type: 'invite', id: s.me.id, to, nickname: s.me.nickname, room: roomOf(s), themeId: s.themeId! });
       }),
     ];
-    // moving to another space or room, or changing clothes / name: update presence
+    // moving to another space or room, or changing clothes / name / language: update presence
     const unsub = useMoa.subscribe((s, prev) => {
-      const moved = s.themeId !== prev.themeId || s.room !== prev.room;
+      const moved = s.themeId !== prev.themeId || roomOf(s).id !== roomOf(prev).id;
       if (moved) mine = null;
-      if (s.themeId && (moved || s.me !== prev.me)) link.track(presenceOf(s));
+      if (roomOf(s).id !== roomOf(prev).id) link.enter(roomOf(s).id);
+      if (s.themeId && (moved || s.me !== prev.me || s.lang !== prev.lang || s.spaceName !== prev.spaceName)) link.track(presenceOf(s));
     });
     return () => {
       offs.forEach((off) => off());

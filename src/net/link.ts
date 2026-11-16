@@ -6,15 +6,18 @@ import type { ThemeId } from '../data/themes';
 import type { Tile } from '../world/space';
 import type { Room } from './rooms';
 import { supabase } from './supabase';
+import type { Lang } from './translate';
 
 /** Who's online and where — slow-changing, kept by presence. */
 export interface Presence {
   id: string;
   nickname: string;
   look: CharacterLook;
+  /** The language they read in (what to translate my lines into for them). */
+  lang: Lang;
   themeId: ThemeId;
   room: Room;
-  /** When they came into that room (who's host, who's over the limit). */
+  /** When they came into that room (who's over the limit). */
   joinedAt: number;
 }
 
@@ -26,14 +29,23 @@ export interface Motion {
   action: ActionId | null;
 }
 
+/** What goes between the people in one place (room + space). */
 export type Message =
   | ({ type: 'state'; id: string; roomId: string; themeId: ThemeId } & Motion)
-  | { type: 'chat'; id: string; roomId: string; themeId: ThemeId; text: string; original?: string }
-  // ponytail: on the shared channel everyone receives invites and ignores ones not `to` them; fine among friends
+  /** A line, as written (`lang`: what it's written in); its translations follow as 'tr'. */
+  | { type: 'chat'; id: string; roomId: string; themeId: ThemeId; mid: string; text: string; lang: Lang | null }
+  | { type: 'tr'; id: string; roomId: string; themeId: ThemeId; mid: string; lang: Lang; text: string }
+  /** The owner sent `to` out of this place. */
+  | { type: 'kick'; id: string; roomId: string; to: string }
+  // without a server only: invitations go over the tabs' channel (with one, they're rows in `invites`)
   | { type: 'invite'; id: string; to: string; nickname: string; room: Room; themeId: ThemeId };
 
 export interface Link {
+  /** How I appear to everyone online. */
   track(me: Presence): void;
+  /** Join this place's channel (leaving the last one). */
+  enter(place: string): void;
+  /** To everyone in my place. */
   send(msg: Message): void;
   close(): void;
 }
@@ -42,10 +54,17 @@ export interface LinkHandlers {
   /** Everyone online, me included, whenever that changes. */
   presence: (all: Presence[]) => void;
   message: (msg: Message) => void;
+  /** The server wouldn't let me into this place. */
+  denied: (place: string) => void;
+  /** Connected or not (it reconnects by itself). */
+  status: (live: boolean) => void;
+  /** This account came in from another window, more recently: this one should stand down. */
+  taken: () => void;
 }
 
-// ponytail: one channel for the whole world (clients filter by themeId); split per theme if it gets busy.
-const TOPIC = 'moa:world';
+const WORLD = 'moa:world';
+/** This window (one account may be open in several). */
+const TAB = crypto.randomUUID();
 
 /** Opens the realtime link: Supabase when configured, otherwise between this browser's tabs. */
 export function openLink(me: Presence, on: LinkHandlers): Link {
@@ -53,53 +72,103 @@ export function openLink(me: Presence, on: LinkHandlers): Link {
 }
 
 /**
- * The previous link's channel on its way out. supabase-js hands back the same
- * channel for a topic until it has fully left, so a new link (back from
- * 꾸미기, React's dev double-mount) waits for that instead of joining a dying one.
+ * Channels on their way out. supabase-js hands back the same channel for a
+ * topic until it has fully left, so a new one (back from 꾸미기, React's dev
+ * double-mount, re-entering a place) waits for those instead of joining a dying one.
  */
 let leaving: Promise<unknown> = Promise.resolve();
+/** Wait for channels on their way out (before opening another). */
+export const settled = () => leaving;
+/** Leave a channel; the next one opened waits for it. */
+export const leave = (c: RealtimeChannel) => (leaving = Promise.all([leaving, supabase!.removeChannel(c)]));
 
-/** Supabase Realtime: presence for who's here, broadcast for movement and chat (private channel, members only). */
+type Meta = Presence & { tab: string; since: number };
+
+/**
+ * Supabase Realtime, two private channels: the world (presence: who's online,
+ * where) and the place I'm in (broadcast: movement, chat). Who may join a
+ * place's channel is the server's call (`can_enter`, supabase/migrations/0002).
+ */
 function supabaseLink(me: Presence, on: LinkHandlers): Link {
   const sb = supabase!;
-  let ch: RealtimeChannel | undefined;
-  let mine = me;
-  let live = false;
+  let mine: Meta = { ...me, tab: TAB, since: Date.now() };
+  let world: RealtimeChannel | undefined;
+  let place: RealtimeChannel | undefined;
+  let placeLive = false;
+  let worldLive = false;
   let closed = false;
-  void leaving
-    .then(() => sb.realtime.setAuth())
-    .then(() => {
-      if (closed) return; // closed before it ever joined
-      const c = (ch = sb.channel(TOPIC, { config: { private: true, presence: { key: me.id }, broadcast: { self: false } } }));
-      c.on('presence', { event: 'sync' }, () => on.presence(Object.values(c.presenceState<Presence>()).map((list) => list[0])))
-        .on('broadcast', { event: 'msg' }, ({ payload }) => on.message(payload as Message))
-        .subscribe((status) => {
-          live = status === 'SUBSCRIBED';
-          if (live) void c.track(mine);
-        });
+  let want = '';
+
+  const open = (topic: string, wire: (c: RealtimeChannel) => RealtimeChannel, onStatus: (status: string, err?: Error) => void) =>
+    leaving.then(async () => {
+      await sb.realtime.setAuth();
+      if (closed) return undefined;
+      const c = wire(sb.channel(topic, { config: { private: true, presence: { key: me.id }, broadcast: { self: false } } }));
+      c.subscribe(onStatus);
+      return c;
     });
+  const drop = (c: RealtimeChannel | undefined) => c && leave(c);
+
+  void open(
+    WORLD,
+    (c) =>
+      c.on('presence', { event: 'sync' }, () => {
+        const state = c.presenceState<Meta>();
+        // one entry per person: their latest window
+        on.presence(Object.values(state).map((metas) => metas.reduce((a, b) => (b.since > a.since ? b : a))));
+        if ((state[me.id] ?? []).some((m) => m.tab !== TAB && m.since > mine.since)) on.taken();
+      }),
+    (status) => {
+      worldLive = status === 'SUBSCRIBED';
+      on.status(worldLive);
+      if (worldLive) void world?.track(mine);
+    },
+  ).then((c) => (world = c));
+
+  const enter = (topic: string) => {
+    want = topic;
+    drop(place);
+    place = undefined;
+    placeLive = false;
+    void open(
+      topic,
+      (c) => c.on('broadcast', { event: 'msg' }, ({ payload }) => on.message(payload as Message)),
+      (status, err) => {
+        if (want !== topic) return;
+        placeLive = status === 'SUBSCRIBED';
+        // refused by the realtime policy (not just a dropped connection, which retries by itself)
+        if (status === 'CHANNEL_ERROR' && /unauthori[sz]ed|permission/i.test(err?.message ?? '')) on.denied(topic);
+      },
+    ).then((c) => {
+      if (want === topic) place = c;
+      else drop(c);
+    });
+  };
+
   return {
     track: (p) => {
-      mine = p;
-      if (live) void ch!.track(p);
+      mine = { ...p, tab: TAB, since: mine.since };
+      if (worldLive) void world?.track(mine);
     },
+    enter,
     send: (msg) => {
-      if (live) void ch!.send({ type: 'broadcast', event: 'msg', payload: msg });
+      if (placeLive) void place!.send({ type: 'broadcast', event: 'msg', payload: msg });
     },
     close: () => {
       closed = true;
-      live = false;
-      if (ch) leaving = sb.removeChannel(ch);
+      worldLive = placeLive = false;
+      drop(world);
+      drop(place);
     },
   };
 }
 
 /**
- * The same thing between tabs of this browser (no server): each tab says hello
- * every couple of seconds; one that goes quiet for 6 s has left.
+ * The same thing between tabs of this browser (no server, so no permissions):
+ * each tab says hello every couple of seconds; one that goes quiet for 6 s has left.
  */
 function tabLink(me: Presence, on: LinkHandlers): Link {
-  const bc = new BroadcastChannel(TOPIC);
+  const bc = new BroadcastChannel(WORLD);
   const peers = new Map<string, { p: Presence; seen: number }>();
   let mine = me;
   const emit = () => on.presence([mine, ...[...peers.values()].map((x) => x.p)]);
@@ -123,12 +192,14 @@ function tabLink(me: Presence, on: LinkHandlers): Link {
   }, 2000);
   hello(false);
   emit();
+  on.status(true);
   return {
     track: (p) => {
       mine = p;
       hello(true);
       emit();
     },
+    enter: () => {},
     send: (msg) => bc.postMessage({ kind: 'msg', msg }),
     close: () => {
       clearInterval(beat);

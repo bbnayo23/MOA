@@ -1,0 +1,471 @@
+// Social UI over the world: a person's card, the whisper window, alerts / invite / settings panels.
+// Floating pieces sit outside the layout's grid (doubled class: beats `.layout > *` positioning).
+
+$phone: 720px;
+$below-top: calc(max(var(--sp-3), env(safe-area-inset-top)) + 64px);
+
+%row-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 40vh;
+  overflow-y: auto;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: var(--sp-2);
+    border: 2px solid var(--c-line);
+    border-radius: var(--r-m);
+    background: var(--c-surface);
+    font-size: var(--fs-s);
+    word-break: keep-all;
+
+    > span {
+      flex: 1;
+      min-width: 0;
+    }
+
+    small {
+      color: var(--c-ink-soft);
+      font-size: var(--fs-xs);
+    }
+
+    > button {
+      flex: none;
+      height: 34px;
+      padding: 0 var(--sp-3);
+    }
+  }
+}
+
+.face {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--c-surface-soft);
+}
+
+.empty {
+  justify-content: center;
+  color: var(--c-ink-soft);
+  border-style: dashed !important;
+}
+
+// ── a person's card ──
+.profile.profile {
+  position: absolute;
+  top: $below-top;
+  left: 50%;
+  z-index: 4;
+  translate: -50% 0;
+  width: min(360px, calc(100% - 2 * var(--sp-3)));
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  animation: drop 0.2s cubic-bezier(0.3, 1.4, 0.6, 1);
+
+  header {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+
+    > span {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      font-size: var(--fs-m);
+    }
+
+    small {
+      color: var(--c-ink-soft);
+      font-size: var(--fs-xs);
+    }
+
+    .on::before {
+      content: '';
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      margin-right: 4px;
+      border-radius: 50%;
+      background: var(--c-online);
+    }
+
+    button {
+      width: 32px;
+      height: 32px;
+      border: 0;
+      border-radius: 50%;
+      background: var(--c-surface-soft);
+      font-size: 18px;
+    }
+  }
+}
+
+.acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+
+  button {
+    height: 38px;
+    padding: 0 var(--sp-3);
+  }
+}
+
+.quiet {
+  color: var(--c-ink-soft);
+}
+
+@keyframes drop {
+  from {
+    translate: -50% -12px;
+    opacity: 0;
+  }
+}
+
+// ── whispers ──
+.whispers.whispers {
+  position: absolute;
+  right: calc(max(var(--sp-3), env(safe-area-inset-right)) + 64px);
+  bottom: 64px;
+  z-index: 3;
+  width: 320px;
+  max-height: min(60vh, 520px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  // a whisper is a different voice from the room's chat: lavender, not white
+  background: #f6f1ff;
+  border: 2px solid var(--c-lavender);
+
+  @media (max-width: $phone) {
+    top: $below-top;
+    bottom: auto;
+    left: var(--sp-2);
+    right: var(--sp-2);
+    width: auto;
+    max-height: 42vh;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    h2 {
+      flex: 1;
+      min-width: 0;
+      font-family: var(--font-pixel);
+      font-size: var(--fs-s);
+      font-weight: 400;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    button {
+      flex: none;
+      width: 32px;
+      height: 32px;
+      border: 0;
+      border-radius: 50%;
+      background: var(--c-surface);
+      font-size: 16px;
+    }
+  }
+}
+
+.thread {
+  flex: 1;
+  min-height: 80px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  li {
+    align-self: flex-start;
+    max-width: 85%;
+    padding: 6px 10px;
+    border-radius: var(--r-m) var(--r-m) var(--r-m) 4px;
+    background: var(--c-surface);
+    font-size: var(--fs-s);
+    line-height: 1.4;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+
+    small {
+      display: block;
+      color: var(--c-ink-soft);
+      font-size: var(--fs-xs);
+    }
+  }
+
+  .mine {
+    align-self: flex-end;
+    border-radius: var(--r-m) var(--r-m) 4px var(--r-m);
+    background: var(--c-lavender);
+  }
+
+  .empty {
+    align-self: stretch;
+    max-width: none;
+    text-align: center;
+    color: var(--c-ink-soft);
+    background: none;
+  }
+}
+
+.send {
+  display: flex;
+  gap: 6px;
+
+  input {
+    flex: 1;
+    min-width: 0;
+    height: 40px;
+    padding: 0 var(--sp-3);
+    border: 2px solid var(--c-line);
+    border-radius: var(--r-pill);
+    background: var(--c-surface);
+
+    &:focus {
+      outline: none;
+      border-color: var(--c-lavender);
+    }
+  }
+}
+
+.convos {
+  @extend %row-list;
+
+  li {
+    padding: 0;
+  }
+
+  li > button {
+    flex: 1;
+    height: auto;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: var(--sp-2);
+    border: 0;
+    background: none;
+    text-align: left;
+
+    span {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    small {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    i {
+      flex: none;
+      min-width: 20px;
+      padding: 0 6px;
+      border-radius: var(--r-pill);
+      background: var(--c-primary-deep);
+      color: #fff;
+      font-style: normal;
+      font-size: var(--fs-xs);
+      font-weight: 700;
+      text-align: center;
+    }
+  }
+}
+
+// folded down
+.pill.pill {
+  position: absolute;
+  right: calc(max(var(--sp-3), env(safe-area-inset-right)) + 64px);
+  bottom: 64px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 var(--sp-4);
+  border: 2px solid var(--c-lavender);
+  border-radius: var(--r-pill);
+  background: #f6f1ff;
+  box-shadow: var(--shadow-m);
+  font-weight: 700;
+
+  @media (max-width: $phone) {
+    top: $below-top;
+    bottom: auto;
+    right: var(--sp-2);
+  }
+
+  b {
+    min-width: 20px;
+    padding: 0 6px;
+    border-radius: var(--r-pill);
+    background: var(--c-primary-deep);
+    color: #fff;
+    font-size: var(--fs-xs);
+  }
+}
+
+// ── panels ──
+.list {
+  @extend %row-list;
+}
+
+.search {
+  height: 40px;
+  padding: 0 var(--sp-3);
+  border: 2px solid var(--c-line);
+  border-radius: var(--r-m);
+  background: var(--c-surface);
+}
+
+.link {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  input {
+    height: 36px;
+    padding: 0 var(--sp-2);
+    border: 2px dashed var(--c-line);
+    border-radius: var(--r-s);
+    background: var(--c-surface-soft);
+    font-size: var(--fs-xs);
+  }
+}
+
+.settings {
+  overflow-y: auto;
+
+  form {
+    display: block;
+  }
+
+  fieldset {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    padding: var(--sp-3);
+    border: 2px solid var(--c-line);
+    border-radius: var(--r-m);
+    background: var(--c-surface);
+  }
+
+  legend {
+    padding: 0 4px;
+    font-weight: 700;
+    font-size: var(--fs-s);
+  }
+
+  label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    font-size: var(--fs-s);
+  }
+
+  select,
+  label > input:not([type='checkbox']) {
+    flex: 1;
+    max-width: 190px;
+    height: 36px;
+    padding: 0 var(--sp-2);
+    border: 2px solid var(--c-line);
+    border-radius: var(--r-s);
+    background: var(--c-surface-soft);
+  }
+}
+
+.check.check {
+  justify-content: flex-start;
+
+  input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--c-primary-deep);
+  }
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  font-size: var(--fs-s);
+
+  button {
+    height: 36px;
+  }
+}
+
+.claim {
+  display: flex !important;
+  flex-direction: column;
+  gap: var(--sp-2);
+
+  input {
+    height: 40px;
+    padding: 0 var(--sp-3);
+    border: 2px solid var(--c-line);
+    border-radius: var(--r-s);
+    background: var(--c-surface-soft);
+  }
+}
+
+.error {
+  color: var(--c-primary-deep);
+  font-size: var(--fs-xs);
+}
+
+.notice.notice {
+  position: absolute;
+  top: $below-top;
+  left: 50%;
+  z-index: 5;
+  translate: -50% 0;
+  max-width: calc(100% - 2 * var(--sp-3));
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: var(--r-pill);
+  background: var(--c-ink);
+  color: #fff;
+  font-size: var(--fs-s);
+  box-shadow: var(--shadow-m);
+  animation: drop 0.2s ease-out;
+}
+
+// another window took over
+.taken {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: var(--sp-4);
+  background: var(--c-bg);
+
+  section {
+    width: min(360px, 100%);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+    padding: var(--sp-5);
+    text-align: center;
+    word-break: keep-all;
+  }
+}

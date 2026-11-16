@@ -81,6 +81,61 @@
   }
 }
 
+// who's in the room with me (tap: their card)
+.members {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+// a 🔒 room asks for its password right in its row
+.knock input {
+  width: 100%;
+  height: 32px;
+  margin-top: 4px;
+  padding: 0 var(--sp-2);
+  border: 2px solid var(--c-line);
+  border-radius: var(--r-s);
+}
+
+.owner {
+  display: flex;
+  gap: var(--sp-2);
+
+  button {
+    flex: 1;
+    height: 38px;
+  }
+}
+
+// making (or setting up) a room
+.panel form.make {
+  flex-direction: column;
+
+  input,
+  select {
+    flex: none;
+    height: 38px;
+  }
+}
+
+.opts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+
+  select {
+    flex: 1 1 30%;
+    min-width: 0;
+    height: 38px;
+    padding: 0 var(--sp-2);
+    border: 2px solid var(--c-line);
+    border-radius: var(--r-m);
+    background: var(--c-surface);
+    font-size: var(--fs-xs);
+  }
+}
+
 .rooms {
   max-height: 46vh;
   overflow-y: auto;

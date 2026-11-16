@@ -9,14 +9,16 @@ export interface ToGame {
   act: { actionId: ActionId; objectId?: string };
   /** Stop whatever my avatar is doing. */
   stop: null;
-  /** Invite this person (their id) to my room. */
-  invite: string;
-  /** A line said (`original`: what was typed, when `text` is its translation). */
-  chat: { playerId: string; text: string; original?: string };
+  /** A line said (or its translation, under the same `mid`): a speech bubble. */
+  chat: { playerId: string; text: string; mid?: string };
   /** Someone else in this space moved / changed (they appear on first sight). */
   peer: { player: Player } & Motion;
   /** …or left it. */
   peerLeave: string;
+  /** Without a server: invite this person (their id) to my room, over the tabs' channel. */
+  invite: string;
+  /** I sent this person (their id) out of my place: they should leave now. */
+  kick: string;
   /** Camera zoom buttons: in / out at the centre, or back to 100% on me. */
   zoom: 'in' | 'out' | 'reset';
 }
@@ -31,6 +33,8 @@ export interface FromGame {
   portal: ThemeId;
   /** Where I am / what I'm doing, whenever it changes (≤ 10×/s). */
   moved: Motion;
+  /** Someone's character (or name tag) was clicked: their id. */
+  playerClick: string;
   /** Camera zoom and how far out this screen goes, in percent. */
   zoomLevel: { pct: number; min: number };
 }

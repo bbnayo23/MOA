@@ -1,43 +1,48 @@
-/** Languages your speech bubbles can be translated into. */
-export type Lang = 'en' | 'ja';
+/** Languages people read MOA in (each sets theirs in ⚙️ 설정). */
+export type Lang = 'ko' | 'en' | 'ja';
 
 /** How each one is named in the picker. */
-export const LANGS: Record<Lang, string> = { en: 'English', ja: '日本語' };
+export const LANGS: Record<Lang, string> = { ko: '한국어', en: 'English', ja: '日本語' };
 
 /**
  * What a chat line is written in, told by its letters (plenty for Korean /
  * Japanese / English chat). Null when it has nothing to translate (emoji, "!!").
  */
-export function langOf(text: string): 'ko' | Lang | null {
+export function langOf(text: string): Lang | null {
   if (/\p{Script=Hangul}/u.test(text)) return 'ko';
   if (/[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/u.test(text)) return 'ja';
   return /\p{L}/u.test(text) ? 'en' : null;
 }
 
 const cache = new Map<string, Promise<string>>();
-const decode = (s: string) => new DOMParser().parseFromString(s, 'text/html').documentElement.textContent ?? s;
+
+/** The signed-in member's access token (supabase.ts hands this over; none without a server). */
+let token: () => Promise<string | undefined> = async () => undefined;
+export const tokenFrom = (get: typeof token) => (token = get);
 
 /**
- * `text` said in `to` — unchanged when it's already in that language or has no
- * words. The same line asked twice (the preview while typing, then sending) is
- * fetched once.
+ * `text` in `to`, through MOA's server (/api/translate: the API key stays
+ * there) — unchanged when it's already in that language or has no words.
+ * The same line asked twice is fetched once; a failure rejects (show the original).
  */
-// ponytail: MyMemory's free API straight from the browser (no key, ~5,000 chars/day per IP).
-// If friends outgrow it, put DeepL / Claude behind a Supabase Edge Function and call that here.
 export function translate(text: string, to: Lang): Promise<string> {
   const from = langOf(text);
   if (!from || from === to) return Promise.resolve(text);
   const key = `${to}:${text}`;
   let job = cache.get(key);
   if (!job) {
-    const q = new URLSearchParams({ q: text, langpair: `${from}|${to}` });
-    job = fetch(`https://api.mymemory.translated.net/get?${q}`, { signal: AbortSignal.timeout(6000) })
-      .then((r) => r.json())
-      .then((j) => {
-        const out = j.responseData?.translatedText;
-        if (Number(j.responseStatus) !== 200 || !out) throw new Error(j.responseDetails || 'no translation');
-        return decode(out);
+    job = (async () => {
+      const bearer = await token();
+      const r = await fetch('/api/translate', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', ...(bearer && { authorization: `Bearer ${bearer}` }) },
+        body: JSON.stringify({ text, from, to }),
+        signal: AbortSignal.timeout(10_000),
       });
+      const j = (await r.json()) as { text?: string; error?: string };
+      if (!r.ok || !j.text) throw new Error(j.error ?? `translate ${r.status}`);
+      return j.text;
+    })();
     job.catch(() => cache.delete(key)); // a failure is retried next time
     cache.set(key, job);
   }

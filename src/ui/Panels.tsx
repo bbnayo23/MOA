@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { THEME_CONFIGS, THEMES, type ThemeId } from '../data/themes';
+import { HUB, THEME_CONFIGS, THEMES, type ThemeId } from '../data/themes';
 import { useCheerBoard } from '../hooks/useCheerBoard';
 import { useFocusTimer } from '../hooks/useFocusTimer';
 import { useLobby } from '../hooks/useLobby';
@@ -12,8 +12,14 @@ import c from '../styles/common.module.scss';
 import s from '../styles/Panels.module.scss';
 import { AvatarImage } from './AvatarImage';
 
-/** The room list (🚪 in the top bar): join a room, make one, or go back to your own space. */
-export function Lobby({ close }: { close: () => void }) {
+/** Spaces a room can open into: the plaza and every theme that's built. */
+const ROOM_THEMES = [THEME_CONFIGS[HUB]!, ...THEMES.filter((t) => t.themeId in THEME_CONFIGS)];
+
+/**
+ * The room list (🚪 in the top bar): who's here, the open rooms (join; a 🔒 one
+ * asks for its password), making a room — and, in my own room, its settings.
+ */
+export function Lobby({ close, invite }: { close: () => void; invite: () => void }) {
   const l = useLobby(close);
   return (
     <section className={`${c.card} ${s.panel}`} aria-label="방 목록">
@@ -23,16 +29,28 @@ export function Lobby({ close }: { close: () => void }) {
           ×
         </button>
       </header>
-      <p className={s.here}>
+      <div className={s.here}>
         <span>
-          지금 <b>{l.here.name}</b> · {l.here.members.length}/{ROOM_MAX}명
+          지금 <b>{l.here.name}</b> · {l.here.members.length}/{l.max}명
         </span>
+        <button className={c.btn} onClick={invite}>
+          💌 초대
+        </button>
         {!l.inOwnSpace && (
           <button className={c.btn} onClick={l.leave}>
             내 공간으로
           </button>
         )}
-      </p>
+      </div>
+      {l.members.length > 0 && (
+        <p className={s.members}>
+          {l.members.map((m) => (
+            <button key={m.id} className={c.chip} onClick={() => l.profile(m.id)}>
+              {m.nickname}
+            </button>
+          ))}
+        </p>
+      )}
       {l.rooms.length ? (
         <ol className={s.rooms}>
           {l.rooms.map((r, i) => {
@@ -41,18 +59,40 @@ export function Lobby({ close }: { close: () => void }) {
               <li key={r.id} aria-current={r.mine || undefined}>
                 <span className={s.no}>{String(i + 1).padStart(3, '0')}</span>
                 <span className={s.title}>
-                  <b>{r.name}</b>
+                  <b>
+                    {r.locked && '🔒 '}
+                    {r.name}
+                  </b>
                   <small>
-                    {space?.emoji} {space?.name} · 방장 {r.members[0].nickname}
+                    {space?.emoji} {space?.name} · 방장 {r.host}
+                    {r.description && ` · ${r.description}`}
                   </small>
+                  {l.knock?.id === r.id && (
+                    <form
+                      className={s.knock}
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        void l.join(r);
+                      }}
+                    >
+                      <input
+                        autoFocus
+                        type="password"
+                        value={l.knock.password}
+                        placeholder={l.knock.wrong ? '비밀번호가 달라요' : '비밀번호'}
+                        aria-label={`${r.name} 비밀번호`}
+                        onChange={(e) => l.setKnockPassword(e.target.value)}
+                      />
+                    </form>
+                  )}
                 </span>
                 <span className={s.count}>
-                  {r.members.length}/{ROOM_MAX}
+                  {r.count}/{r.max}
                 </span>
                 {r.mine ? (
                   <em>참여 중</em>
                 ) : (
-                  <button className={c.primary} disabled={r.full} onClick={() => l.join(r)}>
+                  <button className={c.primary} disabled={r.full} onClick={() => void l.join(r)}>
                     {r.full ? '가득' : '입장'}
                   </button>
                 )}
@@ -63,11 +103,64 @@ export function Lobby({ close }: { close: () => void }) {
       ) : (
         <p className={s.tagline}>아직 열린 방이 없어요. 첫 방을 만들어 보세요!</p>
       )}
-      <form onSubmit={l.create}>
-        <input value={l.name} maxLength={20} placeholder={l.placeholder} aria-label="새 방 이름" onChange={(e) => l.setName(e.target.value)} />
-        <button className={c.primary}>방 만들기</button>
+      {l.mine && !l.editing && (
+        <div className={s.owner}>
+          <button className={c.btn} onClick={l.edit}>
+            ⚙️ 방 설정
+          </button>
+          <button className={c.btn} onClick={() => void l.closeRoom()}>
+            방 닫기
+          </button>
+        </div>
+      )}
+      <form className={s.make} onSubmit={l.submit}>
+        <input value={l.form.name} maxLength={20} placeholder={l.placeholder} aria-label="방 이름" onChange={(e) => l.setForm({ name: e.target.value })} />
+        {l.server && (
+          <>
+            <input value={l.form.description} maxLength={60} placeholder="방 설명 (선택)" aria-label="방 설명" onChange={(e) => l.setForm({ description: e.target.value })} />
+            <div className={s.opts}>
+              <select aria-label="방 테마" value={l.form.theme} onChange={(e) => l.setForm({ theme: e.target.value as ThemeId })}>
+                {ROOM_THEMES.map((t) => (
+                  <option key={t.themeId} value={t.themeId}>
+                    {t.emoji} {t.name}
+                  </option>
+                ))}
+              </select>
+              <select aria-label="최대 인원" value={l.form.max} onChange={(e) => l.setForm({ max: +e.target.value })}>
+                {Array.from({ length: ROOM_MAX - 1 }, (_, i) => i + 2).map((n) => (
+                  <option key={n} value={n}>
+                    최대 {n}명
+                  </option>
+                ))}
+              </select>
+              <select aria-label="공개 여부" value={l.form.visibility} onChange={(e) => l.setForm({ visibility: e.target.value as 'public' | 'private' })}>
+                <option value="public">공개 (목록에 보임)</option>
+                <option value="private">비공개 (초대 전용)</option>
+              </select>
+            </div>
+            {l.form.visibility === 'public' && (
+              <input
+                type="password"
+                value={l.form.password ?? ''}
+                maxLength={30}
+                placeholder={l.editing ? '비밀번호 (비워 두면 그대로)' : '비밀번호 (선택)'}
+                aria-label="방 비밀번호"
+                onChange={(e) => l.setForm({ password: e.target.value || (l.editing ? null : '') })}
+              />
+            )}
+          </>
+        )}
+        {l.error && <p className={s.tagline}>{l.error}</p>}
+        <div className={s.owner}>
+          <button className={c.primary}>{l.editing ? '설정 저장' : '방 만들기'}</button>
+          {l.editing && (
+            <button type="button" className={c.btn} onClick={l.cancel}>
+              취소
+            </button>
+          )}
+        </div>
       </form>
-      <p className={s.tagline}>내 공간엔 ☰ 친구 목록에서 초대해서 모여요. 한 방에 {ROOM_MAX}명까지.</p>
+      <p className={s.tagline}>내 공간엔 💌 초대로 모여요. 한 방에 최대 {ROOM_MAX}명.</p>
     </section>
   );
 }

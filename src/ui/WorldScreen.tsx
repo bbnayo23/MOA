@@ -1,16 +1,19 @@
 import { useEffect, useState, type CSSProperties } from 'react';
-import { toGame } from '../bridge';
-import { HUB, type ThemeConfig } from '../data/themes';
+import { useShallow } from 'zustand/react/shallow';
+import { fromGame } from '../bridge';
+import type { CharacterLook } from '../data/character';
+import { HUB, type ThemeConfig, type ThemeId } from '../data/themes';
 import { useActionBar } from '../hooks/useActionBar';
 import { useChat } from '../hooks/useChat';
 import { useRoomList } from '../hooks/useLobby';
 import { useRealtime } from '../hooks/useRealtime';
+import { inviteHere, takeInvite, useAlerts, useUnread } from '../hooks/useSocialPanels';
 import { useZoom } from '../hooks/useZoom';
 import { usePlaces, useWorldSession } from '../hooks/useWorldSession';
 import { FRIENDS } from '../mock';
-import { ROOM_MAX } from '../net/rooms';
+import { ROOM_MAX, type Room } from '../net/rooms';
+import { declineInvite, openDm, useSocial } from '../net/social';
 import { supabase } from '../net/supabase';
-import { LANGS, type Lang } from '../net/translate';
 import { roomOf, useMoa } from '../store';
 import c from '../styles/common.module.scss';
 import s from '../styles/WorldScreen.module.scss';
@@ -19,29 +22,47 @@ import { ZOOM } from '../world/camera';
 import { World } from '../world/World';
 import { InstallButton } from './InstallButton';
 import { CheerBoard, FocusTimer, Lobby, MenuPanel, RallyGame, ThemePreview, Wardrobe } from './Panels';
+import { Alerts, InvitePanel, Notice, ProfileCard, SettingsPanel, Whispers } from './Social';
 
 const EMOTES = ['👋', '❤️', '😆', '😮', '✨'];
+
+/** The panel open on the right (one at a time). */
+type Sheet = 'lobby' | 'alerts' | 'invite' | 'settings' | null;
 
 /** The world fills the screen; every piece of UI floats on top of it. */
 export function WorldScreen() {
   const { theme, panel, preview } = useWorldSession();
   useRealtime();
   const [drawer, setDrawer] = useState(false);
-  const [lobby, setLobby] = useState(false);
+  const [sheet, setSheet] = useState<Sheet>(null);
   const roomId = useMoa((st) => roomOf(st).id);
+  useEffect(() => fromGame.on('playerClick', (id) => useSocial.setState({ profile: id })), []);
+  // came in by an invite link (…/?invite=<id>): take it up, then tidy the address
+  useEffect(() => {
+    const id = new URLSearchParams(location.search).get('invite');
+    if (!id || !supabase) return;
+    history.replaceState(null, '', location.pathname);
+    void takeInvite(id);
+  }, []);
   if (!theme) return null;
   const hub = theme.themeId === HUB;
+  const close = () => setSheet(null);
+  const toggle = (which: Sheet) => setSheet(sheet === which ? null : which);
 
   return (
     <div className={s.layout} style={{ '--stage-bg': theme.background.sky[0] } as CSSProperties}>
       {/* a fresh world per room: only its people are in it */}
       <World key={roomId} theme={theme} className={s.game} />
-      <TopBar theme={theme} drawer={drawer} toggleDrawer={() => setDrawer(!drawer)} openLobby={() => setLobby(true)} />
+      {/* moving to another space or room: the new one fades in from its sky */}
+      <div key={`${roomId}:${theme.themeId}`} className={s.curtain} aria-hidden />
+      <TopBar theme={theme} drawer={drawer} toggleDrawer={() => setDrawer(!drawer)} open={toggle} />
       <ZoomControls />
       {drawer && <Sidebar theme={theme} close={() => setDrawer(false)} />}
-      {lobby ? (
-        <Lobby close={() => setLobby(false)} />
-      ) : (
+      {sheet === 'lobby' && <Lobby close={close} invite={() => setSheet('invite')} />}
+      {sheet === 'alerts' && <Alerts close={close} />}
+      {sheet === 'invite' && <InvitePanel close={close} />}
+      {sheet === 'settings' && <SettingsPanel close={close} />}
+      {!sheet && (
         <>
           {panel === 'board' && <CheerBoard />}
           {panel === 'timer' && <FocusTimer />}
@@ -51,6 +72,9 @@ export function WorldScreen() {
         </>
       )}
       <InviteToast />
+      <ProfileCard />
+      <Whispers />
+      <Notice />
       {preview && <ThemePreview id={preview} />}
       <div className={s.dock}>
         <ChatPanel open={panel === 'chat'} />
@@ -87,13 +111,18 @@ interface TopBarProps {
   theme: ThemeConfig;
   drawer: boolean;
   toggleDrawer: () => void;
-  openLobby: () => void;
+  open: (sheet: Sheet) => void;
 }
 
-function TopBar({ theme, drawer, toggleDrawer, openLobby }: TopBarProps) {
+function TopBar({ theme, drawer, toggleDrawer, open }: TopBarProps) {
   const me = useMoa((st) => st.me);
+  const online = useMoa((st) => st.online);
   const { here } = useRoomList();
+  const alerts = useAlerts().count;
+  const unread = useUnread();
+  const dmOpen = useSocial((x) => x.dm.open);
   const { go, enterTheme } = useMoa.getState();
+  const max = here.max ?? ROOM_MAX;
   return (
     <header className={s.top}>
       <button className={s.menu} aria-label="공간 · 친구 목록" aria-expanded={drawer} onClick={toggleDrawer}>
@@ -103,14 +132,32 @@ function TopBar({ theme, drawer, toggleDrawer, openLobby }: TopBarProps) {
       <div className={s.place}>
         <span aria-hidden>{theme.emoji}</span>
         <strong>{theme.name}</strong>
-        <button className={s.room} aria-label={`방 목록 (지금 ${here.name}, ${here.members.length}명)`} onClick={openLobby}>
+        <button className={s.room} aria-label={`방 목록 (지금 ${here.name}, ${here.members.length}명)`} onClick={() => open('lobby')}>
           🚪<span className={s.label}>{here.name}</span>
-          <span className={s.live}>
-            {here.members.length}/{ROOM_MAX}
+          <span className={online ? s.live : `${s.live} ${s.off}`}>
+            {online ? `${here.members.length}/${max}` : '다시 연결 중'}
           </span>
         </button>
       </div>
       <div className={s.user}>
+        {supabase && (
+          <>
+            <button className={s.icon} aria-label={`알림${alerts ? ` ${alerts}개` : ''}`} onClick={() => open('alerts')}>
+              🔔{alerts > 0 && <b>{alerts}</b>}
+            </button>
+            <button
+              className={s.icon}
+              aria-label={`귓속말${unread ? `, 안 읽은 ${unread}개` : ''}`}
+              aria-pressed={dmOpen}
+              onClick={() => (dmOpen ? useSocial.setState((x) => ({ dm: { ...x.dm, open: false } })) : openDm(null))}
+            >
+              💌{unread > 0 && <b>{unread}</b>}
+            </button>
+          </>
+        )}
+        <button className={s.icon} aria-label="설정" onClick={() => open('settings')}>
+          ⚙️
+        </button>
         {theme.themeId !== HUB && (
           <button className={c.btn} aria-label="광장으로" onClick={() => enterTheme(HUB)}>
             ⛲<span className={s.label}> 광장으로</span>
@@ -125,18 +172,40 @@ function TopBar({ theme, drawer, toggleDrawer, openLobby }: TopBarProps) {
   );
 }
 
-/** Everyone online: me, then real people (or, without a server, the two mock friends) with where they are. */
-function useOnline() {
-  const me = useMoa((st) => st.me);
-  const themeId = useMoa((st) => st.themeId);
-  const room = useMoa((st) => st.room);
-  const peers = useMoa((st) => st.peers);
-  const mine = roomOf({ room, me });
-  const bots = supabase ? [] : FRIENDS.map((f) => ({ ...f, themeId: themeId!, room: mine, bot: true }));
-  return [{ ...me, themeId: themeId!, room: mine, bot: false }, ...bots, ...peers.map((p) => ({ ...p, bot: false }))];
+/** One line of the people list. */
+interface Row {
+  id: string;
+  nickname: string;
+  look: CharacterLook;
+  themeId: ThemeId | null;
+  room: Room | null;
+  bot: boolean;
+  online: boolean;
 }
 
-/** "So-and-so asked you over": join them (in the space they're in), or not. Fades after 30 s. */
+/**
+ * The people list: me, my friends (online or not), then everyone else online
+ * (or, without a server, the two mock friends) — with where they are.
+ */
+function usePeople(): { myRoom: Room; friends: Row[]; others: Row[] } {
+  const [me, themeId, peers, room, spaceName] = useMoa(useShallow((st) => [st.me, st.themeId, st.peers, st.room, st.spaceName] as const));
+  const { friends, people } = useSocial(useShallow((x) => ({ friends: x.friends, people: x.people })));
+  const mine = roomOf({ room, me, spaceName });
+  const bots = supabase ? [] : FRIENDS.map((f) => ({ ...f, themeId: themeId!, room: mine, bot: true, online: true }));
+  const live = peers.map((p) => ({ ...p, bot: false, online: true }));
+  const friendIds = friends.filter((f) => f.accepted).map((f) => (f.from_id === me.id ? f.to_id : f.from_id));
+  const offline = friendIds
+    .filter((id) => people[id] && !peers.some((p) => p.id === id))
+    .map((id) => ({ ...people[id], themeId: null, room: null, bot: false, online: false }));
+  const isFriend = (id: string) => friendIds.includes(id);
+  return {
+    myRoom: mine,
+    friends: [...live.filter((p) => isFriend(p.id)), ...offline],
+    others: [{ ...me, themeId: themeId!, room: mine, bot: false, online: true }, ...bots, ...live.filter((p) => !isFriend(p.id))],
+  };
+}
+
+/** "So-and-so asked you over": join them (through the server, which checks the invite), or not. Fades after 30 s. */
 function InviteToast() {
   const invite = useMoa((st) => st.invite);
   const { rooms } = useRoomList();
@@ -147,16 +216,23 @@ function InviteToast() {
   }, [invite]);
   if (!invite) return null;
   const st = useMoa.getState();
-  const full = (rooms.find((r) => r.id === invite.room.id)?.members.length ?? 0) >= ROOM_MAX;
+  const room = rooms.find((r) => r.id === invite.room.id);
+  const full = (room?.members.length ?? 0) >= (room?.max ?? ROOM_MAX);
   return (
     <div className={s.invite} role="alertdialog" aria-label="초대">
       <p>
         💌 <b>{invite.from}</b>님이 <b>{invite.room.name}</b>에 초대했어요
       </p>
-      <button className={c.primary} disabled={full} onClick={() => st.joinRoom(invite.room, invite.themeId)}>
+      <button className={c.primary} disabled={full} onClick={() => (invite.id ? void takeInvite(invite.id) : st.joinRoom(invite.room, invite.themeId))}>
         {full ? '가득 찼어요' : '수락'}
       </button>
-      <button className={c.btn} onClick={() => st.setInvite(null)}>
+      <button
+        className={c.btn}
+        onClick={() => {
+          if (invite.id) void declineInvite(invite.id);
+          st.setInvite(null);
+        }}
+      >
         거절
       </button>
     </div>
@@ -167,14 +243,40 @@ function Sidebar({ theme, close }: { theme: ThemeConfig; close: () => void }) {
   const me = useMoa((st) => st.me);
   const setLook = useMoa((st) => st.setLook);
   const rooms = usePlaces(theme.themeId);
-  const online = useOnline();
-  const myRoom = online[0].room;
+  const { myRoom, friends, others } = usePeople();
   const [invited, setInvited] = useState<string[]>([]);
-  const invite = (p: { id: string; nickname: string }) => {
-    toGame.emit('invite', p.id);
-    setInvited([...invited, p.id]);
-    useMoa.getState().system(`💌 ${p.nickname}님을 ${myRoom.name}에 초대했어요.`);
-  };
+  const profile = (id: string) => id !== me.id && useSocial.setState({ profile: id });
+  const person = (p: Row) => (
+    <li key={p.id} className={p.online ? undefined : s.away}>
+      <button className={s.who} disabled={p.id === me.id || p.bot} onClick={() => profile(p.id)}>
+        <AvatarImage look={p.look} className={s.face} />
+        <span>
+          {p.nickname}
+          {p.id === me.id && <small> (나)</small>}
+          {!p.online ? (
+            <small> · 오프라인</small>
+          ) : p.room && p.room.id !== myRoom.id ? (
+            <small> · {p.room.listed ? p.room.name : '자기 공간'}</small>
+          ) : (
+            p.themeId !== theme.themeId && <small> · {rooms.find((r) => r.themeId === p.themeId)?.emoji}</small>
+          )}
+        </span>
+      </button>
+      {p.online && p.room && p.room.id !== myRoom.id && !p.bot && (
+        <button
+          className={s.inviteBtn}
+          disabled={invited.includes(p.id)}
+          onClick={() => {
+            setInvited([...invited, p.id]);
+            void inviteHere(p);
+          }}
+        >
+          {invited.includes(p.id) ? '보냄' : '초대'}
+        </button>
+      )}
+      {p.online && <i className={s.online} aria-label="온라인" />}
+    </li>
+  );
   return (
     <aside className={`${c.card} ${s.side}`}>
       <section>
@@ -198,30 +300,19 @@ function Sidebar({ theme, close }: { theme: ThemeConfig; close: () => void }) {
         </ul>
       </section>
 
+      {supabase && (
+        <section>
+          <h2>친구 {friends.length}</h2>
+          <ul className={s.friends}>
+            {friends.map(person)}
+            {!friends.length && <li className={s.hintRow}>캐릭터를 누르고 👫 친구 추가를 해 보세요.</li>}
+          </ul>
+        </section>
+      )}
+
       <section>
-        <h2>친구 {online.length}</h2>
-        <ul className={s.friends}>
-          {online.map((p) => (
-            <li key={p.id}>
-              <AvatarImage look={p.look} className={s.face} />
-              <span>
-                {p.nickname}
-                {p.id === me.id && <small> (나)</small>}
-                {p.room.id !== myRoom.id ? (
-                  <small> · {p.room.listed ? p.room.name : '자기 공간'}</small>
-                ) : (
-                  p.themeId !== theme.themeId && <small> · {rooms.find((r) => r.themeId === p.themeId)?.emoji}</small>
-                )}
-              </span>
-              {p.room.id !== myRoom.id && !p.bot && (
-                <button className={s.inviteBtn} disabled={invited.includes(p.id)} onClick={() => invite(p)}>
-                  {invited.includes(p.id) ? '보냄' : '초대'}
-                </button>
-              )}
-              <i className={s.online} aria-label="온라인" />
-            </li>
-          ))}
-        </ul>
+        <h2>접속 중 {others.length}</h2>
+        <ul className={s.friends}>{others.map(person)}</ul>
       </section>
 
       {theme.recommendedOutfits.length > 0 && (
@@ -265,11 +356,12 @@ function ActionBar({ theme }: { theme: ThemeConfig }) {
 
 /** The chat dock. `open` (💬 대화하기): the log opens up and the cursor waits in the box. */
 function ChatPanel({ open }: { open: boolean }) {
-  const { messages, lang, setLang, preview, busy, text, setText, inputRef, logRef, sendEmote, submit, blurOnEscape } = useChat();
+  const { messages, to, setTo, targets, text, setText, inputRef, logRef, sendEmote, submit, blurOnEscape } = useChat();
   const myId = useMoa((st) => st.me.id);
   useEffect(() => {
     if (open) inputRef.current?.focus();
   }, [open, inputRef]);
+  const whisperTo = targets.find((t) => t.id === to);
   return (
     <section className={open ? `${s.chat} ${s.open}` : s.chat} aria-label="채팅">
       <ol ref={logRef} className={s.log} aria-live="polite">
@@ -281,38 +373,35 @@ function ChatPanel({ open }: { open: boolean }) {
           </li>
         ))}
       </ol>
-      <form className={s.compose} onSubmit={submit}>
+      <form className={whisperTo ? `${s.compose} ${s.whisper}` : s.compose} onSubmit={submit}>
         <div className={s.emotes}>
           {EMOTES.map((e) => (
             <button key={e} type="button" aria-label={`감정 표현 ${e}`} onClick={() => sendEmote(e)}>
               {e}
             </button>
           ))}
-          <select className={s.lang} aria-label="내 말풍선 언어" value={lang ?? ''} onChange={(e) => setLang((e.target.value || null) as Lang | null)}>
-            <option value="">🌐 번역 끔</option>
-            {(Object.keys(LANGS) as Lang[]).map((id) => (
-              <option key={id} value={id}>
-                🌐 {LANGS[id]}
-              </option>
-            ))}
-          </select>
+          {targets.length > 0 && (
+            <select className={s.mode} aria-label="채팅 모드" value={whisperTo ? to : ''} onChange={(e) => setTo(e.target.value)}>
+              <option value="">💬 모두에게</option>
+              {targets.map((t) => (
+                <option key={t.id} value={t.id}>
+                  💌 {t.nickname}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
-        {preview && (
-          <p className={s.preview} aria-live="polite">
-            <span>{LANGS[lang!]}</span> {preview}
-          </p>
-        )}
         <input
           ref={inputRef}
           value={text}
           maxLength={80}
-          placeholder={lang ? `쓰면 ${LANGS[lang]}로 바꿔 보내요` : '친구들에게 한마디'}
+          placeholder={whisperTo ? `${whisperTo.nickname}님에게만 귓속말` : '친구들에게 한마디'}
           enterKeyHint="send"
           onChange={(e) => setText(e.target.value)}
           onKeyDown={blurOnEscape}
         />
-        <button type="submit" className={c.primary} disabled={busy}>
-          {busy ? '번역 중' : '전송'}
+        <button type="submit" className={c.primary}>
+          전송
         </button>
       </form>
     </section>

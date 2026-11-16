@@ -7,16 +7,26 @@ import type { Presence } from './link';
  * 방 만들기 shows on the room list, your own space only by invitation.
  */
 export interface Room {
+  /** Its realtime topic: 'space:<owner id>' (someone's own space) or 'room:<room id>' (a group room). */
   id: string;
   name: string;
   /** On the room list. */
   listed: boolean;
+  /** How many fit (default ROOM_MAX). */
+  max?: number;
 }
 
 export const ROOM_MAX = 10;
 
-/** Your own space: it has your id. */
-export const ownRoom = (me: { id: string; nickname: string }): Room => ({ id: me.id, name: `${me.nickname}의 공간`, listed: false });
+/** Your own space (its name, when you've given it one). */
+export const ownRoom = (me: { id: string; nickname: string }, name?: string): Room => ({
+  id: `space:${me.id}`,
+  name: name || `${me.nickname}의 공간`,
+  listed: false,
+});
+
+/** Whose space this is (null: a group room). */
+export const spaceOwner = (room: Pick<Room, 'id'>) => (room.id.startsWith('space:') ? room.id.slice(6) : null);
 
 export interface RoomInfo extends Room {
   /** Who's in it, first to arrive first (the first is the host). */
@@ -41,4 +51,4 @@ export function roomsOf(everyone: Presence[]): RoomInfo[] {
 }
 
 /** Past the limit (two took the last seat at once), the later arrivals have to go. */
-export const bumped = (room: RoomInfo, id: string) => room.members.findIndex((m) => m.id === id) >= ROOM_MAX;
+export const bumped = (room: RoomInfo, id: string) => room.members.findIndex((m) => m.id === id) >= (room.max ?? ROOM_MAX);

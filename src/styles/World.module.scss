@@ -29,6 +29,8 @@
 .tag {
   display: block;
   padding: 2px 8px;
+  border: 0;
+  font: inherit;
   border-radius: var(--r-pill);
   background: var(--c-tag);
   color: var(--c-ink);
@@ -36,6 +38,12 @@
   font-weight: 700;
   white-space: nowrap;
   box-shadow: var(--shadow-s);
+}
+
+// others' tags open their card
+button.tag {
+  pointer-events: auto;
+  cursor: pointer;
 }
 
 .me {
