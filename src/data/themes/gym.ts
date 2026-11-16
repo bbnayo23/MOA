@@ -35,17 +35,27 @@ export const gym: ThemeConfig = {
   interactionObjects: [
     treadmill('treadmill-1', { tx: 0.6, ty: 2.0 }),
     treadmill('treadmill-2', { tx: 0.6, ty: 3.9 }),
+    treadmill('treadmill-3', { tx: 0.6, ty: 5.8 }),
     {
       id: 'rack', kind: 'rack', label: '덤벨 랙', icon: '🏋️', at: { tx: 2.6, ty: 0.55 },
       actions: ['dumbbell'],
       spots: [{ tx: 3.0, ty: 1.15 }, { tx: 3.6, ty: 0.55 }],
     },
+    {
+      id: 'rack-2', kind: 'rack', label: '덤벨 랙', icon: '🏋️', at: { tx: 4.8, ty: 0.55 },
+      actions: ['dumbbell'],
+      spots: [{ tx: 5.2, ty: 1.15 }, { tx: 5.8, ty: 0.55 }],
+    },
     mat('mat-1', { tx: 4.2, ty: 3.4 }),
     mat('mat-2', { tx: 5.4, ty: 2.2 }),
+    mat('mat-3', { tx: 6.4, ty: 3.8 }),
+    mat('mat-4', { tx: 3.8, ty: 6.4 }),
   ],
   decorations: [
     { kind: 'plant', at: { tx: 0.5, ty: 6.8 } },
     { kind: 'plant', at: { tx: 7.3, ty: 0.6 } },
+    { kind: 'plant', at: { tx: 7.4, ty: 5.4 } },
+    { kind: 'plant', at: { tx: 5.4, ty: 7.4 } },
   ],
   recommendedOutfits: [
     { name: '💪 트레이닝룩', look: { top: 'tee', topColor: '#a9cdfc', bottom: 'shorts', bottomColor: '#5c6185', hat: 'cap' } },

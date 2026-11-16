@@ -45,7 +45,13 @@ export function makePlaza(themes: ThemeMeta[], isOpen: (id: ThemeId) => boolean)
     },
     spawnPosition: { tx: 4.75, ty: 4.75 }, // just in front of the fountain, buildings in view
     availableActions: ['sit', 'wave', 'dance'],
-    interactionObjects: [...buildings, bench('bench-l', { tx: 2.7, ty: 5.1 }), bench('bench-r', { tx: 5.1, ty: 2.7 })],
+    interactionObjects: [
+      ...buildings,
+      bench('bench-l', { tx: 2.7, ty: 5.1 }),
+      bench('bench-r', { tx: 5.1, ty: 2.7 }),
+      bench('bench-3', { tx: 6.2, ty: 5.3 }),
+      bench('bench-4', { tx: 5.3, ty: 6.2 }),
+    ],
     decorations: [
       { kind: 'fountain', at: { tx: 4, ty: 4 } },
       { kind: 'bush', at: { tx: 1.8, ty: 7.5 } }, // beside the end doors, not on their step

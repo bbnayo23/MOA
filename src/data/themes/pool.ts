@@ -43,9 +43,11 @@ export const pool: ThemeConfig = {
     },
     lounger('lounger-1', { tx: 6.6, ty: 1.6 }),
     lounger('lounger-2', { tx: 7.0, ty: 3.4 }),
+    lounger('lounger-3', { tx: 7.2, ty: 6.2 }),
   ],
   decorations: [
     { kind: 'parasol', at: { tx: 6.4, ty: 2.7 } },
+    { kind: 'parasol', at: { tx: 6.6, ty: 5.6 } },
     { kind: 'ring', at: { tx: 3.6, ty: 6.4 } },
     { kind: 'bush', at: { tx: 0.6, ty: 6.6 } },
     { kind: 'bush', at: { tx: 1.0, ty: 1.0 } },

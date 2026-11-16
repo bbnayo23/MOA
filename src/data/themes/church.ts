@@ -1,7 +1,7 @@
 import type { InteractionObject, ThemeConfig } from './types';
 
-// Pews in three rows either side of the aisle (which runs up the screen's centre line).
-const pews: InteractionObject[] = [6, 8, 10].flatMap((sum, row) =>
+// Pews in four rows either side of the aisle (which runs up the screen's centre line).
+const pews: InteractionObject[] = [6, 8, 10, 12].flatMap((sum, row) =>
   [-1.7, 1.7].map((d, side) => {
     const at = { tx: (sum - d) / 2, ty: (sum + d) / 2 };
     return {
@@ -53,6 +53,10 @@ export const church: ThemeConfig = {
     { kind: 'plant', at: { tx: 2.2, ty: 0.5 } },
     { kind: 'plant', at: { tx: 0.6, ty: 7.0 } },
     { kind: 'plant', at: { tx: 7.0, ty: 0.6 } },
+    { kind: 'plant', at: { tx: 0.5, ty: 5.2 } },
+    { kind: 'plant', at: { tx: 5.2, ty: 0.5 } },
+    { kind: 'plant', at: { tx: 7.4, ty: 3.4 } },
+    { kind: 'plant', at: { tx: 3.4, ty: 7.4 } },
   ],
   recommendedOutfits: [
     { name: '👔 단정한 재킷', look: { top: 'jacket', topColor: '#5c6185', bottom: 'pants', bottomColor: '#5c6185', hat: 'none' } },

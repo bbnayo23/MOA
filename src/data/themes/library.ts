@@ -35,15 +35,18 @@ export const library: ThemeConfig = {
   interactionObjects: [
     table('table-l', { tx: 3.4, ty: 4.6 }),
     table('table-r', { tx: 4.9, ty: 3.1 }),
+    table('table-3', { tx: 2.2, ty: 6.4 }),
+    table('table-4', { tx: 6.4, ty: 4.4 }),
     desk('desk-1', { tx: 5.2, ty: 0.95 }),
     desk('desk-2', { tx: 7.2, ty: 0.95 }),
   ],
   decorations: [
-    ...[[0.45, 1.6], [0.45, 3.5], [0.45, 5.4], [1.6, 0.45], [3.5, 0.45]].map(([tx, ty]) => ({
+    ...[[0.45, 1.6], [0.45, 3.5], [0.45, 5.4], [1.6, 0.45], [3.5, 0.45], [6.2, 0.45]].map(([tx, ty]) => ({
       kind: 'bookshelf' as const,
       at: { tx, ty },
     })),
     { kind: 'plant', at: { tx: 0.5, ty: 7.3 } },
+    { kind: 'plant', at: { tx: 7.4, ty: 6.2 } },
     { kind: 'plant', at: { tx: 7.6, ty: 2.4 } },
   ],
   recommendedOutfits: [

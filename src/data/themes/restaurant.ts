@@ -49,12 +49,16 @@ export const restaurant: ThemeConfig = {
     table('table-2', { tx: 3.8, ty: 2.2 }),
     table('table-3', { tx: 3.7, ty: 5.3 }),
     table('table-4', { tx: 5.3, ty: 3.7 }),
+    table('table-5', { tx: 2.0, ty: 6.4 }),
+    table('table-6', { tx: 6.4, ty: 2.0 }),
   ],
   decorations: [
     { kind: 'menuboard', at: { tx: 5.2, ty: 0.5 } },
     { kind: 'plant', at: { tx: 0.5, ty: 1.4 } },
     { kind: 'plant', at: { tx: 0.5, ty: 7.2 } },
     { kind: 'plant', at: { tx: 7.4, ty: 0.6 } },
+    { kind: 'plant', at: { tx: 7.4, ty: 4.8 } },
+    { kind: 'plant', at: { tx: 4.8, ty: 7.4 } },
   ],
   recommendedOutfits: [
     { name: '🍷 디너 재킷', look: { top: 'jacket', topColor: '#5c6185', bottom: 'pants', bottomColor: '#5c6185', hat: 'none' } },

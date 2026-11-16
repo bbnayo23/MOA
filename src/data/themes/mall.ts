@@ -41,6 +41,9 @@ export const mall: ThemeConfig = {
   interactionObjects: [
     rack('rack-1', { tx: 0.6, ty: 2.0 }),
     rack('rack-2', { tx: 0.6, ty: 4.2 }),
+    rack('rack-3', { tx: 0.6, ty: 6.0 }),
+    rack('rack-4', { tx: 3.4, ty: 5.0 }),
+    rack('rack-5', { tx: 5.0, ty: 3.4 }),
     {
       id: 'fitting', kind: 'fittingRoom', label: '피팅룸', icon: '👗', at: { tx: 3.4, ty: 0.6 },
       actions: ['fitting'],
@@ -56,6 +59,8 @@ export const mall: ThemeConfig = {
     { kind: 'plant', at: { tx: 0.5, ty: 6.8 } },
     { kind: 'plant', at: { tx: 7.4, ty: 0.8 } },
     { kind: 'plant', at: { tx: 1.6, ty: 0.5 } },
+    { kind: 'plant', at: { tx: 7.4, ty: 4.4 } },
+    { kind: 'plant', at: { tx: 4.4, ty: 7.4 } },
   ],
   recommendedOutfits: OUTFITS.slice(0, 2),
 };
