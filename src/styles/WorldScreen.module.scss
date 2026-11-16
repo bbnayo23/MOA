@@ -515,6 +515,19 @@ $phone: 720px;
   }
 }
 
+// 💬 대화하기, or typing: the log opens up — even on short screens (landscape, keyboard up)
+.open .log:not(:empty),
+.chat:focus-within .log:not(:empty) {
+  display: block;
+  max-height: min(40vh, 320px);
+}
+
+.open {
+  box-shadow:
+    0 0 0 2px var(--c-primary),
+    var(--shadow-m);
+}
+
 .mine b {
   color: var(--c-primary-deep);
 }

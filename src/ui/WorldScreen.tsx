@@ -53,7 +53,7 @@ export function WorldScreen() {
       <InviteToast />
       {preview && <ThemePreview id={preview} />}
       <div className={s.dock}>
-        <ChatPanel />
+        <ChatPanel open={panel === 'chat'} />
         <ActionBar theme={theme} />
         <p className={s.hint}>
           <span className={s.keys}>클릭·방향키 이동 · Enter 채팅 · </span>
@@ -263,11 +263,15 @@ function ActionBar({ theme }: { theme: ThemeConfig }) {
   );
 }
 
-function ChatPanel() {
+/** The chat dock. `open` (💬 대화하기): the log opens up and the cursor waits in the box. */
+function ChatPanel({ open }: { open: boolean }) {
   const { messages, lang, setLang, preview, busy, text, setText, inputRef, logRef, sendEmote, submit, blurOnEscape } = useChat();
   const myId = useMoa((st) => st.me.id);
+  useEffect(() => {
+    if (open) inputRef.current?.focus();
+  }, [open, inputRef]);
   return (
-    <section className={s.chat}>
+    <section className={open ? `${s.chat} ${s.open}` : s.chat} aria-label="채팅">
       <ol ref={logRef} className={s.log} aria-live="polite">
         {messages.map((m) => (
           <li key={m.id} className={m.system ? s.system : m.playerId === myId ? s.mine : undefined}>
