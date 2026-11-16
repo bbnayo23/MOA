@@ -1,6 +1,6 @@
 import { KINDS } from '../../world/kinds';
 import type { Tile } from '../../world/space';
-import { isFree, type Footprint } from '../../world/path';
+import { isFree, walkRadius, type Footprint } from '../../world/path';
 import { camping } from './camping';
 import { church } from './church';
 import { gym } from './gym';
@@ -32,6 +32,27 @@ export const THEMES: ThemeMeta[] = [
 
 /** How many tiles across every space is played on (the theme files draw them on 8). */
 const SIZE = 16;
+/** Outdoors the space isn't boxed in: you can walk this far past it, over a round stretch of land. */
+const WILD = 6;
+
+/** Trees, bushes and rocks over that land (seeded per space, so everyone sees the same ones). */
+function scatter(seedText: string): ThemeConfig['decorations'] {
+  let h = [...seedText].reduce((x, ch) => (x * 31 + ch.charCodeAt(0)) >>> 0, 7);
+  const rnd = () => (h = (h * 1664525 + 1013904223) >>> 0) / 2 ** 32;
+  const mid = SIZE / 2, reach = walkRadius(SIZE, WILD) - 0.8;
+  const out: ThemeConfig['decorations'] = [];
+  for (let i = 0; i < 4000 && out.length < 46; i++) {
+    const at = { tx: mid + (rnd() * 2 - 1) * reach, ty: mid + (rnd() * 2 - 1) * reach };
+    const onMap = at.tx > -1 && at.ty > -1 && at.tx < SIZE + 1 && at.ty < SIZE + 1;
+    if (onMap || Math.hypot(at.tx - mid, at.ty - mid) > reach) continue;
+    if (out.some((d) => Math.hypot(d.at.tx - at.tx, d.at.ty - at.ty) < 1.8)) continue;
+    const r = rnd();
+    // on the camera's side of the space nothing tall, so it never hides anyone
+    const front = at.tx + at.ty > SIZE;
+    out.push({ kind: front ? (r < 0.7 ? 'bush' : 'rock') : r < 0.55 ? 'pine' : r < 0.85 ? 'bush' : 'rock', at });
+  }
+  return out;
+}
 
 /**
  * Roomier spaces: stretch the middle of a theme drawn on its small grid out to
@@ -48,9 +69,9 @@ function widen(t: ThemeConfig): ThemeConfig {
   const bg = t.background;
   return {
     ...t,
-    background: { ...bg, size: SIZE, rugs: bg.rugs?.map(strip), water: bg.water && strip(bg.water) },
+    background: { ...bg, size: SIZE, rugs: bg.rugs?.map(strip), water: bg.water && strip(bg.water), wild: bg.walls ? 0 : WILD },
     spawnPosition: m(t.spawnPosition),
-    decorations: t.decorations.map((d) => ({ ...d, at: m(d.at) })),
+    decorations: [...t.decorations.map((d) => ({ ...d, at: m(d.at) })), ...(bg.walls ? [] : scatter(t.themeId))],
     interactionObjects: t.interactionObjects.map((o) => {
       const at = m(o.at);
       const close = o.spots.every((p) => Math.hypot(p.tx - o.at.tx, p.ty - o.at.ty) <= 0.9);
@@ -76,7 +97,7 @@ export function checkThemes() {
   const errors: string[] = [];
   for (const t of Object.values(THEME_CONFIGS)) {
     const blocks = footprintsOf(t);
-    const free = (p: Tile) => isFree(p, t.background.size, blocks);
+    const free = (p: Tile) => isFree(p, t.background.size, blocks, t.background.wild);
     if (!free(t.spawnPosition)) errors.push(`${t.themeId}: spawnPosition blocked or off the map`);
     for (const o of t.interactionObjects) {
       if (!o.spots.length || !o.spots.every(free)) errors.push(`${t.themeId}/${o.id}: spot blocked or off the map`);

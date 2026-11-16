@@ -24,30 +24,28 @@ export function groundAt(cam: THREE.Camera, ndc: THREE.Vector2, out = new THREE.
 }
 
 /**
- * Keep the camera's centre over the map: `margin` in from each edge at 100%,
- * proportionally less when zoomed in, more when zoomed out — and simply the
- * middle once the whole map fits.
+ * Keep the camera's centre over the ground (the square `lo`…`hi` on both axes):
+ * `margin` in from each edge at 100%, proportionally less when zoomed in, more
+ * when zoomed out — and simply the middle once all of it fits.
  */
-export function clampCenter(c: THREE.Vector3, mapSize: number, zoom: number, margin: number) {
-  const edge = Math.min(mapSize / 2, margin / zoom);
-  c.x = THREE.MathUtils.clamp(c.x, edge, mapSize - edge);
-  c.z = THREE.MathUtils.clamp(c.z, edge, mapSize - edge);
+export function clampCenter(c: THREE.Vector3, lo: number, hi: number, zoom: number, margin: number) {
+  const edge = Math.min((hi - lo) / 2, margin / zoom);
+  c.x = THREE.MathUtils.clamp(c.x, lo + edge, hi - edge);
+  c.z = THREE.MathUtils.clamp(c.z, lo + edge, hi - edge);
   return c;
 }
 
 /**
- * The zoom at which the whole map — its corners, and a building's height above
- * them — fits on this camera's screen, looking at the middle (`base` is the
- * camera distance at 100%).
+ * The zoom at which all these points (the map's corners and a building's height
+ * above them, or the edge of the open land round it) fit on this camera's
+ * screen, looking at `mid` (`base` is the camera distance at 100%).
  */
-export function fitZoom(cam: THREE.PerspectiveCamera, mapSize: number, base: number) {
+export function fitZoom(cam: THREE.PerspectiveCamera, points: THREE.Vector3[], mid: THREE.Vector3, base: number) {
   const probe = cam.clone();
-  const mid = new THREE.Vector3(mapSize / 2, 0, mapSize / 2);
-  const corners = [0, mapSize].flatMap((x) => [0, mapSize].flatMap((z) => [new THREE.Vector3(x, 0, z), new THREE.Vector3(x, 3, z)]));
   const v = new THREE.Vector3();
   const fits = (dist: number) => {
     place(probe, mid, dist);
-    return corners.every((p) => {
+    return points.every((p) => {
       v.copy(p).project(probe);
       return Math.abs(v.x) < 0.94 && Math.abs(v.y) < 0.88;
     });

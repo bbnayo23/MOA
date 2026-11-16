@@ -25,6 +25,8 @@ export interface Background {
   night?: boolean;
   /** Grass of the open land around the map (outdoor themes have one; indoor ones have walls). */
   grass?: string;
+  /** Outdoors you can walk out onto that land: this many tiles past the map, a round area (set in themes/index). */
+  wild?: number;
   /** Flower colours sprinkled on the grass. */
   flowers?: string[];
   // indoor

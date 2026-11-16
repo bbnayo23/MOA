@@ -1,8 +1,9 @@
 import { useFrame, useThree } from '@react-three/fiber';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { fromGame, toGame } from '../bridge';
 import { ZOOM, clampCenter, clampZoom, fitZoom, gesture, groundAt, place } from './camera';
+import { walkRadius } from './path';
 import type { Agent, Sim } from './sim';
 import { T } from './space';
 
@@ -39,15 +40,25 @@ export function CameraRig({ sim, me }: { sim: Sim; me: Agent }) {
   const c = useRef<Cam>({ zoom: 1, zoomTo: 1, min: 0.5, focus: null, pan: new THREE.Vector3(), anchor: null, homing: false, dragging: false }).current;
   const reported = useRef('');
   const fitted = useRef('');
+  // the ground the camera may show: the map, or outdoors the round land around it (`fit`: its edge)
+  const ground = useMemo(() => {
+    const S = sim.size * T, mid = new THREE.Vector3(S / 2, 0, S / 2);
+    if (!sim.wild) {
+      const fit = [0, S].flatMap((x) => [0, S].flatMap((z) => [new THREE.Vector3(x, 0, z), new THREE.Vector3(x, 3, z)]));
+      return { lo: 0, hi: S, mid, fit };
+    }
+    const R = walkRadius(sim.size, sim.wild) * T;
+    const fit = Array.from({ length: 24 }, (_, i) => new THREE.Vector3(mid.x + Math.cos((i / 24) * Math.PI * 2) * R, 0, mid.z + Math.sin((i / 24) * Math.PI * 2) * R));
+    return { lo: mid.x - R, hi: mid.x + R, mid, fit };
+  }, [sim]);
 
   // where the camera looks, given the current pan (pan is trimmed so it can't build up past the edge)
   const look = (aspect: number) => {
-    const S = sim.size * T;
-    const centre = clampCenter(c.focus!.clone().add(c.pan), S, c.zoom, MARGIN);
+    const centre = clampCenter(c.focus!.clone().add(c.pan), ground.lo, ground.hi, c.zoom, MARGIN);
     c.pan.subVectors(centre, c.focus!);
     // zooming out drifts the view to the middle: all the way out, the whole space is in view
     const out = THREE.MathUtils.clamp((1 / c.zoom - 1) / (1 / c.min - 1), 0, 1);
-    centre.lerp(new THREE.Vector3(S / 2, 0, S / 2), out);
+    centre.lerp(ground.mid, out);
     // a little past me so I stand slightly below the middle; on phones a bit higher, clear of the chat dock
     const ahead = aspect < 1 ? 0.45 : -0.5;
     return centre.add(new THREE.Vector3(ahead, 0.6, ahead));
@@ -69,16 +80,16 @@ export function CameraRig({ sim, me }: { sim: Sim; me: Agent }) {
 
     const aspect = size.width / size.height;
     const base = BASE * (aspect < 1 ? 1 + (1 - aspect) * 0.8 : 1);
-    const screen = `${size.width}x${size.height}:${sim.size}`;
+    const screen = `${size.width}x${size.height}:${ground.hi - ground.lo}`;
     if (screen !== fitted.current) {
       fitted.current = screen;
-      c.min = Math.min(0.5, Math.max(ZOOM.min, fitZoom(camera as THREE.PerspectiveCamera, sim.size * T, base)));
+      c.min = Math.min(0.5, Math.max(ZOOM.min, fitZoom(camera as THREE.PerspectiveCamera, ground.fit, ground.mid, base)));
       c.zoomTo = clampZoom(c.zoomTo, c.min);
     }
     const dist = base / c.zoom;
     // what's drawn reaches past the far side of the map, however far out we are (and depth stays precise up close)
     const cam = camera as THREE.PerspectiveCamera;
-    const far = dist * 2.5 + sim.size * T * 2;
+    const far = dist * 2.5 + (ground.hi - ground.lo) * 1.5;
     if (Math.abs(cam.far - far) > far * 0.05) {
       cam.near = Math.max(0.5, dist / 40);
       cam.far = far;

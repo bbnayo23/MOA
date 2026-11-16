@@ -100,8 +100,13 @@ export class Sim {
     return t;
   }
 
+  /** Outdoors: how far past the map the land goes (0 indoors). */
+  get wild() {
+    return this.theme.background.wild ?? 0;
+  }
+
   free(t: Tile) {
-    return isFree(t, this.size, this.blocks);
+    return isFree(t, this.size, this.blocks, this.wild);
   }
 
   /** Advance the world by `dt` seconds. `input` is the held arrow keys as a screen direction. */
@@ -176,7 +181,7 @@ export class Sim {
 
   /** Walk around furniture to `to` (or as close as it gets), then `then`. Returns where it ends. */
   route(a: Agent, to: Tile, then?: () => void) {
-    a.route = findPath(a.pos, to, this.size, this.blocks);
+    a.route = findPath(a.pos, to, this.size, this.blocks, this.wild);
     a.arrive = then;
     if (!a.route.length) {
       a.arrive = undefined;

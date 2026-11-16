@@ -36,4 +36,15 @@ const seat = { tx: 3.58, ty: 4.82 };
 assert.ok(isFree(seat, N, [diningTable]), 'the seat itself is free');
 assert.deepEqual(findPath({ tx: 6.4, ty: 6.4 }, seat, N, [diningTable]).at(-1), seat, 'sits right on the seat');
 
+// outdoors the ground is round and reaches past the map (indoors it stops at the square's edge)
+const W = 3;
+assert.ok(isFree({ tx: -1, ty: 4 }, N, [], W) && !isFree({ tx: -1, ty: 4 }, N, []), 'out on the open land, outdoors only');
+assert.ok(!isFree({ tx: -2.5, ty: -2.5 }, N, [], W), 'round, not square: not out in its corner');
+const roam = findPath({ tx: 4, ty: 4 }, { tx: -10, ty: 4 }, N, [], W);
+assert.ok(roam.at(-1)!.tx < -3 && isFree(roam.at(-1)!, N, [], W), 'walks out over the land, up to its edge');
+const tree: Footprint[] = [{ tx: -2, ty: 4, r: 0.6 }];
+const aroundTree = findPath({ tx: -2, ty: 2 }, { tx: -2, ty: 6 }, N, tree, W);
+assert.ok(aroundTree.length > 1 && aroundTree.every((p, i) => isClear(i ? aroundTree[i - 1] : { tx: -2, ty: 2 }, p, N, tree, W)), 'goes round a tree out there');
+assert.deepEqual(aroundTree.at(-1), { tx: -2, ty: 6 });
+
 console.log('path rules ok');

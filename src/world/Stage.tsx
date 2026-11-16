@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import type { Background } from '../data/themes';
 import { gesture } from './camera';
 import { MODELS } from './models';
+import { walkRadius } from './path';
 import { FACE_CAMERA, T, type Tile } from './space';
 import { canvasTexture, castShadows, toon } from './toon';
 
@@ -224,14 +225,17 @@ function Land({ bg, S, onTap }: { bg: Background; S: number; onTap: (e: ThreeEve
   const props = useMemo(() => {
     const rnd = seeded(11);
     const out: { kind: 'pine' | 'bush' | 'rock'; x: number; z: number; s: number }[] = [];
-    while (out.length < 90) {
-      const x = -16 + rnd() * (S + 32), z = -16 + rnd() * (S + 32);
-      if (x > -1.5 && x < S + 1.5 && z > -1.5 && z < S + 1.5) continue; // keep the map's edge clear
+    // a forest ring just past where you can walk (low things only on the camera's side)
+    const mid = S / 2, inner = walkRadius(bg.size, bg.wild ?? 0) * T + 1.2, outer = inner + 26;
+    while (out.length < 220) {
+      const a = rnd() * Math.PI * 2, d = inner + rnd() ** 2 * (outer - inner); // thickest at the edge: a tree line
+      const x = mid + Math.cos(a) * d, z = mid + Math.sin(a) * d;
+      const front = x + z > S + inner;
       const r = rnd();
-      out.push({ kind: r < 0.6 ? 'pine' : r < 0.9 ? 'bush' : 'rock', x, z, s: 0.8 + rnd() * 0.6 });
+      out.push({ kind: front ? (r < 0.75 ? 'bush' : 'rock') : r < 0.6 ? 'pine' : r < 0.9 ? 'bush' : 'rock', x, z, s: 0.8 + rnd() * 0.6 });
     }
     return out;
-  }, [S]);
+  }, [S, bg.size, bg.wild]);
   const group = useRef<THREE.Group>(null);
   useLayoutEffect(() => castShadows(group.current));
   return (
@@ -250,15 +254,16 @@ function Land({ bg, S, onTap }: { bg: Background; S: number; onTap: (e: ThreeEve
           );
         })}
       </group>
-      {bg.flowers && <Flowers colors={bg.flowers} S={S} rugs={bg.rugs ?? []} onMap={bg.floor === 'grass'} />}
+      {bg.flowers && <Flowers colors={bg.flowers} S={S} reach={walkRadius(bg.size, bg.wild ?? 0) * T + 3} rugs={bg.rugs ?? []} onMap={bg.floor === 'grass'} />}
     </>
   );
 }
 
 /** Little flowers on the grass (one instanced draw); on the map too when its floor is grass. */
-function Flowers({ colors, S, rugs, onMap }: { colors: string[]; S: number; rugs: NonNullable<Background['rugs']>; onMap: boolean }) {
+/** Flowers over the land, out to `reach` from the middle (and on a grassy map itself when `onMap`). */
+function Flowers({ colors, S, reach, rugs, onMap }: { colors: string[]; S: number; reach: number; rugs: NonNullable<Background['rugs']>; onMap: boolean }) {
   const ref = useRef<THREE.InstancedMesh>(null);
-  const COUNT = 260;
+  const COUNT = 700;
   useLayoutEffect(() => {
     const mesh = ref.current;
     if (!mesh) return;
@@ -273,8 +278,9 @@ function Flowers({ colors, S, rugs, onMap }: { colors: string[]; S: number; rugs
     for (let i = 0; i < COUNT; i++) {
       let x = 0, z = 0;
       do {
-        x = -10 + rnd() * (S + 20);
-        z = -10 + rnd() * (S + 20);
+        const a = rnd() * Math.PI * 2, d = Math.sqrt(rnd()) * reach;
+        x = S / 2 + Math.cos(a) * d;
+        z = S / 2 + Math.sin(a) * d;
       } while (onRug(x, z) || (!onMap && x > -0.3 && x < S + 0.3 && z > -0.3 && z < S + 0.3));
       m.makeScale(1, 0.6, 1).setPosition(x, 0.06, z);
       mesh.setMatrixAt(i, m);
@@ -282,7 +288,7 @@ function Flowers({ colors, S, rugs, onMap }: { colors: string[]; S: number; rugs
     }
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-  }, [colors, S, rugs, onMap]);
+  }, [colors, S, reach, rugs, onMap]);
   return (
     <instancedMesh ref={ref} args={[undefined, undefined, COUNT]} material={toon('#ffffff', undefined, 'flower')}>
       <sphereGeometry args={[0.08, 8, 6]} />
