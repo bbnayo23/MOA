@@ -68,6 +68,9 @@ export function World({ theme, className }: { theme: ThemeConfig; className?: st
       }),
       toGame.on('peerLeave', (id) => sim.agents.delete(id) && recast((n) => n + 1)),
     ];
+    // a new space: nothing from the last one is near or hovered any more
+    setNear(sim.near);
+    setHover(null);
     sim.onNear = setNear;
     if (import.meta.env.DEV) (window as unknown as { __moaSim: Sim }).__moaSim = sim; // for the browser tests
     return () => {
