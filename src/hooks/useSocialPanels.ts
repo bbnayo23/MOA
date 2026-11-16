@@ -167,7 +167,6 @@ export function useWhispers() {
     pick: (id: string | null) => set({ with: id }),
     minimize: () => set({ min: !dm.min }),
     close: () => set({ open: false }),
-    open: () => set({ open: true, min: false }),
     text,
     setText,
     send: (e: FormEvent) => {
