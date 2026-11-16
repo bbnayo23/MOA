@@ -143,12 +143,13 @@ export function World({ theme, className }: { theme: ThemeConfig; className?: st
             {a.player.nickname}
           </span>
         ))}
-        {agents.map((a) => {
-          const text = bubbles[a.player.id];
-          if (!text) return null;
+        {/* oldest first, so the latest line is drawn on top where bubbles overlap */}
+        {Object.entries(bubbles).map(([id, text]) => {
+          const a = sim.agents.get(id);
+          if (!a) return null;
           const emoji = /^[\p{Extended_Pictographic}️‍\s]+$/u.test(text);
           return (
-            <p key={`${a.player.id}${text}`} ref={labels.bind(`bubble:${a.player.id}`, head(a))} className={emoji ? `${s.bubble} ${s.emoji}` : s.bubble}>
+            <p key={`${id}${text}`} ref={labels.bind(`bubble:${id}`, head(a))} className={emoji ? `${s.bubble} ${s.emoji}` : s.bubble}>
               {text}
             </p>
           );
@@ -195,7 +196,8 @@ function useBubbles() {
   useEffect(() => {
     const timers = new Map<string, ReturnType<typeof setTimeout>>();
     const off = toGame.on('chat', ({ playerId, text }) => {
-      setBubbles((b) => ({ ...b, [playerId]: text }));
+      // re-added at the end: newest last
+      setBubbles(({ [playerId]: _, ...b }) => ({ ...b, [playerId]: text }));
       clearTimeout(timers.get(playerId));
       timers.set(
         playerId,

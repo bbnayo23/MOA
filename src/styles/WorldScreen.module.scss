@@ -571,9 +571,11 @@ $phone: 720px;
   flex-basis: 100%;
   display: flex;
 
+  // 44px to touch, while the row still takes 32px (the extra spills into the 8px padding/gap around it)
   button {
-    width: 40px;
-    height: 32px;
+    width: 44px;
+    height: 44px;
+    margin-block: -6px;
     border: 0;
     border-radius: var(--r-s);
     background: none;
