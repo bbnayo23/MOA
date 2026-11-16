@@ -73,7 +73,7 @@ function ZoomControls() {
         +
       </button>
       <span aria-live="polite">{z.pct}%</span>
-      <button aria-label="축소" onClick={z.zoomOut} disabled={z.pct <= ZOOM.min * 100}>
+      <button aria-label="축소" onClick={z.zoomOut} disabled={z.pct <= z.min}>
         −
       </button>
       <button aria-label="기본 화면으로" onClick={z.reset} className={s.home}>

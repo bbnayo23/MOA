@@ -237,7 +237,8 @@ function Land({ bg, S, onTap }: { bg: Background; S: number; onTap: (e: ThreeEve
   return (
     <>
       <mesh material={toon(bg.grass ?? bg.ground[0])} rotation-x={-Math.PI / 2} position={[S / 2, 0, S / 2]} receiveShadow onClick={onTap}>
-        <planeGeometry args={[160, 160]} />
+        {/* reaches the horizon even zoomed all the way out */}
+        <planeGeometry args={[800, 800]} />
       </mesh>
       <group ref={group}>
         {props.map(({ kind, x, z, s }, i) => {

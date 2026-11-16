@@ -31,7 +31,7 @@ export const THEMES: ThemeMeta[] = [
 
 
 /** How many tiles across every space is played on (the theme files draw them on 8). */
-const SIZE = 12;
+const SIZE = 16;
 
 /**
  * Roomier spaces: stretch the middle of a theme drawn on its small grid out to

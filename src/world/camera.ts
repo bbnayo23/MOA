@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 
-/** Zoom: 1 = 100%. */
-export const ZOOM = { min: 0.25, max: 2, step: 1.25 };
-export const clampZoom = (z: number) => Math.min(ZOOM.max, Math.max(ZOOM.min, z));
+/** Zoom: 1 = 100%. How far out you can go depends on the screen (see `fitZoom`); `min` is the floor. */
+export const ZOOM = { min: 0.05, max: 2, step: 1.25 };
+export const clampZoom = (z: number, min = ZOOM.min) => Math.min(ZOOM.max, Math.max(min, z));
 
 const PITCH = (40 * Math.PI) / 180;
 
@@ -33,6 +33,32 @@ export function clampCenter(c: THREE.Vector3, mapSize: number, zoom: number, mar
   c.x = THREE.MathUtils.clamp(c.x, edge, mapSize - edge);
   c.z = THREE.MathUtils.clamp(c.z, edge, mapSize - edge);
   return c;
+}
+
+/**
+ * The zoom at which the whole map — its corners, and a building's height above
+ * them — fits on this camera's screen, looking at the middle (`base` is the
+ * camera distance at 100%).
+ */
+export function fitZoom(cam: THREE.PerspectiveCamera, mapSize: number, base: number) {
+  const probe = cam.clone();
+  const mid = new THREE.Vector3(mapSize / 2, 0, mapSize / 2);
+  const corners = [0, mapSize].flatMap((x) => [0, mapSize].flatMap((z) => [new THREE.Vector3(x, 0, z), new THREE.Vector3(x, 3, z)]));
+  const v = new THREE.Vector3();
+  const fits = (dist: number) => {
+    place(probe, mid, dist);
+    return corners.every((p) => {
+      v.copy(p).project(probe);
+      return Math.abs(v.x) < 0.94 && Math.abs(v.y) < 0.88;
+    });
+  };
+  let lo = 1, hi = 1000; // camera distance
+  for (let i = 0; i < 32; i++) {
+    const d = (lo + hi) / 2;
+    if (fits(d)) hi = d;
+    else lo = d;
+  }
+  return base / hi;
 }
 
 /** Shared between the camera's gestures and the world's click handlers. */

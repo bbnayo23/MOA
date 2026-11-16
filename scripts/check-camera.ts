@@ -1,7 +1,7 @@
 // Runnable check for the camera's zoom maths: `pnpm check`
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import { clampCenter, clampZoom, groundAt, place } from '../src/world/camera.ts';
+import { clampCenter, clampZoom, fitZoom, groundAt, place } from '../src/world/camera.ts';
 
 const cam = new THREE.PerspectiveCamera(32, 16 / 10, 0.5, 200);
 cam.updateProjectionMatrix();
@@ -22,7 +22,20 @@ assert.ok(after.distanceTo(before) < 1e-6, 'the point under the cursor stays put
 
 // zoom limits
 assert.equal(clampZoom(5), 2);
-assert.equal(clampZoom(0.1), 0.25);
+assert.equal(clampZoom(0.01), 0.05);
+assert.equal(clampZoom(0.3, 0.42), 0.42); // this screen's own limit
+
+// all the way out, the whole map fits: a phone (portrait) gets to go further out than a wide screen
+const wide = fitZoom(cam, 38.4, 16);
+const tall = new THREE.PerspectiveCamera(32, 390 / 844, 0.5, 200);
+tall.updateProjectionMatrix();
+const phone = fitZoom(tall, 38.4, 16 * 1.43);
+assert.ok(phone < wide && wide < 1, `phone ${phone.toFixed(2)} < wide ${wide.toFixed(2)}`);
+place(cam, new THREE.Vector3(19.2, 0, 19.2), 16 / wide);
+for (const [x, z] of [[0, 0], [38.4, 0], [0, 38.4], [38.4, 38.4]]) {
+  const v = new THREE.Vector3(x, 0, z).project(cam);
+  assert.ok(Math.abs(v.x) <= 1 && Math.abs(v.y) <= 1, `corner ${x},${z} on screen`);
+}
 
 // bounds: 3.6 in from the edge at 100%, tighter in, wider out, centred when the map fits
 const S = 19.2, M = 3.6;

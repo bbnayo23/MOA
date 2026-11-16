@@ -31,8 +31,8 @@ export interface FromGame {
   portal: ThemeId;
   /** Where I am / what I'm doing, whenever it changes (≤ 10×/s). */
   moved: Motion;
-  /** Camera zoom, in percent (50–200). */
-  zoomLevel: number;
+  /** Camera zoom and how far out this screen goes, in percent. */
+  zoomLevel: { pct: number; min: number };
 }
 
 function channel<M>() {

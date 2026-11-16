@@ -2,7 +2,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { fromGame, toGame } from '../bridge';
-import { ZOOM, clampCenter, clampZoom, gesture, groundAt, place } from './camera';
+import { ZOOM, clampCenter, clampZoom, fitZoom, gesture, groundAt, place } from './camera';
 import type { Agent, Sim } from './sim';
 import { T } from './space';
 
@@ -14,6 +14,8 @@ const MARGIN = T * 1.5;
 interface Cam {
   zoom: number;
   zoomTo: number;
+  /** As far out as this screen goes: the whole space in view (at most 50%). */
+  min: number;
   /** Where the camera follows me to (eased). */
   focus: THREE.Vector3 | null;
   /** How far the player has dragged the view away from me. */
@@ -26,20 +28,26 @@ interface Cam {
 }
 
 /**
- * Quarter-view camera that follows me, plus zoom (25–200%: wheel at the cursor,
- * pinch between the fingers, the +/− buttons at the centre) and pan (drag the
- * ground). It never shows past the map, and once I walk off it drifts back to me.
+ * Quarter-view camera that follows me, plus zoom (wheel at the cursor, pinch
+ * between the fingers, the +/− buttons at the centre) and pan (drag the
+ * ground). Zooming out goes until the whole space fits the screen, the view
+ * drifting to its middle on the way; zoomed in it never shows past the map,
+ * and once I walk off it comes back to me.
  */
 export function CameraRig({ sim, me }: { sim: Sim; me: Agent }) {
   const { camera, gl } = useThree();
-  const c = useRef<Cam>({ zoom: 1, zoomTo: 1, focus: null, pan: new THREE.Vector3(), anchor: null, homing: false, dragging: false }).current;
-  const reported = useRef(0);
+  const c = useRef<Cam>({ zoom: 1, zoomTo: 1, min: 0.5, focus: null, pan: new THREE.Vector3(), anchor: null, homing: false, dragging: false }).current;
+  const reported = useRef('');
+  const fitted = useRef('');
 
   // where the camera looks, given the current pan (pan is trimmed so it can't build up past the edge)
   const look = (aspect: number) => {
     const S = sim.size * T;
     const centre = clampCenter(c.focus!.clone().add(c.pan), S, c.zoom, MARGIN);
     c.pan.subVectors(centre, c.focus!);
+    // zooming out drifts the view to the middle: all the way out, the whole space is in view
+    const out = THREE.MathUtils.clamp((1 / c.zoom - 1) / (1 / c.min - 1), 0, 1);
+    centre.lerp(new THREE.Vector3(S / 2, 0, S / 2), out);
     // a little past me so I stand slightly below the middle; on phones a bit higher, clear of the chat dock
     const ahead = aspect < 1 ? 0.45 : -0.5;
     return centre.add(new THREE.Vector3(ahead, 0.6, ahead));
@@ -60,7 +68,22 @@ export function CameraRig({ sim, me }: { sim: Sim; me: Agent }) {
     if (Math.abs(c.zoomTo - c.zoom) < 1e-3) c.zoom = c.zoomTo;
 
     const aspect = size.width / size.height;
-    const dist = (BASE * (aspect < 1 ? 1 + (1 - aspect) * 0.8 : 1)) / c.zoom;
+    const base = BASE * (aspect < 1 ? 1 + (1 - aspect) * 0.8 : 1);
+    const screen = `${size.width}x${size.height}:${sim.size}`;
+    if (screen !== fitted.current) {
+      fitted.current = screen;
+      c.min = Math.min(0.5, Math.max(ZOOM.min, fitZoom(camera as THREE.PerspectiveCamera, sim.size * T, base)));
+      c.zoomTo = clampZoom(c.zoomTo, c.min);
+    }
+    const dist = base / c.zoom;
+    // what's drawn reaches past the far side of the map, however far out we are (and depth stays precise up close)
+    const cam = camera as THREE.PerspectiveCamera;
+    const far = dist * 2.5 + sim.size * T * 2;
+    if (Math.abs(cam.far - far) > far * 0.05) {
+      cam.near = Math.max(0.5, dist / 40);
+      cam.far = far;
+      cam.updateProjectionMatrix();
+    }
     place(camera, look(aspect), dist);
     if (c.anchor) {
       const now = groundAt(camera, c.anchor.ndc);
@@ -72,8 +95,9 @@ export function CameraRig({ sim, me }: { sim: Sim; me: Agent }) {
       if (c.zoom === c.zoomTo) c.anchor = null;
     }
 
-    const pct = Math.round(c.zoomTo * 100);
-    if (pct !== reported.current) fromGame.emit('zoomLevel', (reported.current = pct));
+    const level = { pct: Math.round(c.zoomTo * 100), min: Math.round(c.min * 100) };
+    const key = `${level.pct}/${level.min}`;
+    if (key !== reported.current) fromGame.emit('zoomLevel', ((reported.current = key), level));
   });
 
   useEffect(() => {
@@ -84,7 +108,7 @@ export function CameraRig({ sim, me }: { sim: Sim; me: Agent }) {
     };
     const zoomAt = (factor: number, at: THREE.Vector2) => {
       const world = groundAt(camera, at);
-      c.zoomTo = clampZoom(c.zoomTo * factor);
+      c.zoomTo = clampZoom(c.zoomTo * factor, c.min);
       c.homing = false;
       c.anchor = world && { ndc: at, world };
     };
@@ -119,7 +143,7 @@ export function CameraRig({ sim, me }: { sim: Sim; me: Agent }) {
         const after = Math.hypot(cur.x - other.x, cur.y - other.y);
         // the ground under the old midpoint follows the fingers to the new one
         const world = groundAt(camera, ndc((prev.x + other.x) / 2, (prev.y + other.y) / 2));
-        c.zoom = c.zoomTo = clampZoom(c.zoomTo * (after / Math.max(before, 1)));
+        c.zoom = c.zoomTo = clampZoom(c.zoomTo * (after / Math.max(before, 1)), c.min);
         c.anchor = world && { ndc: ndc((cur.x + other.x) / 2, (cur.y + other.y) / 2), world };
         c.dragging = true;
         c.homing = false;
