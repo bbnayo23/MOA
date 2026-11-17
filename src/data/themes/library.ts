@@ -1,4 +1,5 @@
 import type { Tile } from '../../world/space';
+import { fine } from './grid';
 import { behind } from './seats';
 import type { InteractionObject, ThemeConfig } from './types';
 
@@ -67,6 +68,13 @@ export const library: ThemeConfig = {
     { kind: 'floorLamp', at: { tx: 0.4, ty: 5.95 } },
     { kind: 'frame', at: { tx: 0.12, ty: 4.45 }, color: '#ffd38a' },
     { kind: 'frame', at: { tx: 2.55, ty: 0.12 }, color: '#a9cdfc' },
+    // more shelves along the walls, and two more islands of them out in the room
+    { kind: 'bookshelf', at: { tx: 0.45, ty: fine(4.5) } },
+    { kind: 'bookshelf', at: { tx: fine(8.7), ty: 0.45 } },
+    ...[[11.9, 4.1], [12.4, 3.6], [12.9, 3.1], [6.1, 10.9], [5.6, 11.4], [5.1, 11.9]].map(([tx, ty]) => ({ kind: 'bookshelf' as const, at: { tx: fine(tx), ty: fine(ty) } })),
+    // books waiting to be shelved
+    ...[[5.0, 6.2], [10.6, 2.4], [7.6, 12.6], [13.2, 10.4], [2.6, 9.8]].map(([tx, ty]) => ({ kind: 'bookStack' as const, at: { tx: fine(tx), ty: fine(ty) } })),
+    { kind: 'plant', at: { tx: fine(9.8), ty: fine(14.8) } },
   ],
   recommendedOutfits: [
     { name: '📚 니트 + 안경', look: { top: 'stripe', topColor: '#cbb8ff', accessory: 'glasses', hat: 'none' } },

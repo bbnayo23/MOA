@@ -477,3 +477,73 @@ export const Candelabra: FC = () => (
     ))}
   </group>
 );
+
+// ── library and mall ─────────────────────────────────────────
+
+const BOOKS = ['#ff8f8f', '#7fb7e8', '#ffd38a', '#9fd8b8', '#cbb8ff', '#ffb3c6', '#c58f63'];
+
+/** Books piled on the floor: two stacks, one leaning. */
+export const BookStack: FC = () => (
+  <group>
+    {[0, 1, 2, 3, 4].map((i) => (
+      <Box key={i} s={[0.5 - (i % 2) * 0.06, 0.09, 0.36 - (i % 3) * 0.03]} p={[0, 0.045 + i * 0.09, 0]} r={[0, (i % 3) * 0.25 - 0.2, 0]} c={BOOKS[i]} />
+    ))}
+    {[0, 1, 2].map((i) => (
+      <Box key={i} s={[0.42, 0.08, 0.3]} p={[0.48, 0.04 + i * 0.08, 0.2]} r={[0, 0.5 + i * 0.2, 0]} c={BOOKS[(i + 4) % BOOKS.length]} />
+    ))}
+    <Box s={[0.08, 0.4, 0.3]} p={[-0.38, 0.2, 0.1]} r={[0, 0, 0.25]} c={BOOKS[6]} />
+  </group>
+);
+
+/** A checkout counter: a register with its screen, a card reader, a paper bag and a flower. */
+export const Cashier: FC<{ color?: string }> = ({ color = '#ff9fc0' }) => (
+  <group>
+    <Box s={[1.9, 0.95, 0.65]} p={[0, 0.475, 0]} c="#fffaf2" />
+    <Box s={[1.9, 0.18, 0.67]} p={[0, 0.3, 0]} c={color} />
+    <Box s={[2.0, 0.06, 0.75]} p={[0, 0.98, 0]} c={shade(color, -0.15)} />
+    <Box s={[0.5, 0.2, 0.36]} p={[-0.45, 1.11, -0.05]} c="#e7edf5" />
+    <Box s={[0.4, 0.3, 0.04]} p={[-0.45, 1.36, -0.15]} r={[-0.3, 0, 0]} c="#3b3150" />
+    <Box s={[0.32, 0.22, 0.02]} p={[-0.45, 1.37, -0.13]} r={[-0.3, 0, 0]} c="#9fe3c4" />
+    <Box s={[0.14, 0.05, 0.22]} p={[0.0, 1.035, 0.15]} c={IRON} />
+    <Box s={[0.32, 0.4, 0.2]} p={[0.55, 1.21, 0]} c="#d9b98a" />
+    <Cyl r={0.07} h={0.22} p={[0.85, 1.12, -0.15]} c="#a9cdfc" seg={8} />
+    <Ball r={0.08} p={[0.85, 1.28, -0.15]} c="#ffb3c6" />
+  </group>
+);
+
+/** Shopping bags set down in a little heap. */
+export const ShoppingBags: FC = () => (
+  <group>
+    {[
+      [0, 0, '#ff9fc0', 0.55],
+      [0.32, 0.12, '#a9cdfc', 0.45],
+      [-0.28, 0.15, '#ffd38a', 0.4],
+      [0.12, -0.25, '#fffaf2', 0.36],
+    ].map(([x, z, c, h], i) => (
+      <group key={i} position={[x as number, 0, z as number]} rotation={[0, i * 0.6 - 0.5, 0]}>
+        <Box s={[0.34, h as number, 0.16]} p={[0, (h as number) / 2, 0]} c={c as string} />
+        <mesh material={toon(shade(c as string, -0.3))} position={[0, (h as number) + 0.02, 0]}>
+          <torusGeometry args={[0.08, 0.012, 4, 10, Math.PI]} />
+        </mesh>
+      </group>
+    ))}
+  </group>
+);
+
+/** A low white shelf of sneakers and heels in three rows. */
+export const ShoeShelf: FC = () => (
+  <group>
+    {[0.04, 0.42, 0.8].map((y) => (
+      <Box key={y} s={[1.4, 0.04, 0.42]} p={[0, y, 0]} c="#fffaf2" />
+    ))}
+    {[-0.69, 0.69].map((x) => (
+      <Box key={x} s={[0.04, 0.84, 0.42]} p={[x, 0.42, 0]} c="#fffaf2" />
+    ))}
+    <Box s={[1.4, 0.84, 0.02]} p={[0, 0.42, -0.2]} c="#f6e2ec" />
+    {[0.06, 0.44, 0.82].flatMap((y, row) =>
+      [-0.45, -0.15, 0.15, 0.45].map((x, i) => (
+        <Box key={`${row}${i}`} s={[0.2, 0.1, 0.3]} p={[x, y + 0.07, 0.02]} c={BOOKS[(row * 4 + i) % BOOKS.length]} />
+      )),
+    )}
+  </group>
+);

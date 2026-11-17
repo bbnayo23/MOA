@@ -18,7 +18,8 @@ export type ArtKind =
   // small outdoor things between the big pieces (props.tsx)
   | 'campChair' | 'picnicTable' | 'woodpile' | 'canoe' | 'reeds' | 'signpost' | 'stump' | 'mushrooms' | 'flowers' | 'iceBox'
   | 'highChair' | 'scoreboard' | 'windscreen' | 'ballMachine' | 'palm' | 'towel' | 'beachBall' | 'rubberDuck' | 'shower'
-  | 'punchBag' | 'kettlebells' | 'lockers' | 'plyoBoxes' | 'powerRack' | 'piano' | 'lectern' | 'candelabra';
+  | 'punchBag' | 'kettlebells' | 'lockers' | 'plyoBoxes' | 'powerRack' | 'piano' | 'lectern' | 'candelabra'
+  | 'bookStack' | 'cashier' | 'shoppingBags' | 'shoeShelf';
 
 /**
  * Physical facts about a kind, used by the simulation (not the renderer):
@@ -104,6 +105,10 @@ export const KINDS: Record<ArtKind, { foot?: number; light?: string; face?: numb
   piano: { foot: 0.45 },
   lectern: { foot: 0.2 },
   candelabra: { foot: 0.15, light: '#ffc870' },
+  bookStack: {},
+  cashier: { foot: 0.5 },
+  shoppingBags: {},
+  shoeShelf: { foot: 0.3 },
   bouquet: { foot: 0.2 },
   // a shop stands on the map's back edge: its footprint reaches from the wall to its front
   shop: { foot: 0.95 },

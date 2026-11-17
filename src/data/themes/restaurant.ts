@@ -1,4 +1,5 @@
 import type { Tile } from '../../world/space';
+import { fine } from './grid';
 import { behind } from './seats';
 import type { InteractionObject, ThemeConfig } from './types';
 
@@ -60,6 +61,17 @@ export const restaurant: ThemeConfig = {
     table('table-4', { tx: 5.3, ty: 3.7 }),
     table('table-5', { tx: 2.0, ty: 6.4 }),
     table('table-6', { tx: 6.4, ty: 2.0 }),
+    // more tables through the front of the room
+    table('table-7', { tx: fine(10.8), ty: fine(10.8) }),
+    table('table-8', { tx: fine(7.4), ty: fine(14.6) }),
+    table('table-9', { tx: fine(14.6), ty: fine(7.4) }),
+    table('table-10', { tx: fine(14.4), ty: fine(12.0) }),
+    {
+      // a second lounge by the back wall
+      id: 'sofa-2', kind: 'sofa', label: '소파', icon: '🛋️', at: { tx: fine(12.2), ty: 0.45 }, color: '#9fd8b8',
+      actions: ['sit', 'drink', 'talk'],
+      spots: [{ tx: fine(12.2) - 0.19, ty: 0.51 }, { tx: fine(12.2) + 0.19, ty: 0.51 }],
+    },
   ],
   decorations: [
     { kind: 'menuboard', at: { tx: 5.2, ty: 0.5 } },
@@ -78,6 +90,13 @@ export const restaurant: ThemeConfig = {
     { kind: 'menuboard', at: { tx: 6.9, ty: 5.8 } },
     { kind: 'bouquet', at: { tx: 5.7, ty: 7.3 }, color: '#ffd38a' },
     { kind: 'bouquet', at: { tx: 7.4, ty: 6.6 }, color: '#ff9fc0' },
+    // the host's stand at the way in, the second lounge's lamp and armchair
+    { kind: 'lectern', at: { tx: fine(15.0), ty: fine(14.6) } },
+    { kind: 'floorLamp', at: { tx: fine(13.7), ty: 0.45 } },
+    { kind: 'armchair', at: { tx: fine(10.6), ty: 0.5 }, color: '#ffd38a' },
+    { kind: 'plant', at: { tx: fine(9.0), ty: fine(9.0) } },
+    { kind: 'plant', at: { tx: fine(11.0), ty: fine(15.4) } },
+    { kind: 'frame', at: { tx: 0.12, ty: fine(13.0) }, color: '#9fd8b8' },
   ],
   recommendedOutfits: [
     { name: '🍷 디너 재킷', look: { top: 'jacket', topColor: '#5c6185', bottom: 'pants', bottomColor: '#5c6185', hat: 'none' } },

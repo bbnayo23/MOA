@@ -1,5 +1,6 @@
 import type { Tile } from '../../world/space';
 import type { CharacterLook } from '../character';
+import { fine } from './grid';
 import type { InteractionObject, ThemeConfig } from './types';
 
 /** Looks you can try on in the fitting room. Each is a partial look laid over yours. */
@@ -76,6 +77,21 @@ export const mall: ThemeConfig = {
     { kind: 'displayTable', at: { tx: 7.2, ty: 5.6 } },
     { kind: 'frame', at: { tx: 0.12, ty: 2.9 }, color: '#ff9fc0' },
     { kind: 'frame', at: { tx: 0.12, ty: 5.1 }, color: '#cbb8ff' },
+    // the atrium: trees in planters and benches either side of the walkway
+    { kind: 'planterTree', at: { tx: fine(6.4), ty: fine(9.2) } },
+    { kind: 'planterTree', at: { tx: fine(9.2), ty: fine(6.4) } },
+    { kind: 'pew', at: { tx: fine(8.3), ty: fine(11.6) } },
+    { kind: 'pew', at: { tx: fine(11.6), ty: fine(8.3) } },
+    // more to look at: racks, a shoe shelf, mannequins; the checkout by the way out
+    { kind: 'clothesRack', at: { tx: fine(13.0), ty: fine(9.6) } },
+    { kind: 'clothesRack', at: { tx: fine(4.0), ty: fine(13.6) } },
+    { kind: 'shoeShelf', at: { tx: 0.4, ty: fine(15.0) } },
+    { kind: 'shoeShelf', at: { tx: fine(11.0), ty: 0.4 } },
+    { kind: 'dressForm', at: { tx: fine(8.2), ty: fine(14.2) }, color: '#9fd8b8' },
+    { kind: 'dressForm', at: { tx: fine(14.2), ty: fine(13.4) }, color: '#ffb3c6' },
+    { kind: 'cashier', at: { tx: fine(14.8), ty: fine(1.6) }, color: '#ff9fc0' },
+    { kind: 'shoppingBags', at: { tx: fine(13.6), ty: fine(7.2) } },
+    { kind: 'shoppingBags', at: { tx: fine(5.0), ty: fine(8.8) } },
   ],
   recommendedOutfits: OUTFITS.slice(0, 2),
 };
