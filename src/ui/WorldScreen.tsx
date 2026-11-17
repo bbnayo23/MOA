@@ -21,7 +21,7 @@ import c from '../styles/common.module.scss';
 import s from '../styles/WorldScreen.module.scss';
 import { AvatarImage } from './AvatarImage';
 import { ZOOM } from '../world/camera';
-import { World } from '../world/World';
+import { World, WorldGuard } from '../world/World';
 import { InstallButton } from './InstallButton';
 import { CheerBoard, FocusTimer, Lobby, MenuPanel, RallyGame, ThemePreview, Wardrobe } from './Panels';
 import { GameLobby, GameStage, GameTables } from './Minigame';
@@ -66,7 +66,9 @@ export function WorldScreen() {
   return (
     <div className={s.layout} style={{ '--stage-bg': theme.background.sky[0] } as CSSProperties}>
       {/* a fresh world per room: only its people are in it */}
-      <World key={roomId} theme={theme} className={s.game} paused={scene && !!game && game !== 'lobby'} raised={!scene && !!game && game !== 'lobby'} />
+      <WorldGuard className={s.game}>
+        <World key={roomId} theme={theme} className={s.game} paused={scene && !!game && game !== 'lobby'} raised={!scene && !!game && game !== 'lobby'} />
+      </WorldGuard>
       <TopBar theme={theme} drawer={drawer} toggleDrawer={() => setDrawer(!drawer)} open={toggle} />
       <ZoomControls />
       {drawer && <Sidebar theme={theme} close={() => setDrawer(false)} />}

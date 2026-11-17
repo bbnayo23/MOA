@@ -1,5 +1,5 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Component, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import * as THREE from 'three';
 import { fromGame, toGame } from '../bridge';
 import { ACTIONS } from '../data/actions';
@@ -205,6 +205,33 @@ export function World({ theme, className, paused = false, raised = false }: { th
       </div>
     </div>
   );
+}
+
+/**
+ * If the world can't be drawn (no WebGL on this device or browser, or it broke): say so in its place,
+ * instead of a blank page under a loading screen that never goes. Everything over it (chat, friends…) still works.
+ */
+export class WorldGuard extends Component<{ className?: string; children: ReactNode }, { broken: boolean }> {
+  state = { broken: false };
+  static getDerivedStateFromError() {
+    return { broken: true };
+  }
+  componentDidCatch(error: unknown) {
+    console.error(error);
+    hideSplash();
+  }
+  render() {
+    if (!this.state.broken) return this.props.children;
+    return (
+      <div className={this.props.className}>
+        <div className={s.broken} role="alert">
+          <strong>화면을 그릴 수 없어요</strong>
+          <p>이 기기나 브라우저에서 3D 그래픽(WebGL)을 쓸 수 없어요. 브라우저를 최신으로 바꾸거나 다른 브라우저로 열어 주세요. 채팅과 친구 기능은 그대로 쓸 수 있어요.</p>
+          <button onClick={() => location.reload()}>다시 시도</button>
+        </div>
+      </div>
+    );
+  }
 }
 
 /** Says when a space's first frames are drawn (its models built, their shaders compiled): the curtain can lift. */
