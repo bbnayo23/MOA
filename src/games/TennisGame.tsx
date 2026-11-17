@@ -4,11 +4,12 @@ import * as THREE from 'three';
 import s from '../styles/Minigame.module.scss';
 import { PIXEL_FONT } from '../styles/fonts';
 import { AvatarBody, useAvatarPose, useJoints } from '../world/Avatar3D';
+import { Fan } from './Fan';
 import { MODELS } from '../world/models';
 import { Sky } from '../world/Stage';
 import { canvasTexture, toon } from '../world/toon';
 import { useHeld } from './controls';
-import { ev, finish, onEvent, type Match } from './session';
+import { ev, finish, onEvent, type Match, type Seat } from './session';
 import { seeded } from './swim';
 import {
   ballAt,
@@ -39,6 +40,8 @@ interface Live {
   /** Where the other player last said they were. */
   seen: [number, number];
   swungAt: [number, number];
+  /** When the last point was scored (the stands cheer). */
+  pointAt: number;
   /** No serve before this. */
   until: number;
   over: boolean;
@@ -52,7 +55,7 @@ const WHY: Record<string, string> = { far: '공이 너무 멀었어요', early: 
 export function TennisGame({ match, meId }: { match: Match; meId: string }) {
   const side = match.role === 'player' ? (match.seats.findIndex((x) => x.id === meId) as Side) : null;
   const cpu = match.seats.findIndex((x) => x.cpu) as Side | -1;
-  const live = useRef<Live>({ score: newScore(), flight: null, t0: 0, x: [0, 0], seen: [0, 0], swungAt: [-9, -9], until: 0, over: false }).current;
+  const live = useRef<Live>({ score: newScore(), flight: null, t0: 0, x: [0, 0], seen: [0, 0], swungAt: [-9, -9], pointAt: -9, until: 0, over: false }).current;
   const [hud, setHud] = useState({ score: live.score, msg: '' });
   const held = useHeld(side !== null);
   const rnd = useMemo(() => seeded(match.seed), [match.seed]);
@@ -61,6 +64,7 @@ export function TennisGame({ match, meId }: { match: Match; meId: string }) {
   /** The point goes to `winner` (decided by whoever missed — or by me against the computer). */
   const scorePoint = (winner: Side, why: string, tell: boolean) => {
     live.score = point(live.score, winner);
+    live.pointAt = now();
     live.flight = null;
     live.until = now() + 1.4;
     if (tell) ev({ k: 'pt', score: live.score, why } satisfies TennisEv);
@@ -90,6 +94,7 @@ export function TennisGame({ match, meId }: { match: Match; meId: string }) {
         if (e.k === 'pt') {
           const before = live.score;
           live.score = e.score;
+          live.pointAt = now();
           live.flight = null;
           live.until = now() + 1.4;
           say(side === null ? e.why : e.score.points[side] > before.points[side] ? `득점! ${e.why}` : `실점 · ${e.why}`);
@@ -165,7 +170,7 @@ export function TennisGame({ match, meId }: { match: Match; meId: string }) {
   return (
     <div className={s.game}>
       <Canvas flat shadows="percentage" dpr={[1, 2]} camera={{ fov: 40, position: side === null ? [12, 10, 0] : [0, 5.6, HALF_L + 7], near: 0.5, far: 160 }}>
-        <Court />
+        <Court fans={match.watchers ?? []} cheer={() => now() - live.pointAt < 1.6} />
         <Scoreboard names={[name(me), name(them)]} points={[hud.score.points[me], hud.score.points[them]]} />
         <group rotation={[0, side === 1 ? Math.PI : 0, 0]}>
           {match.seats.map((p, i) => (
@@ -226,7 +231,7 @@ const meshTexture = (line: string, repeat: [number, number]) =>
     ctx.strokeRect(0, 0, 32, 32);
   }, repeat);
 
-function Court() {
+function Court({ fans, cheer }: { fans: Seat[]; cheer: () => boolean }) {
   const net = useMemo(() => new THREE.MeshBasicMaterial({ map: meshTexture('#2f3a4a', [HALF_W * 5, 3]), transparent: true, alphaTest: 0.3, side: THREE.DoubleSide }), []);
   const fence = useMemo(() => new THREE.MeshBasicMaterial({ map: meshTexture(FENCE, [16, 4]), transparent: true, alphaTest: 0.3, side: THREE.DoubleSide }), []);
   const FW = HALF_W + 3.2, FB = HALF_L + 3.4; // the fence: sides and the far end (the near end is open, so nothing hides you)
@@ -291,7 +296,7 @@ function Court() {
           ))}
         </group>
       ))}
-      <Stands z={-FB - 1.6} />
+      <Stands z={-FB - 1.6} fans={fans} cheer={cheer} />
       {/* a park all round */}
       {[[-FW - 3, -6], [-FW - 2.5, 2], [FW + 3, -4], [FW + 2.6, 4.5], [-7, -FB - 6], [7.5, -FB - 5.5], [-FW - 4, 9], [FW + 4, 10]].map(([x, z], i) => (
         <group key={i} position={[x, 0, z]} scale={1.2 + (i % 3) * 0.15}>
@@ -303,10 +308,18 @@ function Court() {
 }
 
 /** Tiered seats behind the far end, in the theme's colours. */
-function Stands({ z }: { z: number }) {
+/** Three rows of seats behind the far baseline, spectators in them (front row first). */
+function Stands({ z, fans, cheer }: { z: number; fans: Seat[]; cheer: () => boolean }) {
   const colors = ['#ff9db5', '#ffd27a', '#8fd0f5', '#b5e8c9', '#cbb8ff'];
+  // first either side of the far player (not right behind them, from the near end), then out, then the middle
+  const order = [3, 8, 2, 9, 4, 7, 1, 10, 0, 11, 5, 6];
   return (
     <group position={[0, 0, z]}>
+      {fans.slice(0, 36).map((f, i) => {
+        const row = Math.floor(i / 12), k = order[i % 12];
+        // sitting on the cushion: hips up on it, feet hanging over the front of the step
+        return <Fan key={f.id} look={f.look} at={[-5.5 + k, 0.29 + row * 0.9, 0.27 - row * 0.9]} excited={cheer} />;
+      })}
       {[0, 1, 2].map((row) => (
         <group key={row} position={[0, 0, -row * 0.9]}>
           <mesh position={[0, 0.25 + row * 0.45, 0]} material={toon('#e9e2f2')} castShadow receiveShadow>

@@ -96,6 +96,7 @@ export function GameLobby({ invite }: { invite: () => void }) {
           ),
         )}
       </ol>
+      {!!m.watchers?.length && <p className={p.tagline}>👀 관전 {m.watchers.length}명 — 경기 중엔 관중석에 앉아 있어요</p>}
       {m.role === 'watch' ? (
         <p className={p.tagline}>👀 관전 중 — 경기가 시작되면 함께 봐요.</p>
       ) : (

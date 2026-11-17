@@ -27,6 +27,8 @@ export interface Table {
   host: string;
   seats: Seat[];
   status: 'open' | 'playing';
+  /** Who's watching (they sit in the stands). */
+  watchers?: Seat[];
 }
 
 export type Scores = Record<string, number | null>;
@@ -57,6 +59,9 @@ export type GameMsg =
   | { k: 'ready'; mid: string; on: boolean }
   | { k: 'start'; mid: string; seed: number; seats: Seat[]; serverId: string | null }
   | { k: 'ev'; mid: string; seq: number; data: unknown }
+  /** I'm watching (or not any more): the host keeps the list, the table carries it. */
+  | { k: 'watch'; mid: string; seat: Seat }
+  | { k: 'unwatch'; mid: string }
   /** "Play with me?": a host asks one person in the room (any space in it) to their table; `nope` is their "not now". */
   | { k: 'ask'; to: string; t: Table; theme: ThemeId }
   | { k: 'nope'; mid: string };
@@ -88,7 +93,10 @@ const patch = (m: Partial<Match>) => set((s) => (s.match ? { match: { ...s.match
 /** The realtime link hands over its send (useRealtime). */
 export const bindGameLink = (send: (g: GameMsg) => void) => (sendRaw = send);
 
-const tableOf = ({ mid, game, host, seats, phase }: Match): Table => ({ mid, game, host, seats, status: phase === 'lobby' ? 'open' : 'playing' });
+const tableOf = ({ mid, game, host, seats, phase, watchers }: Match): Table => ({ mid, game, host, seats, watchers, status: phase === 'lobby' ? 'open' : 'playing' });
+
+/** Seats in the stands. */
+const STANDS = 36;
 
 /** Tell the space about my table (also every few seconds, for people who walk in later). */
 function announce() {
@@ -147,10 +155,11 @@ export function join(t: Table) {
   sendRaw({ k: 'join', mid: t.mid, seat: mySeat() });
 }
 
-/** Watch a table (a match in progress shows from the next event on). */
+/** Watch a table (a match in progress shows from the next event on), from a seat in its stands. */
 export function watch(t: Table) {
   if (get().match) return;
   set({ match: { ...t, role: 'watch', phase: t.status === 'playing' ? 'play' : 'lobby', seed: 0, startAt: performance.now(), serverId: null, scores: null, verdict: null, left: [] } });
+  sendRaw({ k: 'watch', mid: t.mid, seat: mySeat() });
 }
 
 export function ready(on: boolean) {
@@ -219,6 +228,7 @@ export function exit() {
   if (!m) return;
   if (isHost()) sendRaw({ k: 'close', mid: m.mid });
   else if (m.role === 'player') sendRaw({ k: 'leave', mid: m.mid });
+  else sendRaw({ k: 'unwatch', mid: m.mid });
   heartbeat(false);
   set({ match: null });
 }
@@ -245,6 +255,7 @@ export function receive(from: string, g: GameMsg) {
         return;
       }
       if (m?.mid !== g.t.mid || isHost()) return;
+      patch({ watchers: g.t.watchers }); // who's in the stands, at any point
       // the host's word on who's seated; a lobby I'm not in any more (full, or sent away): leave it
       if (m.role === 'player' && m.phase === 'lobby' && !g.t.seats.some((s) => s.id === me().id)) {
         set({ match: null });
@@ -262,6 +273,12 @@ export function receive(from: string, g: GameMsg) {
       return;
   }
   if (!m || m.mid !== g.mid) return;
+  // spectators come and go whenever (the host keeps the list)
+  if (isHost() && (g.k === 'watch' || g.k === 'unwatch')) {
+    const rest = (m.watchers ?? []).filter((w) => w.id !== from);
+    patch({ watchers: g.k === 'watch' ? [...rest, g.seat].slice(0, STANDS) : rest });
+    return announce();
+  }
   if (isHost() && m.phase === 'lobby') {
     if (g.k === 'join' && !m.seats.some((s) => s.id === from) && m.seats.length < GAMES[m.game].max) patch({ seats: [...m.seats, g.seat] });
     if (g.k === 'leave') patch({ seats: m.seats.filter((s) => s.id !== from) });
@@ -288,6 +305,10 @@ export function present(ids: string[]) {
       useMoa.getState().system('🏁 호스트가 나가서 게임이 닫혔어요.');
       return;
     }
+  }
+  if (isHost() && m.watchers?.some((w) => !here.has(w.id))) {
+    patch({ watchers: m.watchers.filter((w) => here.has(w.id)) });
+    announce();
   }
   const gone = m.seats.filter((s) => !s.cpu && !here.has(s.id)).map((s) => s.id);
   if (m.phase === 'lobby' && isHost() && gone.length) {

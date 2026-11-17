@@ -3,11 +3,12 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperti
 import * as THREE from 'three';
 import s from '../styles/Minigame.module.scss';
 import { AvatarBody, useAvatarPose, useJoints } from '../world/Avatar3D';
+import { Fan } from './Fan';
 import { MODELS } from '../world/models';
 import { Sky } from '../world/Stage';
 import { canvasTexture, shimmer, toon } from '../world/toon';
 import { useTaps } from './controls';
-import { ev, finish, onEvent, type Match } from './session';
+import { ev, finish, onEvent, type Match, type Seat } from './session';
 import { BEAT, CUTOFF, cpuStrokes, LENGTH, newSwimmer, seeded, stroke, strokeQuality, swimFor, type Arm, type Swimmer } from './swim';
 
 const LANE = 2.4;
@@ -114,7 +115,7 @@ export function SwimGame({ match, meId }: { match: Match; meId: string }) {
   return (
     <div className={s.game}>
       <Canvas flat shadows="percentage" dpr={[1, 2]} camera={{ fov: 42, position: [width / 2 + 4, 7, 6], near: 0.5, far: 150 }}>
-        <Pool lanes={match.seats.length} />
+        <Pool lanes={match.seats.length} fans={match.watchers ?? []} cheer={() => lanes.some((l) => l.sw.time !== null && raceTime() - l.sw.time < 2)} />
         {match.seats.map((p, i) => (
           <SwimmerFigure key={p.id} look={p.look} lane={lanes[i]} x={(i - (match.seats.length - 1) / 2) * LANE} />
         ))}
@@ -177,7 +178,7 @@ const tiles = (fill: string, grout: string, w: number, h: number, n = 2) =>
   }, [w * n, h * n]);
 
 
-function Pool({ lanes }: { lanes: number }) {
+function Pool({ lanes, fans, cheer }: { lanes: number; fans: Seat[]; cheer: () => boolean }) {
   const w = lanes * LANE;
   const L = START_Z - END_Z;
   const look = useMemo(() => {
@@ -298,6 +299,16 @@ function Pool({ lanes }: { lanes: number }) {
       {[-5, -LENGTH + 5].map((z) => (
         <Bunting key={z} z={z} width={w + 2} />
       ))}
+      {/* spectators: on the loungers, then standing along the deck */}
+      {fans.slice(0, 12).map((f, i) =>
+        i < 3 ? (
+          <group key={f.id} position={[w / 2 + 2.6, 0, [-14, -8, -2][i]]} rotation-y={-Math.PI / 2}>
+            <Fan look={f.look} at={[0, 0, 0.47]} excited={cheer} />
+          </group>
+        ) : (
+          <Fan key={f.id} look={f.look} at={[w / 2 + 1.3, 0, -17 + (i - 3) * 2]} rotY={-Math.PI / 2} anim="idle" excited={cheer} />
+        ),
+      )}
       {/* poolside: loungers under parasols, trees */}
       {[-14, -8, -2].map((z) => (
         <group key={z} position={[w / 2 + 2.6, 0, z]} rotation-y={-Math.PI / 2}>
