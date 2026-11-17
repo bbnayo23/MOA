@@ -14,7 +14,8 @@ export function PixelPost({ threshold = 0.22 }: { threshold?: number }) {
     const rt = new THREE.WebGLRenderTarget(1, 1, {
       minFilter: THREE.NearestFilter,
       magFilter: THREE.NearestFilter,
-      type: THREE.HalfFloatType, // linear light: 8 bits would band in the dark
+      // 8-bit sRGB storage (no banding in the dark; unlike half-float targets, every WebGL2 phone can draw into it)
+      colorSpace: THREE.SRGBColorSpace,
       depthTexture: new THREE.DepthTexture(1, 1),
     });
     const mat = new THREE.ShaderMaterial({
