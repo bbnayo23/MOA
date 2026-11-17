@@ -4,7 +4,8 @@ import * as THREE from 'three';
 export const ZOOM = { min: 0.05, max: 2, step: 1.25 };
 export const clampZoom = (z: number, min = ZOOM.min) => Math.min(ZOOM.max, Math.max(min, z));
 
-const PITCH = (40 * Math.PI) / 180;
+/** How far the camera looks down. */
+export const PITCH = (40 * Math.PI) / 180;
 
 /** Quarter view: look at `look` from the +x +z side, `dist` away, tilted down by PITCH. */
 export function place(cam: THREE.Camera, look: THREE.Vector3, dist: number) {

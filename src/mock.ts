@@ -9,18 +9,18 @@ export const FRIENDS: Player[] = [
     id: 'haru',
     nickname: '하루',
     look: {
-      skin: '#fcd5bd', face: 'round', eyes: 'round', nose: 'dot', mouth: 'cat', hair: 'short', hairColor: '#4a3540',
-      top: 'hoodie', topColor: '#b5e8c9', bottom: 'pants', bottomColor: '#5c6185', shoes: '#fffaf2',
-      hat: 'cap', accessory: 'none',
+      skin: '#fcd5bd', face: 'round', eyes: 'round', eyeColor: '#6b4434', nose: 'dot', mouth: 'cat', hair: 'short', hairColor: '#4a3540',
+      top: 'hoodie', topColor: '#ffd38a', bottom: 'pants', bottomColor: '#5c6185', shoes: '#fffaf2',
+      hat: 'puppy', accessory: 'none',
     },
   },
   {
     id: 'momo',
     nickname: '모모',
     look: {
-      skin: '#ffe8dc', face: 'oval', eyes: 'happy', nose: 'none', mouth: 'smile', hair: 'long', hairColor: '#f4a6c0',
+      skin: '#ffe8dc', face: 'round', eyes: 'sleepy', eyeColor: '#7b52b0', nose: 'none', mouth: 'flat', hair: 'long', hairColor: '#f4a6c0',
       top: 'stripe', topColor: '#cbb8ff', bottom: 'skirt', bottomColor: '#ffd38a', shoes: '#ff9a7a',
-      hat: 'none', accessory: 'star',
+      hat: 'kitty', accessory: 'none',
     },
   },
 ];

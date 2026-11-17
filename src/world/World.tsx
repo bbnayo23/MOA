@@ -11,7 +11,7 @@ import type { Motion } from '../net/link';
 import { supabase } from '../net/supabase';
 import { roomOf, useMoa } from '../store';
 import s from '../styles/World.module.scss';
-import { AvatarBody, moodOf, NIGHT_TINT, SIT_BACK, SIT_UP, useAvatarPose, useJoints, type Mood } from './Avatar';
+import { AvatarBody, moodOf, NIGHT_TINT, SIT_BACK, SIT_UP, TAG_Y, useAvatarPose, useJoints, type Mood } from './Avatar';
 import { gesture } from './camera';
 import { CameraRig } from './CameraRig';
 import { KINDS, type ArtKind } from './kinds';
@@ -94,7 +94,7 @@ export function World({ theme, className, paused = false, raised = false }: { th
   const above = (o: InteractionObject) => (): [number, number, number] => [o.at.tx * T, MODELS[o.kind].h + 0.3, o.at.ty * T];
   // door signs hang on the front wall above the door, where they stay in view
   const onFront = (o: InteractionObject) => (): [number, number, number] => [(o.at.tx + 0.42) * T, 2.15, (o.at.ty + 0.42) * T];
-  const head = (a: Agent) => (): [number, number, number] => [a.pos.tx * T, 2.15 + sinkOf(a), a.pos.ty * T]; // just over the sprite's head
+  const head = (a: Agent) => (): [number, number, number] => [a.pos.tx * T, TAG_Y + sinkOf(a), a.pos.ty * T];
 
   return (
     <div className={className}>

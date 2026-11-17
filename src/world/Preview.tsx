@@ -134,7 +134,7 @@ export type ThumbMode = 'head' | 'full';
 
 // art-pixel crops of the sprite, and how big each pixel gets in the picture
 const CROP: Record<ThumbMode, { x: number; y: number; w: number; h: number; k: number }> = {
-  head: { x: 4, y: 4, w: 40, h: 40, k: 4 },
+  head: { x: 4, y: 6, w: 40, h: 40, k: 4 },
   full: { x: 0, y: 0, w: AV_W, h: AV_H, k: 3 },
 };
 const cache = new Map<string, string>();

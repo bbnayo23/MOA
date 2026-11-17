@@ -1,7 +1,8 @@
 import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { AV_FOOT, AV_H, AV_W, avatarCanvas, type Mood } from '../art/avatar';
+import { AV_FOOT, AV_H, AV_TOP, AV_W, avatarCanvas, type Mood } from '../art/avatar';
+import { PITCH } from './camera';
 import { ANIMS } from '../data/anims';
 import type { CharacterLook } from '../data/character';
 
@@ -15,6 +16,9 @@ export { moodOf, type Mood } from '../art/avatar';
 
 /** Art pixels per world unit: one sprite pixel is one screen pixel in the pixel-art world. */
 export const ART = 30;
+
+/** Name tags: just over the head (the card is stretched up by 1 / cos(pitch), so it looks square to the camera). */
+export const TAG_Y = (AV_FOOT - AV_TOP) / ART / Math.cos(PITCH) + 0.06;
 
 /** Seated hips sit this far up and back from where the feet stood (seat height ≈ 0.45). */
 export const SIT_UP = 0.06;

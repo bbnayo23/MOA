@@ -12,7 +12,7 @@ export const MOUTH_TYPES = ['smile', 'cat', 'open', 'flat'] as const;
 export const TOP_STYLES = ['tee', 'stripe', 'hoodie', 'jacket', 'dress'] as const;
 export const BOTTOM_STYLES = ['pants', 'shorts', 'skirt'] as const;
 /** Hats, and animal hoods (a kigurumi hood with ears; its colour is the animal's). */
-export const HAT_STYLES = ['none', 'cap', 'beanie', 'ribbon', 'sunhat', 'bunny', 'bear', 'frog', 'kitty'] as const;
+export const HAT_STYLES = ['none', 'cap', 'beanie', 'ribbon', 'sunhat', 'bunny', 'bear', 'frog', 'kitty', 'puppy'] as const;
 export const ACCESSORIES = ['none', 'glasses', 'star', 'scarf', 'flower'] as const;
 
 export interface CharacterLook {
@@ -73,7 +73,7 @@ export const LABELS: Record<string, string> = {
   tee: '티셔츠', stripe: '스트라이프', hoodie: '후디', jacket: '재킷', dress: '원피스',
   pants: '바지', shorts: '반바지', skirt: '치마',
   none: '없음', cap: '캡모자', beanie: '비니', ribbon: '리본', sunhat: '밀짚모자',
-  bunny: '토끼 후드', bear: '곰 후드', frog: '개구리 후드', kitty: '고양이 후드',
+  bunny: '토끼 후드', bear: '곰 후드', frog: '개구리 후드', kitty: '고양이 후드', puppy: '강아지 후드',
   glasses: '안경', star: '별 핀', scarf: '목도리', flower: '꽃 핀',
 };
 
@@ -82,7 +82,7 @@ export const PRESETS: { name: string; look: CharacterLook }[] = [
     name: '모아',
     look: {
       skin: '#ffe8dc', face: 'round', eyes: 'round', eyeColor: '#d0703c', nose: 'none', mouth: 'flat', hair: 'bob', hairColor: '#8a5a44',
-      top: 'hoodie', topColor: '#ffb3c6', bottom: 'skirt', bottomColor: '#a9cdfc', shoes: '#fffaf2',
+      top: 'hoodie', topColor: '#ffb3c6', bottom: 'skirt', bottomColor: '#ffb3c6', shoes: '#fffaf2',
       hat: 'bunny', accessory: 'none',
     },
   },
@@ -105,9 +105,9 @@ export const PRESETS: { name: string; look: CharacterLook }[] = [
   {
     name: '루루',
     look: {
-      skin: '#ffe8dc', face: 'oval', eyes: 'round', eyeColor: '#3d6fb8', nose: 'none', mouth: 'smile', hair: 'long', hairColor: '#a7bcf5',
-      top: 'dress', topColor: '#cbb8ff', bottom: 'pants', bottomColor: '#fffaf2', shoes: '#5c6185',
-      hat: 'ribbon', accessory: 'flower',
+      skin: '#ffe8dc', face: 'round', eyes: 'round', eyeColor: '#3d6fb8', nose: 'button', mouth: 'cat', hair: 'short', hairColor: '#e0a96d',
+      top: 'hoodie', topColor: '#ffd38a', bottom: 'shorts', bottomColor: '#a9cdfc', shoes: '#ff9a7a',
+      hat: 'puppy', accessory: 'none',
     },
   },
 ];
