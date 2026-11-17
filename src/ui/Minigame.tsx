@@ -13,7 +13,7 @@ import p from '../styles/Panels.module.scss';
 import s from '../styles/Minigame.module.scss';
 
 /** Tennis and swimming have their own 3D scenes; every other game is a timed round on a card. */
-const view = (game: GameId) => (game === 'tennis' ? TennisGame : game === 'swim' ? SwimGame : TimedGame);
+const view = (game: GameId) => (game === 'tennis' || game === 'doubles' ? TennisGame : game === 'swim' ? SwimGame : TimedGame);
 
 /** Leave the table and stop the action that opened it. */
 const leave = () => {
@@ -85,6 +85,7 @@ export function GameLobby({ invite }: { invite: () => void }) {
         {Array.from({ length: def.max }, (_, i) => m.seats[i]).map((x, i) =>
           x ? (
             <li key={x.id}>
+              {def.teams && (i % 2 ? '🔵 ' : '🔴 ')}
               {x.id === m.host && '👑 '}
               {x.nickname}
               {x.id === myId && ' (나)'}
@@ -105,7 +106,7 @@ export function GameLobby({ invite }: { invite: () => void }) {
           {host ? (
             <>
               <button className={c.primary} disabled={!allReady} onClick={() => void start()}>
-                {allReady ? '시작!' : `친구 기다리는 중 (${def.min}명부터)`}
+                {!allReady ? `친구 기다리는 중 (${def.min}명부터)` : def.fill && m.seats.length < def.max ? '시작! (빈자리는 컴퓨터)' : '시작!'}
               </button>
               <button className={c.btn} onClick={() => void start(true)}>
                 {def.cpu ? '🤖 혼자 하기' : '혼자 하기'}
@@ -141,10 +142,10 @@ export function GameLobby({ invite }: { invite: () => void }) {
       )}
       {best.length > 0 && (
         <p className={s.records}>
-          🏅 {m.game === 'swim' ? '최고 기록' : m.game === 'tennis' ? '최다 승리' : '최고 점수'}:{' '}
+          🏅 {m.game === 'swim' ? '최고 기록' : m.game === 'tennis' || m.game === 'doubles' ? '최다 승리' : '최고 점수'}:{' '}
           {best.map((r, i) => (
             <span key={i}>
-              {r.nickname} {m.game === 'swim' ? `${Number(r.value).toFixed(2)}초` : m.game === 'tennis' ? `${r.value}승` : `${r.value}점`}
+              {r.nickname} {m.game === 'swim' ? `${Number(r.value).toFixed(2)}초` : m.game === 'tennis' || m.game === 'doubles' ? `${r.value}승` : `${r.value}점`}
             </span>
           ))}
         </p>
@@ -197,7 +198,7 @@ function Results({ m, me }: { m: Match; me: string }) {
   const best = order[0]?.[1];
   const won = best != null && scores[me] === best;
   const firsts = order.filter(([, v]) => v === best).length;
-  const title = def.score === 'none' ? `${def.icon} 함께해서 좋았어요` : m.role === 'player' && won ? (firsts > 1 ? '🤝 공동 1위!' : '🏆 승리!') : '🏁 경기 종료';
+  const title = def.score === 'none' ? `${def.icon} 함께해서 좋았어요` : m.role === 'player' && won ? (firsts > 1 && !def.teams ? '🤝 공동 1위!' : '🏆 승리!') : '🏁 경기 종료';
   return (
     <div className={`${c.card} ${s.results}`} role="dialog" aria-label="결과">
       <h2>{title}</h2>

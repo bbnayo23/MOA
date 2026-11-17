@@ -6,7 +6,7 @@ import type { ThemeId } from './themes/types';
  * the lobby / countdown / results around it are shared (src/games/session.ts).
  */
 export type GameId =
-  | 'tennis' | 'swim'
+  | 'tennis' | 'doubles' | 'swim'
   | 'fishing' | 'barista' | 'squat' | 'memory' | 'styling' | 'breath'
   | 'stars' | 'recall' | 'rhythm' | 'bookhunt' | 'vote' | 'glass';
 
@@ -26,6 +26,10 @@ export interface GameDef {
   scene?: boolean;
   /** A game with no winner: what it came to, all together ({n}: the count). */
   together?: string;
+  /** Two teams: seats 0 · 2 against 1 · 3. */
+  teams?: boolean;
+  /** Start with whoever's here: empty seats go to computer players. */
+  fill?: boolean;
   howTo: string[];
 }
 
@@ -41,6 +45,10 @@ export const GAMES: Record<GameId, GameDef> = {
     score: 'points',
     scene: true,
     howTo: ['← → (◀ ▶)로 공이 떨어질 곳으로 달려가요', '공이 오면 타이밍 맞춰 스윙! (Space · 스윙)', '스윙할 때 ← →를 누르고 있으면 그쪽으로 쳐요', '먼저 5점 내면 승리'],
+  },
+  doubles: {
+    id: 'doubles', name: '테니스 2:2 복식', icon: '🎾', themeId: 'tennis', min: 2, max: 4, cpu: 3, score: 'points', scene: true, teams: true, fill: true,
+    howTo: ['두 명씩 한 팀 — 각자 코트 절반(왼쪽·오른쪽)을 맡아요', '내 쪽 절반으로 오는 공을 쳐요 (← → 이동 · Space 스윙)', '서브는 팀끼리 번갈아, 팀 안에서도 번갈아', '빈자리는 컴퓨터가 채워요 — 먼저 5점 내는 팀이 승리'],
   },
   swim: {
     id: 'swim',

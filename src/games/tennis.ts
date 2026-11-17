@@ -1,5 +1,5 @@
 /**
- * Tennis 1:1 rules. Pure (no React / three) so scripts/check-games.ts can run them in node.
+ * Tennis rules, 1:1 and 2:2. Pure (no React / three) so scripts/check-games.ts can run them in node.
  *
  * The court, seen from above: x across (−HALF_W … HALF_W), side 0's baseline at
  * z = +HALF_L, side 1's at z = −HALF_L. A shot is a *flight*: from the hitter's
@@ -89,3 +89,13 @@ export function cpuReturns(f: Flight, cpuX: number, rally: number, roll: number)
   const canReach = Math.abs(f.to - cpuX) - REACH <= RUN * 0.8 * f.dur;
   return canReach && roll < Math.max(0.55, 0.93 - rally * 0.035);
 }
+
+// ── doubles (2:2): seats 0 · 2 against 1 · 3, each player covering half the baseline ──
+/** A seat's team (its side of the net). */
+export const teamOf = (seat: number) => (seat % 2) as Side;
+/** Where along the baseline a seat may run: the whole court, or in doubles its half (the first pair left, the second right). */
+export const laneOf = (seat: number, doubles: boolean): [number, number] => (!doubles ? [-HALF_W, HALF_W] : seat < 2 ? [-HALF_W, 0.2] : [-0.2, HALF_W]);
+/** Who returns a flight: the receiving team's player whose half it lands in (so only ever one). */
+export const receiverOf = (f: Flight, doubles: boolean) => other(f.by) + (doubles && f.to >= 0 ? 2 : 0);
+/** Who serves: the teams take turns, and in doubles the partners take turns serving for their team. */
+export const serverOf = (s: Score, doubles: boolean) => s.server + (doubles && Math.floor((s.points[0] + s.points[1]) / 2) % 2 ? 2 : 0);

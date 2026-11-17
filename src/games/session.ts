@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { CharacterLook } from '../data/character';
+import { PRESETS, type CharacterLook } from '../data/character';
 import { GAMES, type GameId } from '../data/games';
 import type { ThemeId } from '../data/themes';
 import { supabase } from '../net/supabase';
@@ -175,10 +175,14 @@ export async function start(solo = false) {
   const m = get().match;
   if (!m || !isHost()) return;
   const def = GAMES[m.game];
+  // computer players, each in its own outfit: all the others when alone, or the empty seats (a game that fills them)
+  const cpu = (i: number): Seat => ({ id: `cpu${i + 1}`, nickname: `컴퓨터 ${i + 1}`, look: PRESETS[(i + 1) % PRESETS.length].look, ready: true, cpu: true });
   const seats = solo
-    ? [mySeat(true), ...Array.from({ length: def.cpu }, (_, i) => ({ id: `cpu${i + 1}`, nickname: `컴퓨터 ${i + 1}`, look: me().look, ready: true, cpu: true }))]
-    : m.seats;
-  if (!solo && (seats.length < def.min || seats.some((s) => !s.ready))) return;
+    ? [mySeat(true), ...Array.from({ length: def.cpu }, (_, i) => cpu(i))]
+    : def.fill
+      ? [...m.seats, ...Array.from({ length: def.max - m.seats.length }, (_, i) => cpu(i))]
+      : m.seats;
+  if (!solo && (m.seats.length < def.min || seats.some((s) => !s.ready))) return;
   const serverId = def.score === 'none' ? null : await record(m.game, seats); // nothing to win: nothing to record
   const seed = Math.floor(Math.random() * 2 ** 31);
   if (!solo) sendRaw({ k: 'start', mid: m.mid, seed, seats, serverId });

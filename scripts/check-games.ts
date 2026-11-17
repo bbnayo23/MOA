@@ -1,6 +1,6 @@
 // Runnable check for the minigame rules (tennis 1:1, swim race): `pnpm check`
 import assert from 'node:assert/strict';
-import { ballAt, cpuReturns, EARLY, HALF_L, judge, LATE, newScore, point, REACH, serve, winnerOf, WIN, type Flight } from '../src/games/tennis.ts';
+import { ballAt, cpuReturns, EARLY, HALF_L, HALF_W, judge, laneOf, LATE, newScore, point, REACH, receiverOf, serve, serverOf, teamOf, winnerOf, WIN, type Flight } from '../src/games/tennis.ts';
 import { cpuStrokes, LENGTH, newSwimmer, ranking, seeded, stroke, swimFor, V_MAX, BEAT, type Swimmer } from '../src/games/swim.ts';
 import {
   bites, cpuScore, deal, DRINKS, FISH, fits, gauge, grade, guide, isDrink, jerk, NEXT_LOOK, NEXT_ORDER, orders, rep, REP_LOCK, REQUESTS, requests, ROUND, wait, type TimedId,
@@ -37,6 +37,26 @@ assert.equal(winnerOf(s), 0);
 // the computer can't cover the whole court on a fast ball
 assert.equal(cpuReturns({ by: 0, from: 0, to: 3, dur: 0.75 }, -3, 0, 0), false);
 assert.equal(cpuReturns({ by: 0, from: 0, to: 0.5, dur: 1.2 }, 0, 0, 0.1), true);
+
+// doubles: seats 0 · 2 against 1 · 3; the ball goes to whoever's half it lands in; partners take turns serving
+assert.deepEqual([0, 1, 2, 3].map(teamOf), [0, 1, 0, 1]);
+assert.equal(receiverOf({ by: 1, from: 0, to: -1.2, dur: 1 }, true), 0);
+assert.equal(receiverOf({ by: 1, from: 0, to: 1.2, dur: 1 }, true), 2);
+assert.equal(receiverOf({ by: 0, from: 0, to: 1.2, dur: 1 }, true), 3);
+assert.equal(receiverOf({ by: 0, from: 0, to: 1.2, dur: 1 }, false), 1, 'singles: the one player');
+// every landing spot is in reach of its receiver's half
+for (let to = -HALF_W + 0.3; to <= HALF_W - 0.3; to += 0.1) {
+  const [lo, hi] = laneOf(receiverOf({ by: 1, from: 0, to, dur: 1 }, true), true);
+  assert.ok(to >= lo - REACH && to <= hi + REACH, `ball at ${to.toFixed(1)} out of reach`);
+}
+let d = newScore();
+const servers = [];
+for (let i = 0; i < 6; i++) {
+  servers.push(serverOf(d, true));
+  d = point(d, 0);
+}
+assert.deepEqual(servers, [0, 1, 2, 3, 0, 1], 'teams alternate, and partners within a team');
+assert.equal(serverOf(newScore(), false), 0);
 
 // ── swim ──
 const race = (gap: (i: number) => number, arms: (i: number) => 'L' | 'R') => {
