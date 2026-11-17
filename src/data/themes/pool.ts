@@ -21,8 +21,8 @@ export const pool: ThemeConfig = {
   background: {
     size: 8,
     sky: ['#8fd3ff', '#a6dcff', '#bde5ff', '#d4eeff', '#e8f6ff', '#f5fbff'],
-    grass: '#bfe6c9',
-    ground: ['#fdf8ef', '#f3ead9'],
+    grass: '#9fd8a8',
+    ground: ['#f7eedd', '#e8d8bc'],
     side: ['#e0cdb0', '#cdb898'],
     // the pool itself (tx 2.2–5.6, ty 2.2–5.0): a basin painted on the floor with white coping, water on top
     water: { from: { tx: 2.2, ty: 3.6 }, to: { tx: 5.6, ty: 3.6 }, width: 2.8 },

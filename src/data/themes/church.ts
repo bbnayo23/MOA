@@ -22,9 +22,9 @@ export const church: ThemeConfig = {
   background: {
     size: 8,
     sky: ['#f4e4f2', '#f6e6ec', '#f8e9e6', '#faece0'],
-    ground: ['#f0dcc0', '#e8d0b0'],
+    ground: ['#efd8b6', '#e0c39b'],
     side: ['#c99b7a', '#b5876a'],
-    walls: { left: '#fbf3e8', right: '#f1e3d2', trim: '#d6b48c', glass: ['#ffb3c6', '#a9cdfc', '#ffe08a', '#b5e8c9', '#cbb8ff'] },
+    walls: { left: '#f8eee0', right: '#ecdcc6', trim: '#c49a68', glass: ['#ffb3c6', '#a9cdfc', '#ffe08a', '#b5e8c9', '#cbb8ff'] },
     rugs: [{ from: { tx: 2.4, ty: 2.4 }, to: { tx: 8, ty: 8 }, width: 1.1, color: '#e98aa2', border: '#f6c76b' }],
     motes: 0xfff8e1,
   },

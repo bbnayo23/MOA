@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef, type FC } from 'react';
 import * as THREE from 'three';
 import type { ArtKind } from './kinds';
-import { canvasTexture, glow, toon } from './toon';
+import { canvasTexture, glow, leafy, toon } from './toon';
 
 /**
  * 3D model per object kind. Local space: standing on y = 0, front facing +z
@@ -39,15 +39,15 @@ const Cyl = ({ r, h, p, c, rot, top, seg = 16 }: { r: number; h: number; p?: V3;
   </mesh>
 );
 const Ball = ({ r, p, c, s, lit }: { r: number; p?: V3; c: string; s?: V3; lit?: boolean }) => (
-  <mesh material={lit ? glow(c) : toon(c)} position={p} scale={s}>
+  <mesh material={lit ? glow(c) : c === LEAF || c === LEAF_DARK ? leafy(c) : toon(c)} position={p} scale={s}>
     <sphereGeometry args={[r, 14, 10]} />
   </mesh>
 );
 
 const WOOD = '#c58f63';
 const WOOD_DARK = '#a8734d';
-const LEAF = '#9fd98c';
-const LEAF_DARK = '#7cc479';
+const LEAF = '#8fd06e';
+const LEAF_DARK = '#6cb85a';
 const STONE = '#d6d0e2';
 const CREAM = '#fff8ee';
 const METAL = '#d7dbe2';
@@ -180,7 +180,7 @@ const Pine: FC = () => (
   <group>
     <Cyl r={0.17} top={0.13} h={0.7} p={[0, 0.35, 0]} c="#a0705a" seg={10} />
     {([[0.65, 1.05, 0.95], [0.52, 1.6, 0.8], [0.38, 2.1, 0.65]] as const).map(([r, y, h], i) => (
-      <mesh key={i} material={toon(i % 2 ? LEAF_DARK : LEAF)} position={[0, y, 0]}>
+      <mesh key={i} material={leafy(i % 2 ? LEAF_DARK : LEAF)} position={[0, y, 0]}>
         <coneGeometry args={[r * 1.35, h, 14]} />
       </mesh>
     ))}

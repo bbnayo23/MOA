@@ -1,149 +1,160 @@
-import { OrbitControls } from '@react-three/drei';
-import { Canvas, useThree } from '@react-three/fiber';
-import { useEffect, useRef, useState } from 'react';
-import * as THREE from 'three';
-import type { AnimKey } from '../data/anims';
+import { useEffect, useRef } from 'react';
+import { AV_FOOT, AV_H, AV_W, avatarCanvas } from '../art/avatar';
+import { ANIMS, type AnimKey } from '../data/anims';
 import type { CharacterLook } from '../data/character';
-import { AvatarBody, useAvatarPose, useJoints } from './Avatar3D';
-import { toon } from './toon';
+import { ART } from './Avatar';
 
-/** Soft studio light for a lone character (same look as the world's daylight). */
-function StudioLights() {
-  return (
-    <>
-      <hemisphereLight args={['#ffffff', '#e9dcf5', 1.8]} />
-      <directionalLight color="#fff4e2" intensity={1.5} position={[3, 6, 5]} castShadow shadow-mapSize={[1024, 1024]} />
-    </>
-  );
-}
+// the four ways round: front-right, front-left, back-left, back-right
+const VIEWS = [
+  { back: false, flip: false },
+  { back: false, flip: true },
+  { back: true, flip: true },
+  { back: true, flip: false },
+];
 
-// ── live preview (character creation) ─────────────────────────
+// the little stage: the sprite plus room round it, in art pixels
+const STAGE_W = 64;
+const STAGE_H = 74;
 
-/** The character on a little round stage; drag to turn them around, otherwise they slowly spin. */
+/** The character, big, on a little patch of grass; tap or drag sideways to turn them round (they turn by themselves till then). */
 export function AvatarPreview({ look, anim, className }: { look: CharacterLook; anim: AnimKey; className?: string }) {
+  const box = useRef<HTMLCanvasElement>(null);
+  const turn = useRef({ view: 0, auto: true, x: null as number | null, moved: false });
+  // read live by the drawing loop (a new look object every render mustn't restart it)
+  const now = useRef({ look, anim });
+  now.current = { look, anim };
+
+  useEffect(() => {
+    const cv = box.current!;
+    const art = document.createElement('canvas');
+    art.width = STAGE_W;
+    art.height = STAGE_H;
+    const a = art.getContext('2d')!;
+    const start = performance.now();
+    let raf = 0;
+    const frame = (t: number) => {
+      raf = requestAnimationFrame(frame);
+      const s = Math.max(0, t - start) / 1000; // a frame stamp can be a hair before `start`
+      if (turn.current.auto) turn.current.view = Math.floor(s / 1.6) % VIEWS.length;
+      const { look, anim } = now.current;
+      const def = ANIMS[anim];
+      const pose = def.frames[Math.floor(s * def.fps) % def.frames.length];
+      const view = VIEWS[turn.current.view];
+      const flip = view.flip !== !!pose.flip;
+
+      a.clearRect(0, 0, STAGE_W, STAGE_H);
+      // grass patch and a soft shadow under the feet
+      const gx = STAGE_W / 2, gy = STAGE_H - 9;
+      oval(a, gx, gy + 1, 26, 7, '#7fb069');
+      oval(a, gx, gy, 25, 6, '#a7d488');
+      oval(a, gx - 6, gy - 2, 8, 2, '#bfe39f');
+      for (const [x, y] of [[gx - 18, gy - 1], [gx + 14, gy + 2], [gx + 20, gy - 2], [gx - 10, gy + 3]]) a.fillRect(x, y, 1, 2);
+      oval(a, gx, gy, 9, 2.5, 'rgba(45,35,64,0.25)');
+      if (pose.legs === 'sit') stool(a, gx, gy);
+      const sprite = avatarCanvas(look, pose, { back: view.back });
+      const lift = Math.round((pose.hop ?? 0) * ART) + (pose.legs === 'sit' ? 2 : 0);
+      const x = Math.round(gx - AV_W / 2), y = Math.round(gy - AV_FOOT - lift);
+      a.save();
+      if (flip) {
+        a.translate(x + AV_W, y);
+        a.scale(-1, 1);
+        a.drawImage(sprite, 0, 0);
+      } else a.drawImage(sprite, x, y);
+      a.restore();
+
+      // up to the screen in whole-pixel steps
+      const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+      const w = Math.round(r.width * dpr), h = Math.round(r.height * dpr);
+      if (cv.width !== w || cv.height !== h) Object.assign(cv, { width: w, height: h });
+      const k = Math.max(1, Math.floor(Math.min(w / STAGE_W, h / STAGE_H)));
+      const c = cv.getContext('2d')!;
+      c.imageSmoothingEnabled = false;
+      c.clearRect(0, 0, w, h);
+      c.drawImage(art, Math.round((w - STAGE_W * k) / 2), Math.round(h - STAGE_H * k), STAGE_W * k, STAGE_H * k);
+    };
+    raf = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  // tap: the next way round; drag: turn with the finger
+  const t = turn.current;
   return (
     <div className={className}>
-      <Canvas flat shadows="percentage" dpr={[1, 2]} camera={{ fov: 24, position: [0, 1.35, 5.2] }}>
-        <StudioLights />
-        <Turntable look={look} anim={anim} />
-        <mesh rotation-x={-Math.PI / 2} receiveShadow material={toon('#c9ebc1')}>
-          <circleGeometry args={[1.1, 48]} />
-        </mesh>
-        <OrbitControls
-          target={[0, 0.72, 0]}
-          enablePan={false}
-          enableZoom={false}
-          minPolarAngle={1.15}
-          maxPolarAngle={1.5}
-          autoRotate
-          autoRotateSpeed={1.2}
-        />
-      </Canvas>
+      <canvas
+        ref={box}
+        style={{ width: '100%', height: '100%', display: 'block', touchAction: 'none' }}
+        aria-label="캐릭터 미리보기"
+        onPointerDown={(e) => {
+          t.x = e.clientX;
+          t.moved = false;
+          e.currentTarget.setPointerCapture(e.pointerId);
+        }}
+        onPointerMove={(e) => {
+          if (t.x === null || Math.abs(e.clientX - t.x) < 36) return;
+          t.auto = false;
+          t.moved = true;
+          t.view = (t.view + (e.clientX > t.x ? 1 : VIEWS.length - 1)) % VIEWS.length;
+          t.x = e.clientX;
+        }}
+        onPointerUp={() => {
+          if (!t.moved) {
+            t.auto = false;
+            t.view = (t.view + 1) % VIEWS.length;
+          }
+          t.x = null;
+        }}
+      />
     </div>
   );
 }
 
-function Turntable({ look, anim }: { look: CharacterLook; anim: AnimKey }) {
-  const joints = useJoints();
-  useAvatarPose(joints, look, () => anim);
-  return (
-    <group>
-      <AvatarBody look={look} joints={joints} />
-      {anim === 'sit' && (
-        // something to sit on
-        <mesh material={toon('#c58f63')} position={[0, 0.21, -0.22]} castShadow>
-          <cylinderGeometry args={[0.24, 0.26, 0.42, 20]} />
-        </mesh>
-      )}
-    </group>
-  );
+function oval(c: CanvasRenderingContext2D, cx: number, cy: number, rx: number, ry: number, color: string) {
+  c.fillStyle = color;
+  for (let y = Math.floor(cy - ry); y <= cy + ry; y++) {
+    const v = (y + 0.5 - cy) / ry;
+    if (Math.abs(v) > 1) continue;
+    const hw = Math.round(rx * Math.sqrt(1 - v * v));
+    c.fillRect(Math.round(cx) - hw, y, hw * 2, 1);
+  }
+}
+
+/** Something to sit on in the preview: a little wooden stool. */
+function stool(c: CanvasRenderingContext2D, gx: number, gy: number) {
+  c.fillStyle = '#7a4e33';
+  c.fillRect(gx - 8, gy - 12, 16, 3);
+  c.fillRect(gx - 7, gy - 9, 2, 9);
+  c.fillRect(gx + 5, gy - 9, 2, 9);
+  c.fillStyle = '#b07a4f';
+  c.fillRect(gx - 8, gy - 13, 16, 2);
 }
 
 // ── thumbnails (icons everywhere else) ────────────────────────
 
 export type ThumbMode = 'head' | 'full';
 
-interface Job {
-  key: string;
-  look: CharacterLook;
-  mode: ThumbMode;
-}
-
-// One hidden canvas paints each look once into an image; every icon is then a plain <img>.
+// art-pixel crops of the sprite, and how big each pixel gets in the picture
+const CROP: Record<ThumbMode, { x: number; y: number; w: number; h: number; k: number }> = {
+  head: { x: 4, y: 4, w: 40, h: 40, k: 4 },
+  full: { x: 0, y: 0, w: AV_W, h: AV_H, k: 3 },
+};
 const cache = new Map<string, string>();
-const waiting = new Map<string, Set<(url: string) => void>>();
-const queue: Job[] = [];
-let wake: (() => void) | null = null;
 
-/** Image URL of this look (head-and-shoulders or full body), once painted. */
-export function useAvatarThumb(look: CharacterLook, mode: ThumbMode) {
+/** This look's picture (head-and-shoulders or full body) as an image URL, painted once. */
+export function thumbOf(look: CharacterLook, mode: ThumbMode) {
   const key = `${mode}|${JSON.stringify(look)}`;
-  const [url, setUrl] = useState(() => cache.get(key));
-  useEffect(() => {
-    const hit = cache.get(key);
-    if (hit) return setUrl(hit);
-    let subs = waiting.get(key);
-    if (!subs) {
-      waiting.set(key, (subs = new Set()));
-      queue.push({ key, look, mode });
-      wake?.();
-    }
-    subs.add(setUrl);
-    return () => void subs.delete(setUrl);
-  }, [key, mode]); // `look` is captured through `key`
+  let url = cache.get(key);
+  if (!url) {
+    const { x, y, w, h, k } = CROP[mode];
+    const c = document.createElement('canvas');
+    c.width = w * k;
+    c.height = h * k;
+    const ctx = c.getContext('2d')!;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(avatarCanvas(look), x, y, w, h, 0, 0, w * k, h * k);
+    cache.set(key, (url = c.toDataURL('image/png')));
+  }
   return url;
 }
 
-const FRAMING: Record<ThumbMode, { eye: THREE.Vector3; at: THREE.Vector3 }> = {
-  head: { eye: new THREE.Vector3(0.8, 1.35, 2.65), at: new THREE.Vector3(0, 1.1, 0) },
-  full: { eye: new THREE.Vector3(1.3, 1.25, 4.3), at: new THREE.Vector3(0, 0.72, 0) },
-};
-
-/** Mount once: works through the queue, one look per render. */
-export function ThumbStudio() {
-  const [job, setJob] = useState<Job | null>(null);
-  // the job being painted lives outside React state, so double-run effects / updaters (StrictMode) can't skip one
-  const current = useRef<Job | null>(null);
-  const next = () => {
-    current.current = queue.shift() ?? null;
-    setJob(current.current);
-  };
-  useEffect(() => {
-    wake = () => current.current ?? next();
-    wake();
-    return () => void (wake = null);
-  }, []);
-  const done = (finished: Job, url: string) => {
-    if (finished !== current.current) return; // already handled
-    cache.set(finished.key, url);
-    waiting.get(finished.key)?.forEach((f) => f(url));
-    waiting.delete(finished.key);
-    next();
-  };
-  return (
-    <div style={{ position: 'fixed', left: -10000, top: 0, width: 160, height: 160, pointerEvents: 'none' }} aria-hidden>
-      <Canvas frameloop="never" flat dpr={2} gl={{ preserveDrawingBuffer: true, alpha: true }} camera={{ fov: 24 }}>
-        <StudioLights />
-        {job && <Snap key={job.key} job={job} onDone={(url) => done(job, url)} />}
-      </Canvas>
-    </div>
-  );
-}
-
-/** Paints its character once (after it's in the scene) and hands back the picture. */
-function Snap({ job, onDone }: { job: Job; onDone: (url: string) => void }) {
-  const { gl, scene, camera } = useThree();
-  const joints = useJoints();
-  useEffect(() => {
-    const { eye, at } = FRAMING[job.mode];
-    camera.position.copy(eye);
-    camera.lookAt(at);
-    gl.render(scene, camera);
-    onDone(gl.domElement.toDataURL('image/png'));
-  }, []); // one shot per job
-  return (
-    <group rotation={[0, 0.25, 0]}>
-      <AvatarBody look={job.look} joints={joints} />
-    </group>
-  );
-}
+/** Hook form, for components (the picture is ready at once). */
+export const useAvatarThumb = (look: CharacterLook, mode: ThumbMode) => thumbOf(look, mode);

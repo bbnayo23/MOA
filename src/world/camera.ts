@@ -37,26 +37,35 @@ export function clampCenter(c: THREE.Vector3, lo: number, hi: number, zoom: numb
 
 /**
  * The zoom at which all these points (the map's corners and a building's height
- * above them, or the edge of the open land round it) fit on this camera's
- * screen, looking at `mid` (`base` is the camera distance at 100%).
+ * above them, or the edge of the open land round it) fit on screen, looking at
+ * `mid` (`base`: the world height the view shows at 100%, `aspect`: width / height).
  */
-export function fitZoom(cam: THREE.PerspectiveCamera, points: THREE.Vector3[], mid: THREE.Vector3, base: number) {
-  const probe = cam.clone();
-  const v = new THREE.Vector3();
-  const fits = (dist: number) => {
-    place(probe, mid, dist);
-    return points.every((p) => {
-      v.copy(p).project(probe);
-      return Math.abs(v.x) < 0.94 && Math.abs(v.y) < 0.88;
-    });
-  };
-  let lo = 1, hi = 1000; // camera distance
-  for (let i = 0; i < 32; i++) {
-    const d = (lo + hi) / 2;
-    if (fits(d)) hi = d;
-    else lo = d;
+export function fitZoom(points: THREE.Vector3[], mid: THREE.Vector3, aspect: number, base: number) {
+  const probe = new THREE.OrthographicCamera();
+  place(probe, mid, 50);
+  const right = new THREE.Vector3().setFromMatrixColumn(probe.matrixWorld, 0);
+  const up = new THREE.Vector3().setFromMatrixColumn(probe.matrixWorld, 1);
+  const d = new THREE.Vector3();
+  let need = 0; // the view height it takes
+  for (const p of points) {
+    d.subVectors(p, mid);
+    need = Math.max(need, (Math.abs(d.dot(up)) * 2) / 0.88, (Math.abs(d.dot(right)) * 2) / 0.94 / aspect);
   }
-  return base / hi;
+  return base / need;
+}
+
+const r = new THREE.Vector3();
+const u = new THREE.Vector3();
+/**
+ * Move the camera (sideways and up, in its own plane) onto the pixel grid, so
+ * still things land on the same pixels as it glides along (no shimmer).
+ */
+export function snap(cam: THREE.Camera, unit: number) {
+  r.setFromMatrixColumn(cam.matrixWorld, 0);
+  u.setFromMatrixColumn(cam.matrixWorld, 1);
+  const a = cam.position.dot(r), b = cam.position.dot(u);
+  cam.position.addScaledVector(r, Math.round(a / unit) * unit - a).addScaledVector(u, Math.round(b / unit) * unit - b);
+  cam.updateMatrixWorld();
 }
 
 /** Shared between the camera's gestures and the world's click handlers. */

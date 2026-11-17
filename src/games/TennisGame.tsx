@@ -3,9 +3,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import s from '../styles/Minigame.module.scss';
 import { PIXEL_FONT } from '../styles/fonts';
-import { AvatarBody, useAvatarPose, useJoints } from '../world/Avatar3D';
+import { AvatarBody, useAvatarPose, useJoints } from '../world/Avatar';
 import { Fan } from './Fan';
 import { MODELS } from '../world/models';
+import { PIXEL_GL, PixelPost, PixelRows } from '../world/pixel';
 import { Sky } from '../world/Stage';
 import { canvasTexture, toon } from '../world/toon';
 import { useHeld } from './controls';
@@ -196,6 +197,7 @@ export function TennisGame({ match, meId }: { match: Match; meId: string }) {
     }
   };
 
+  const [dpr, setDpr] = useState(0.3);
   const [me, them] = side === 1 ? [1, 0] : [0, 1];
   const name = (i: number) => (i === mine ? '나' : (match.seats[i]?.nickname ?? ''));
   const teamName = (team: number) => match.seats.flatMap((_, i) => (teamOf(i) === team ? [name(i)] : [])).join('·');
@@ -203,7 +205,8 @@ export function TennisGame({ match, meId }: { match: Match; meId: string }) {
   const partnerServes = doubles && side !== null && !live.flight && live.score.server === side && !serving && !live.over;
   return (
     <div className={s.game}>
-      <Canvas flat shadows="percentage" dpr={[1, 2]} camera={{ fov: 40, position: side === null ? [12, 10, 0] : [0, 5.6, HALF_L + 7], near: 0.5, far: 160 }}>
+      <Canvas flat shadows="basic" gl={PIXEL_GL} dpr={dpr} camera={{ fov: 40, position: side === null ? [12, 10, 0] : [0, 5.6, HALF_L + 7], near: 0.5, far: 160 }}>
+        <PixelRows rows={280} onDpr={setDpr} />
         <Court fans={match.watchers ?? []} cheer={() => now() - live.pointAt < 1.6} />
         <Scoreboard names={[teamName(me), teamName(them)]} points={[hud.score.points[me], hud.score.points[them]]} />
         <group rotation={[0, side === 1 ? Math.PI : 0, 0]}>
@@ -213,6 +216,7 @@ export function TennisGame({ match, meId }: { match: Match; meId: string }) {
           <Ball live={live} />
         </group>
         <Tick step={step} look={side === null} />
+        <PixelPost />
       </Canvas>
       <div className={s.board} aria-live="polite">
         <span>{teamName(me)}</span>

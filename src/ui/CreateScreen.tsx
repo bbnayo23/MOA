@@ -45,7 +45,7 @@ export function CreateScreen() {
       <main className={s.body}>
         <section className={`${c.card} ${s.stageCard}`}>
           <AvatarPreview look={me.look} anim={anim} className={s.stage} />
-          <p className={s.spin}>드래그해서 돌려 보기</p>
+          <p className={s.spin}>누르거나 옆으로 밀어서 돌려 보기</p>
           <div className={s.row}>
             {PREVIEW.map(([key, label]) => (
               <button key={key} className={c.chip} aria-pressed={anim === key} onClick={() => setAnim(key)}>

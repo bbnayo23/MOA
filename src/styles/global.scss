@@ -4,7 +4,7 @@
   --c-bg: #f4effd;
   --c-surface: #ffffff;
   --c-surface-soft: #faf7ff;
-  --c-line: #e6ddf7;
+  --c-line: #d6c9ea;
   --c-ink: #3b3150;
   --c-ink-soft: #8a80a0;
   --c-primary: #ff8fab;
@@ -19,11 +19,11 @@
   --c-tag: rgba(255, 255, 255, 0.88);
   --c-locked: #cfc8dc;
 
-  // shape
-  --r-s: 8px;
-  --r-m: 14px;
-  --r-l: 20px;
-  --r-pill: 999px;
+  // shape: small, squarish corners (pixel-art UI)
+  --r-s: 3px;
+  --r-m: 5px;
+  --r-l: 8px;
+  --r-pill: 6px;
 
   // space
   --sp-1: 4px;
@@ -34,8 +34,9 @@
   --sp-6: 32px;
 
   // elevation
-  --shadow-s: 0 2px 0 rgba(59, 49, 80, 0.08);
-  --shadow-m: 0 10px 30px rgba(120, 96, 180, 0.14);
+  // hard drop shadows, no blur
+  --shadow-s: 0 2px 0 rgba(59, 49, 80, 0.2);
+  --shadow-m: 0 4px 0 rgba(59, 49, 80, 0.16);
 
   // type
   --font-ui: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
@@ -64,10 +65,8 @@ body {
   overscroll-behavior: none; // no pull-to-refresh / rubber-banding inside the app
   -webkit-tap-highlight-color: transparent;
   -webkit-text-size-adjust: 100%;
-  background:
-    radial-gradient(circle at 10% 0%, #ffe6f0 0, transparent 40%),
-    radial-gradient(circle at 100% 100%, #e3efff 0, transparent 45%),
-    var(--c-bg);
+  // a faint pixel check
+  background: repeating-conic-gradient(#efe7fb 0 25%, var(--c-bg) 0 50%) 0 0 / 16px 16px;
   color: var(--c-ink);
   font: 400 var(--fs-m) / 1.5 var(--font-ui);
   -webkit-font-smoothing: antialiased;

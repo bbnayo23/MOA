@@ -21,9 +21,9 @@ export const tennis: ThemeConfig = {
   background: {
     size: 8,
     sky: ['#9fd4ff', '#b3dcff', '#c8e4ff', '#dcecff', '#eef3ff', '#fff3ec'],
-    grass: '#a9db92',
+    grass: '#92cf71',
     floor: 'grass',
-    ground: ['#a9db92', '#9dd187'],
+    ground: ['#92cf71', '#84c465'],
     side: ['#c99b7a', '#b5876a'],
     flowers: ['#ffffff', '#fff1a8'],
     rugs: [

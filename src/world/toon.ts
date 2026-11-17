@@ -1,16 +1,52 @@
 import * as THREE from 'three';
+import { shade } from '../art/pix';
 
 const cache = new Map<string, THREE.Material>();
 
-/**
- * Shared soft material per colour (and optional texture): smooth shading with a
- * gentle sheen, like painted vinyl toys. Never dispose these.
- */
+/** Light in three flat steps (shadow side, half-lit, lit): cel shading, so faces read as pixel-art planes. */
+const RAMP = (() => {
+  const t = new THREE.DataTexture(new Uint8Array([110, 190, 255]), 3, 1, THREE.RedFormat);
+  t.minFilter = t.magFilter = THREE.NearestFilter;
+  t.needsUpdate = true;
+  return t;
+})();
+
+/** Shared flat-shaded material per colour (and optional texture). Never dispose these. */
 export function toon(color: string, map?: THREE.Texture, key = '') {
   const id = `${color}|${key}`;
   let m = cache.get(id);
-  if (!m) cache.set(id, (m = new THREE.MeshStandardMaterial({ color, roughness: 0.72, metalness: 0, ...(map && { map }) })));
+  if (!m) cache.set(id, (m = new THREE.MeshToonMaterial({ color, gradientMap: RAMP, ...(map && { map }) })));
   return m;
+}
+
+const leaves = new Map<string, THREE.Texture>();
+/** Foliage: the colour with pixel leaves drawn in — darker clumps, lit tips (bushes, trees, pot plants). */
+export function leafy(color: string) {
+  let t = leaves.get(color);
+  if (!t)
+    leaves.set(
+      color,
+      (t = canvasTexture(
+        32,
+        32,
+        (ctx) => {
+          let seed = 9;
+          const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+          ctx.fillStyle = color;
+          ctx.fillRect(0, 0, 32, 32);
+          for (let i = 0; i < 26; i++) {
+            const x = Math.floor(rnd() * 32), y = Math.floor(rnd() * 32);
+            ctx.fillStyle = shade(color, -0.22);
+            ctx.fillRect(x, y + 1, 3, 1);
+            ctx.fillRect(x + 1, y + 2, 2, 1);
+            ctx.fillStyle = shade(color, 0.3);
+            ctx.fillRect(x + 1, y, 2, 1);
+          }
+        },
+        [3, 2],
+      )),
+    );
+  return toon(color, t, 'leafy');
 }
 
 /** Unlit material: glass, flames, glowing bits. */
@@ -32,7 +68,9 @@ export function canvasTexture(w: number, h: number, draw: (ctx: CanvasRenderingC
   draw(c.getContext('2d')!);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 4;
+  // pixel art: texels stay crisp squares up close; far off (perspective scenes), the mipmaps pick one
+  tex.magFilter = THREE.NearestFilter;
+  tex.minFilter = THREE.NearestMipmapNearestFilter;
   if (repeat) {
     tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
     tex.repeat.set(...repeat);

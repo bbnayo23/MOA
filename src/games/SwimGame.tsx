@@ -2,9 +2,10 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import * as THREE from 'three';
 import s from '../styles/Minigame.module.scss';
-import { AvatarBody, useAvatarPose, useJoints } from '../world/Avatar3D';
+import { AvatarBody, useAvatarPose, useJoints } from '../world/Avatar';
 import { Fan } from './Fan';
 import { MODELS } from '../world/models';
+import { PIXEL_GL, PixelPost, PixelRows } from '../world/pixel';
 import { Sky } from '../world/Stage';
 import { canvasTexture, shimmer, toon } from '../world/toon';
 import { useKeys, useTaps } from './controls';
@@ -137,10 +138,12 @@ export function SwimGame({ match, meId }: { match: Match; meId: string }) {
     return () => clearInterval(id);
   });
 
+  const [dpr, setDpr] = useState(0.3);
   const width = match.seats.length * LANE;
   return (
     <div className={s.game}>
-      <Canvas flat shadows="percentage" dpr={[1, 2]} camera={{ fov: 42, position: [width / 2 + 4, 7, 6], near: 0.5, far: 150 }}>
+      <Canvas flat shadows="basic" gl={PIXEL_GL} dpr={dpr} camera={{ fov: 42, position: [width / 2 + 4, 7, 6], near: 0.5, far: 150 }}>
+        <PixelRows rows={280} onDpr={setDpr} />
         <Pool lanes={match.seats.length} fans={match.watchers ?? []} cheer={() => lanes.some((l) => l.sw.time !== null && raceTime() - l.sw.time < 2)} />
         {match.seats.map((p, i) => (
           <SwimmerFigure
@@ -153,6 +156,7 @@ export function SwimGame({ match, meId }: { match: Match; meId: string }) {
         ))}
         {ds.length > 0 && <Ducks ds={ds} lanes={match.seats.length} />}
         <Follow lanes={lanes} mine={mine} step={step} />
+        <PixelPost />
       </Canvas>
       <ol className={s.ranks} aria-live="polite">
         {hud.order.map((r, i) => (
@@ -434,29 +438,15 @@ function Ducks({ ds, lanes }: { ds: number[]; lanes: number }) {
 function SwimmerFigure({ look, lane, x, dipped }: { look: Match['seats'][number]['look']; lane: Lane; x: number; dipped: () => boolean }) {
   const joints = useJoints();
   const root = useRef<THREE.Group>(null);
-  const body = useRef<THREE.Group>(null);
   const drops = useRef<THREE.Group>(null);
-  const st = useRef({ phase: 0, prone: 0, dip: 0 }).current;
+  const st = useRef({ dip: 0 }).current;
   const swimming = () => lane.sw.time === null && lane.sw.v >= 0.15;
   useAvatarPose(joints, look, () => (swimming() ? 'swim' : 'tube'));
-  // after the pose (registered first): lay them down and wheel the arms
   useFrame((_, dtRaw) => {
     const dt = Math.min(dtRaw, 0.1);
-    st.prone += ((swimming() ? 1 : 0) - st.prone) * (1 - Math.exp(-dt * 6));
-    st.phase += dt * (2.2 + lane.sw.v * 2.4);
     // under water (the duck race): down below the surface, back up after
     st.dip += ((dipped() ? 1 : 0) - st.dip) * (1 - Math.exp(-dt * 10));
     root.current?.position.set(x, -0.62 * st.dip, -lane.sw.d);
-    body.current?.rotation.set(st.prone * 1.42, 0, 0);
-    body.current?.position.set(0, -0.12 * st.prone, -0.5 * st.prone);
-    const j = joints;
-    if (st.prone > 0.5 && j.sink.current && j.armL.current && j.armR.current && j.legL.current && j.legR.current) {
-      j.sink.current.position.set(0, 0, 0);
-      j.armL.current.rotation.set(st.phase % (Math.PI * 2), 0, 0.15);
-      j.armR.current.rotation.set((st.phase + Math.PI) % (Math.PI * 2), 0, -0.15);
-      j.legL.current.rotation.x = Math.sin(st.phase * 3) * 0.35;
-      j.legR.current.rotation.x = -Math.sin(st.phase * 3) * 0.35;
-    }
     // a splash: drops thrown up and out, falling back
     const t = (now() - lane.splashAt) / 0.55;
     drops.current?.children.forEach((d, i) => {
@@ -469,9 +459,7 @@ function SwimmerFigure({ look, lane, x, dipped }: { look: Match['seats'][number]
   });
   return (
     <group ref={root} rotation={[0, Math.PI, 0]}>
-      <group ref={body}>
-        <AvatarBody look={look} joints={joints} />
-      </group>
+      <AvatarBody look={look} joints={joints} />
       <group ref={drops}>
         {Array.from({ length: DROPS }, (_, i) => (
           <mesh key={i} visible={false}>

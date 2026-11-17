@@ -2,13 +2,16 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { fromGame, toGame } from '../bridge';
-import { ZOOM, clampCenter, clampZoom, fitZoom, gesture, groundAt, place } from './camera';
+import { ART } from './Avatar';
+import { ZOOM, clampCenter, clampZoom, fitZoom, gesture, groundAt, place, snap } from './camera';
 import { walkRadius } from './path';
 import type { Agent, Sim } from './sim';
 import { T } from './space';
 
-/** Camera distance at 100% (pulled back a bit more on portrait screens). */
-const BASE = 16;
+/** How much of the world (its height, in world units) the view shows at 100% (more on portrait screens). */
+const BASE = 12.5;
+/** The (orthographic) camera's distance: only for what's in front of it, not for size. */
+const DIST = 100;
 /** How far in from the map's edge the camera centre may go at 100%. */
 const MARGIN = T * 1.5;
 
@@ -37,8 +40,10 @@ interface Cam {
  * drifting to its middle on the way; zoomed in it never shows past the map,
  * and once I walk off it comes back to me.
  */
-export function CameraRig({ sim, me, raised = false }: { sim: Sim; me: Agent; raised?: boolean }) {
+/** `onDpr`: the canvas's pixel ratio this zoom wants (the canvas takes it as its `dpr` prop, so a re-render keeps it). */
+export function CameraRig({ sim, me, raised = false, onDpr }: { sim: Sim; me: Agent; raised?: boolean; onDpr: (dpr: number) => void }) {
   const { camera, gl } = useThree();
+  const dpr = useRef(0);
   const c = useRef<Cam>({ zoom: 1, zoomTo: 1, min: 0.5, focus: null, pan: new THREE.Vector3(), anchor: null, homing: false, dragging: false, lift: 0 }).current;
   const reported = useRef('');
   const fitted = useRef('');
@@ -93,28 +98,33 @@ export function CameraRig({ sim, me, raised = false }: { sim: Sim; me: Agent; ra
     const screen = `${size.width}x${size.height}:${ground.hi - ground.lo}`;
     if (screen !== fitted.current) {
       fitted.current = screen;
-      c.min = Math.min(0.5, Math.max(ZOOM.min, fitZoom(camera as THREE.PerspectiveCamera, ground.fit, ground.mid, base)));
+      c.min = Math.min(0.5, Math.max(ZOOM.min, fitZoom(ground.fit, ground.mid, aspect, base)));
       c.zoomTo = clampZoom(c.zoomTo, c.min);
     }
-    const dist = base / c.zoom;
-    // what's drawn reaches past the far side of the map, however far out we are (and depth stays precise up close)
-    const cam = camera as THREE.PerspectiveCamera;
-    const far = dist * 2.5 + (ground.hi - ground.lo) * 1.5;
-    if (Math.abs(cam.far - far) > far * 0.05) {
-      cam.near = Math.max(0.5, dist / 40);
+    // the view's height in the world; the picture is always ART pixels per world unit, so zooming
+    // changes how big a pixel is on screen, never how many a character has
+    const view = base / c.zoom;
+    const cam = camera as THREE.OrthographicCamera;
+    const far = DIST + (ground.hi - ground.lo) * 2;
+    if (cam.zoom !== size.height / view || cam.far !== far) {
+      cam.zoom = size.height / view;
+      cam.near = 1;
       cam.far = far;
       cam.updateProjectionMatrix();
     }
-    place(camera, look(aspect), dist);
+    const want = Math.min(window.devicePixelRatio, (ART * view) / size.height);
+    if (Math.abs(want - dpr.current) > dpr.current * 0.01) onDpr((dpr.current = want));
+    place(camera, look(aspect), DIST);
     if (c.anchor) {
       const now = groundAt(camera, c.anchor.ndc);
       if (now) {
         c.pan.x += c.anchor.world.x - now.x;
         c.pan.z += c.anchor.world.z - now.z;
-        place(camera, look(aspect), dist);
+        place(camera, look(aspect), DIST);
       }
       if (c.zoom === c.zoomTo) c.anchor = null;
     }
+    snap(camera, 1 / ART);
 
     const level = { pct: Math.round(c.zoomTo * 100), min: Math.round(c.min * 100) };
     const key = `${level.pct}/${level.min}`;

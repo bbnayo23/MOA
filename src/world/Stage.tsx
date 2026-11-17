@@ -53,14 +53,14 @@ function Lights({ bg, S }: { bg: Background; S: number }) {
     <>
       {/* diffuse ≈ colour × (sky + sun) / π, so the two add up to about π for true colours in full light */}
       {/* the ground's bounce, washed out (full grass green turns faces sickly) */}
-      <hemisphereLight args={[tint, new THREE.Color(bg.grass ?? bg.ground[0]).lerp(new THREE.Color('#fff4ea'), 0.6), bg.night ? 1.1 : 1.35]} />
+      <hemisphereLight args={[tint, new THREE.Color(bg.grass ?? bg.ground[0]).lerp(new THREE.Color('#fff4ea'), 0.6), bg.night ? 1.0 : 1.05]} />
       <primitive object={target} />
       {/* a soft fill from the camera's side, so faces turned to us are never in the dark */}
-      <directionalLight target={target} color="#fff8f0" intensity={bg.night ? 0.25 : 0.55} position={[S / 2 + 14, 9, S / 2 + 14]} />
+      <directionalLight target={target} color="#fff8f0" intensity={bg.night ? 0.25 : 0.4} position={[S / 2 + 14, 9, S / 2 + 14]} />
       <directionalLight
         target={target}
         color={bg.night ? '#b9c3ff' : '#fff4e2'}
-        intensity={bg.night ? 0.7 : 2.3}
+        intensity={bg.night ? 0.8 : 2.6}
         position={[S / 2 + 4, 20, S / 2 + 12]}
         castShadow
         shadow-mapSize={[2048, 2048]}
@@ -95,8 +95,16 @@ export function Sky({ colors }: { colors: string[] }) {
     return new THREE.MeshBasicMaterial({ map, side: THREE.BackSide, fog: false, depthWrite: false });
   }, [colors, horizon]);
   const fog = useMemo(() => new THREE.Fog(horizon, 30, 90), [horizon]);
+  const backdrop = useMemo(() => new THREE.Color(horizon), [horizon]);
   useFrame(({ camera, scene }) => {
-    scene.fog = fog;
+    // the pixel world's straight-down-at-an-angle camera never sees the sky: a plain backdrop of the horizon
+    const flat = (camera as THREE.OrthographicCamera).isOrthographicCamera;
+    if (dome.current) dome.current.visible = !flat;
+    scene.fog = flat ? null : fog;
+    if (flat) {
+      scene.background = backdrop;
+      return;
+    }
     const far = (camera as THREE.PerspectiveCamera).far;
     fog.near = far * 0.3;
     fog.far = far * 0.9;
@@ -126,79 +134,121 @@ function seeded(a: number) {
 /** '#rrggbb' → [r, g, b] as written to a canvas (sRGB, unlike THREE.Color's linear values). */
 const rgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
 
-/** Lighter (k > 0) or darker (k < 0) by that fraction, as a canvas colour. */
-const shade = (hex: string, k: number) => `rgb(${rgb(hex).map((v) => Math.round(k < 0 ? v * (1 + k) : v + (255 - v) * k))})`;
+/** Lighter (k > 0) or darker (k < 0) by that fraction (#rrggbb in, #rrggbb out). */
+const shade = (hex: string, k: number) =>
+  '#' + rgb(hex).map((v) => Math.round(k < 0 ? v * (1 + k) : v + (255 - v) * k).toString(16).padStart(2, '0')).join('');
 
-/** Cobblestones in `color`, each a shade lighter or darker, mortar between (pixels for a W × W floor). */
+/** A pixel-exact disc (no smoothing: every texel is in or out). */
+function disc(ctx: CanvasRenderingContext2D, cx: number, cy: number, rx: number, ry: number) {
+  for (let y = Math.floor(cy - ry); y <= cy + ry; y++) {
+    const v = (y + 0.5 - cy) / ry;
+    if (Math.abs(v) > 1) continue;
+    const hw = Math.round(rx * Math.sqrt(1 - v * v));
+    ctx.fillRect(Math.round(cx) - hw, y, hw * 2, 1);
+  }
+}
+
+/** Cobblestones in `color` (pixels for a W × W floor): each stone lit on top, shaded below, dark mortar between. */
 function cobbles(W: number, color: string) {
   const c = document.createElement('canvas');
   c.width = c.height = W;
   const ctx = c.getContext('2d')!;
-  const rnd = seeded(13), S = 22;
-  ctx.fillStyle = shade(color, -0.16);
+  const rnd = seeded(13), S = 16;
+  ctx.fillStyle = shade(color, -0.32);
   ctx.fillRect(0, 0, W, W);
   for (let row = 0; row * S < W; row++)
-    for (let x = -(row % 2) * (S / 2); x < W; x += S) {
-      const w = S - 3 + (rnd() - 0.5) * 3;
-      ctx.fillStyle = shade(color, (rnd() - 0.5) * 0.14);
-      ctx.beginPath();
-      ctx.roundRect(x + 1.5, row * S + 1.5, w, S - 3, 7);
-      ctx.fill();
-      ctx.fillStyle = 'rgba(255,255,255,0.22)'; // a lit top edge: they read as rounded
-      ctx.beginPath();
-      ctx.roundRect(x + 4, row * S + 3, w - 6, 4, 2);
-      ctx.fill();
+    for (let x = -(row % 2) * (S / 2) - Math.floor(rnd() * 4); x < W; ) {
+      const w = S - 1 + Math.floor(rnd() * 6), y = row * S, base = shade(color, (rnd() - 0.5) * 0.12);
+      ctx.fillStyle = base;
+      ctx.fillRect(x + 2, y + 1, w - 4, S - 2);
+      ctx.fillRect(x + 1, y + 2, w - 2, S - 4);
+      ctx.fillStyle = shade(color, 0.3); // lit top edge
+      ctx.fillRect(x + 2, y + 2, w - 5, 1);
+      ctx.fillStyle = shade(color, -0.14); // shaded bottom
+      ctx.fillRect(x + 2, y + S - 3, w - 4, 1);
+      ctx.fillRect(x + w - 3, y + 3, 1, S - 6);
+      x += w;
     }
   return ctx.getImageData(0, 0, W, W).data;
 }
 
-/** Checker tiles, or grass (soft patches, a fine grain of blades), then rugs / paths / lines on top. */
+/** The floor as pixel art: grass with tufts, glazed tiles, wooden planks — then rugs / paths / lines on top. */
 function floorTexture(bg: Background) {
   const n = bg.size, W = n * PX;
   return canvasTexture(W, W, (ctx) => {
     const rnd = seeded(7);
-    ctx.fillStyle = bg.ground[0];
+    const [a, b] = bg.ground;
+    ctx.fillStyle = a;
     ctx.fillRect(0, 0, W, W);
-    ctx.fillStyle = bg.ground[1];
     if (bg.floor === 'wood') {
-      // planks a third of a tile wide in both colours, joints staggered, a fine grain
-      const P = PX / 3;
+      // planks a quarter of a tile wide, joints staggered: dark seams, a lit edge, grain, nail heads
+      const P = PX / 4;
       for (let row = 0; row * P < W; row++) {
-        for (let x = -rnd() * PX * 2; x < W; ) {
-          const len = PX * (1.4 + rnd() * 1.6);
-          ctx.fillStyle = bg.ground[rnd() < 0.5 ? 0 : 1];
-          ctx.fillRect(x, row * P, len, P);
-          ctx.fillStyle = 'rgba(80,45,20,0.2)';
-          ctx.fillRect(x, row * P, 2, P);
+        for (let x = -Math.floor(rnd() * PX * 2); x < W; ) {
+          const len = Math.floor(PX * (1.2 + rnd() * 1.8));
+          const c = shade(rnd() < 0.5 ? a : b, (rnd() - 0.5) * 0.08);
+          const y = row * P;
+          ctx.fillStyle = c;
+          ctx.fillRect(x, y, len, P);
+          ctx.fillStyle = shade(c, 0.18);
+          ctx.fillRect(x + 1, y + 1, len - 2, 1);
+          ctx.fillStyle = shade(c, -0.1);
+          for (let k = 0; k < 3; k++) ctx.fillRect(x + 4 + Math.floor(rnd() * (len - 24)), y + 4 + Math.floor(rnd() * (P - 7)), 8 + Math.floor(rnd() * 14), 1);
+          ctx.fillStyle = shade(a, -0.42);
+          ctx.fillRect(x, y, 1, P); // butt joint
+          ctx.fillRect(x + 3, y + 3, 1, 1); // nails
+          ctx.fillRect(x + 3, y + P - 4, 1, 1);
           x += len;
         }
-        ctx.fillStyle = 'rgba(80,45,20,0.16)';
-        ctx.fillRect(0, row * P, W, 1.5);
-      }
-      for (let i = 0; i < n * n * 40; i++) {
-        ctx.fillStyle = rnd() < 0.5 ? 'rgba(255,255,255,0.08)' : 'rgba(80,45,20,0.07)';
-        ctx.fillRect(rnd() * W, rnd() * W, 6 + rnd() * 14, 1);
+        ctx.fillStyle = shade(a, -0.36);
+        ctx.fillRect(0, row * P, W, 1);
       }
     } else if (bg.floor !== 'grass') {
-      // tiles half a map tile across (whole-tile squares read as a toy board, not a floor)
+      // glazed tiles half a map tile across, a checker of the two colours: grout, a lit bevel, a few specks
       const Q = PX / 2;
-      for (let y = 0; y < n * 2; y++) for (let x = 0; x < n * 2; x++) if ((x + y) % 2) ctx.fillRect(x * Q, y * Q, Q, Q);
-      ctx.fillStyle = 'rgba(0,0,0,0.05)';
+      for (let y = 0; y < n * 2; y++)
+        for (let x = 0; x < n * 2; x++) {
+          const c = (x + y) % 2 ? b : a, px = x * Q, py = y * Q;
+          ctx.fillStyle = c;
+          ctx.fillRect(px, py, Q, Q);
+          ctx.fillStyle = shade(c, 0.4);
+          ctx.fillRect(px + 1, py + 1, Q - 2, 1);
+          ctx.fillRect(px + 1, py + 1, 1, Q - 2);
+          ctx.fillStyle = shade(c, -0.07);
+          ctx.fillRect(px + 2, py + Q - 2, Q - 3, 1);
+          ctx.fillRect(px + Q - 2, py + 2, 1, Q - 3);
+          ctx.fillStyle = shade(c, -0.1);
+          for (let k = 0; k < 3; k++) ctx.fillRect(px + 3 + Math.floor(rnd() * (Q - 6)), py + 3 + Math.floor(rnd() * (Q - 6)), 1, 1);
+        }
+      ctx.fillStyle = shade(a, -0.28);
       for (let i = 0; i <= n * 2; i++) {
-        ctx.fillRect(i * Q - 1, 0, 2, W);
-        ctx.fillRect(0, i * Q - 1, W, 2);
+        ctx.fillRect(i * Q, 0, 1, W);
+        ctx.fillRect(0, i * Q, W, 1);
       }
     } else {
-      ctx.globalAlpha = 0.55;
-      for (let i = 0; i < n * n * 0.6; i++) {
-        ctx.beginPath();
-        ctx.ellipse(rnd() * W, rnd() * W, 18 + rnd() * 34, 12 + rnd() * 22, rnd() * Math.PI, 0, Math.PI * 2);
-        ctx.fill();
+      // grass: soft patches of the second green, then tufts (a darker ^), lit blades, a few pebbles
+      ctx.fillStyle = b;
+      for (let i = 0; i < n * n * 0.7; i++) disc(ctx, rnd() * W, rnd() * W, 10 + rnd() * 26, 7 + rnd() * 16);
+      const dark = shade(a, -0.2), light = shade(a, 0.28);
+      for (let i = 0; i < n * n * 70; i++) {
+        const x = Math.floor(rnd() * W), y = Math.floor(rnd() * W);
+        ctx.fillStyle = dark;
+        ctx.fillRect(x, y + 1, 1, 2);
+        ctx.fillRect(x + 1, y, 1, 2);
+        ctx.fillRect(x + 2, y + 1, 1, 2);
+        if (rnd() < 0.5) {
+          ctx.fillStyle = light;
+          ctx.fillRect(x + 1, y - 1, 1, 1);
+        }
       }
-      ctx.globalAlpha = 1;
-      for (let i = 0; i < n * n * 110; i++) {
-        ctx.fillStyle = rnd() < 0.5 ? 'rgba(255,255,255,0.13)' : 'rgba(30,80,20,0.09)';
-        ctx.fillRect(rnd() * W, rnd() * W, 2, 3 + rnd() * 5);
+      ctx.fillStyle = light;
+      for (let i = 0; i < n * n * 40; i++) ctx.fillRect(Math.floor(rnd() * W), Math.floor(rnd() * W), 1, 2);
+      for (let i = 0; i < n * n * 1.5; i++) {
+        const x = Math.floor(rnd() * W), y = Math.floor(rnd() * W);
+        ctx.fillStyle = '#d9d2c4';
+        ctx.fillRect(x, y, 2, 1);
+        ctx.fillStyle = '#a89f92';
+        ctx.fillRect(x, y + 1, 2, 1);
       }
     }
     // rugs: every pixel within width/2 of the from→to segment, with a border band
@@ -251,7 +301,7 @@ function Room({ bg, S, floor, onTap }: { bg: Background; S: number; floor: THREE
         ] as const
       ).map(([color, pos, size, out, turn], w) => (
         <group key={w}>
-          <mesh material={toon(color)} position={pos}>
+          <mesh material={wallpaper(color, S)} position={pos}>
             <boxGeometry args={size} />
           </mesh>
           <mesh material={toon(trim)} position={[pos[0], WALL_H, pos[2]]}>
@@ -261,7 +311,7 @@ function Room({ bg, S, floor, onTap }: { bg: Background; S: number; floor: THREE
             <boxGeometry args={[size[0] + 0.04, 0.2, size[2] + 0.04]} />
           </mesh>
           {/* wainscoting: the lower wall a shade toward the trim, a rail along its top */}
-          <mesh material={toon(`#${new THREE.Color(color).lerp(new THREE.Color(trim), 0.22).getHexString()}`)} position={[pos[0], 0.45, pos[2]]}>
+          <mesh material={wainscot(`#${new THREE.Color(color).lerp(new THREE.Color(trim), 0.22).getHexString()}`, S)} position={[pos[0], 0.45, pos[2]]}>
             <boxGeometry args={[size[0] + 0.03, 0.9, size[2] + 0.03]} />
           </mesh>
           <mesh material={toon(trim)} position={[pos[0], 0.92, pos[2]]}>
@@ -286,6 +336,52 @@ function Room({ bg, S, floor, onTap }: { bg: Background; S: number; floor: THREE
     </group>
   );
 }
+
+/** Striped wallpaper with a little diamond between the stripes (64 texels a tile, like the floor). */
+const wallpaper = (color: string, S: number) =>
+  toon(
+    color,
+    canvasTexture(
+      PX,
+      PX,
+      (ctx) => {
+        ctx.fillStyle = color;
+        ctx.fillRect(0, 0, PX, PX);
+        ctx.fillStyle = shade(color, -0.06);
+        for (let x = 0; x < PX; x += 16) ctx.fillRect(x, 0, 3, PX);
+        ctx.fillStyle = shade(color, -0.14);
+        for (let x = 8; x < PX; x += 16)
+          for (let y = 8; y < PX; y += 16) {
+            ctx.fillRect(x + 1, y, 1, 3);
+            ctx.fillRect(x, y + 1, 3, 1);
+          }
+      },
+      [S / T, WALL_H / T],
+    ),
+    `wall${S}`,
+  );
+
+/** The lower wall: tongue-and-groove boards. */
+const wainscot = (color: string, S: number) =>
+  toon(
+    color,
+    canvasTexture(
+      PX,
+      24,
+      (ctx) => {
+        ctx.fillStyle = color;
+        ctx.fillRect(0, 0, PX, 24);
+        for (let x = 0; x < PX; x += 8) {
+          ctx.fillStyle = shade(color, -0.2);
+          ctx.fillRect(x, 0, 1, 24);
+          ctx.fillStyle = shade(color, 0.25);
+          ctx.fillRect(x + 1, 0, 1, 24);
+        }
+      },
+      [S / T, 1],
+    ),
+    `wainscot${S}`,
+  );
 
 /** Unlit, cut out along the arch's edge. */
 const arched = (map: THREE.Texture) => new THREE.MeshBasicMaterial({ map, transparent: true, alphaTest: 0.5 });
@@ -472,12 +568,13 @@ function Motes({ color, S }: { color: number; S: number }) {
       }),
     [color],
   );
-  useFrame(({ clock }) => {
+  useFrame(({ clock, camera }) => {
     const pos = geo.getAttribute('position') as THREE.BufferAttribute;
     const t = clock.elapsedTime * 0.35;
     seeds.forEach(([x, y, z, p], i) => pos.setXYZ(i, x + Math.sin(t + p) * 0.6, y + Math.sin(t * 1.3 + p * 2) * 0.3, z + Math.cos(t + p) * 0.6));
     pos.needsUpdate = true;
     mat.opacity = 0.6 + Math.sin(clock.elapsedTime * 2) * 0.2;
+    mat.size = (camera as THREE.OrthographicCamera).isOrthographicCamera ? 3 : 0.14;
   });
   return <points ref={ref} geometry={geo} material={mat} />;
 }

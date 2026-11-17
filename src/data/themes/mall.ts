@@ -29,9 +29,9 @@ export const mall: ThemeConfig = {
   background: {
     size: 8,
     sky: ['#ffeef5', '#fff1f6', '#fff5f8', '#fff8fa'],
-    ground: ['#fff5f8', '#f3e8f8'],
+    ground: ['#fcf0f4', '#efd8e7'],
     side: ['#e6c9d9', '#d6b6c8'],
-    walls: { left: '#fffafc', right: '#fbeef4', trim: '#ff9fc0', glass: ['#ffe0ec', '#e6f5ff'] },
+    walls: { left: '#fdf1f6', right: '#f6e2ec', trim: '#ee86ab', glass: ['#ffe0ec', '#e6f5ff'] },
     // the catwalk down the middle
     rugs: [{ from: { tx: 2.6, ty: 2.6 }, to: { tx: 8, ty: 8 }, width: 1.0, color: '#ffd6e0', border: '#ff9fc0' }],
     motes: 0xffe0ec,

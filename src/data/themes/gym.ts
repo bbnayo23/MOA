@@ -24,10 +24,10 @@ export const gym: ThemeConfig = {
   background: {
     size: 8,
     sky: ['#e9e6f5', '#eeebf6', '#f3f0f7', '#f7f5f9'],
-    ground: ['#e8e4f0', '#ddd8e8'],
+    ground: ['#e1dcef', '#cdc5e3'],
     side: ['#b8b0cc', '#a69dbd'],
     // tall mirror panes
-    walls: { left: '#f3f1f8', right: '#e6e2f0', trim: '#a99fd0', glass: ['#dff3ff', '#eef9ff'] },
+    walls: { left: '#eeecf7', right: '#dfdbef', trim: '#8f84c4', glass: ['#dff3ff', '#eef9ff'] },
     rugs: [
       { from: { tx: 3.6, ty: 4.0 }, to: { tx: 6.0, ty: 1.6 }, width: 1.6, color: '#d3cdea', border: '#b3abd3' },
       // rubber flooring under the free weights

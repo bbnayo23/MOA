@@ -33,9 +33,9 @@ export const restaurant: ThemeConfig = {
   background: {
     size: 8,
     sky: ['#ffe9e4', '#fff0e6', '#fff5e8', '#fffaeb'],
-    ground: ['#fffaf5', '#ffd9d0'],
+    ground: ['#fbe9d6', '#eeb59a'],
     side: ['#e3b7a8', '#d5a596'],
-    walls: { left: '#fff6f0', right: '#ffe9e1', trim: '#e98a7a', glass: ['#ffe8b8', '#ffd6e0'] },
+    walls: { left: '#fdeee0', right: '#f8dccb', trim: '#d9705f', glass: ['#ffe8b8', '#ffd6e0'] },
     // a round rug in the sofa corner
     rugs: [
       { from: { tx: 1.5, ty: 5.1 }, to: { tx: 1.5, ty: 5.1 }, width: 1.3, color: '#ffe0b8', border: '#f3c78f' },

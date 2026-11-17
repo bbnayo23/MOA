@@ -25,9 +25,9 @@ export const library: ThemeConfig = {
     size: 8,
     sky: ['#e4efe6', '#e8f0e4', '#edf1e2', '#f1f2e0'],
     floor: 'wood',
-    ground: ['#d9b48a', '#cfa87e'],
+    ground: ['#d6a571', '#c79563'],
     side: ['#a8825f', '#94704f'],
-    walls: { left: '#f4ead8', right: '#e8dcc6', trim: '#9c7a5a', glass: ['#cfe8ff', '#e3f2ff'] },
+    walls: { left: '#f1e4cb', right: '#e3d3b6', trim: '#8a6646', glass: ['#cfe8ff', '#e3f2ff'] },
     rugs: [
       { from: { tx: 2.2, ty: 4.2 }, to: { tx: 6.4, ty: 4.2 }, width: 3.2, color: '#a9d6b0', border: '#86c093' },
     ],

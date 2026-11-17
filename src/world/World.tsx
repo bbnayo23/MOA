@@ -11,12 +11,13 @@ import type { Motion } from '../net/link';
 import { supabase } from '../net/supabase';
 import { roomOf, useMoa } from '../store';
 import s from '../styles/World.module.scss';
-import { AvatarBody, moodOf, SIT_BACK, SIT_UP, useAvatarPose, useJoints, type Mood } from './Avatar3D';
+import { AvatarBody, moodOf, NIGHT_TINT, SIT_BACK, SIT_UP, useAvatarPose, useJoints, type Mood } from './Avatar';
 import { gesture } from './camera';
 import { CameraRig } from './CameraRig';
 import { KINDS, type ArtKind } from './kinds';
 import { Labels } from './labels';
 import { Chair, MODELS } from './models';
+import { PIXEL_GL, PixelPost } from './pixel';
 import { Sim, type Agent } from './sim';
 import { Stage } from './Stage';
 import { T, headingOf, objectYaw, type Tile } from './space';
@@ -63,6 +64,8 @@ export function World({ theme, className, paused = false, raised = false }: { th
   const bubbles = useBubbles();
   const moods = useMoods();
   const [hover, setHover] = useState<InteractionObject | null>(null);
+  // the picture's resolution follows the zoom (see CameraRig)
+  const [dpr, setDpr] = useState(0.4);
   const [near, setNear] = useState<InteractionObject | null>(null);
   const indoor = !!theme.background.walls;
 
@@ -91,28 +94,29 @@ export function World({ theme, className, paused = false, raised = false }: { th
   const above = (o: InteractionObject) => (): [number, number, number] => [o.at.tx * T, MODELS[o.kind].h + 0.3, o.at.ty * T];
   // door signs hang on the front wall above the door, where they stay in view
   const onFront = (o: InteractionObject) => (): [number, number, number] => [(o.at.tx + 0.42) * T, 2.15, (o.at.ty + 0.42) * T];
-  const head = (a: Agent) => (): [number, number, number] => [a.pos.tx * T, 1.58 + sinkOf(a), a.pos.ty * T];
+  const head = (a: Agent) => (): [number, number, number] => [a.pos.tx * T, 2.15 + sinkOf(a), a.pos.ty * T]; // just over the sprite's head
 
   return (
     <div className={className}>
-      <Canvas flat shadows="percentage" dpr={[1, 2]} camera={{ fov: 32, near: 0.5, far: 200 }} frameloop={paused ? 'never' : 'always'}>
+      <Canvas flat orthographic shadows="basic" gl={PIXEL_GL} dpr={dpr} camera={{ near: 1, far: 300, position: [60, 60, 60] }} frameloop={paused ? 'never' : 'always'}>
         <Driver sim={sim} me={me} />
         <Stage bg={theme.background} onTap={(t) => walkTo(sim, me, t)} />
         {theme.decorations.map((d, i) => (
-          <Thing key={`d${i}`} kind={d.kind} at={d.at} indoor={indoor} color={d.color} />
+          <Thing key={`d${i}`} kind={d.kind} at={d.at} indoor={indoor} night={theme.background.night} color={d.color} />
         ))}
         {theme.interactionObjects.map((o) => (
-          <Thing key={o.id} kind={o.kind} at={o.at} indoor={indoor} color={o.color} onPick={() => pick(o)} onHover={(on) => setHover(on ? o : null)} />
+          <Thing key={o.id} kind={o.kind} at={o.at} indoor={indoor} night={theme.background.night} color={o.color} onPick={() => pick(o)} onHover={(on) => setHover(on ? o : null)} />
         ))}
         {theme.interactionObjects
           .filter((o) => MODELS[o.kind].seats)
           .flatMap((o) => o.spots.map((at, i) => <Seat key={`${o.id}${i}`} at={at} facing={o.at} />))}
         {agents.map((a) => (
-          <Character key={a.player.id} agent={a} look={a.isMe ? meLook : a.player.look} mood={() => moods(a.player.id)} />
+          <Character key={a.player.id} agent={a} look={a.isMe ? meLook : a.player.look} mood={() => moods(a.player.id)} tint={theme.background.night ? NIGHT_TINT : undefined} />
         ))}
         <TapMarker sim={sim} />
-        <CameraRig sim={sim} me={me} raised={raised} />
+        <CameraRig sim={sim} me={me} raised={raised} onDpr={setDpr} />
         <LabelSync labels={labels} />
+        <PixelPost />
       </Canvas>
 
       <div className={far ? `${s.labels} ${s.far}` : s.labels}>
@@ -247,13 +251,14 @@ interface ThingProps {
   kind: ArtKind;
   at: Tile;
   indoor: boolean;
+  night?: boolean;
   color?: string;
   onPick?: () => void;
   onHover?: (on: boolean) => void;
 }
 
 /** One placed object: its model turned to face the camera (or away from its wall), and a light if it glows. */
-function Thing({ kind, at, indoor, color, onPick, onHover }: ThingProps) {
+function Thing({ kind, at, indoor, night, color, onPick, onHover }: ThingProps) {
   const { Model, h, yaw } = MODELS[kind];
   const light = KINDS[kind].light;
   const [hover, setHover] = useState(false);
@@ -278,7 +283,8 @@ function Thing({ kind, at, indoor, color, onPick, onHover }: ThingProps) {
       <group ref={group} rotation={[0, yaw ?? objectYaw(at, indoor), 0]} scale={hover ? 1.04 : 1} {...handlers}>
         <Model color={color} />
       </group>
-      {light && <Glow color={light} y={Math.min(h, 1.2)} />}
+      {/* light pools only by night (by day a cel-shaded pool reads as a yellow disc on the floor) */}
+      {light && night && <Glow color={light} y={Math.min(h, 1.2)} />}
     </group>
   );
 }
@@ -300,14 +306,14 @@ function Glow({ color, y }: { color: string; y: number }) {
   const light = useRef<THREE.PointLight>(null);
   const seed = useMemo(() => Math.random() * 10, []);
   useFrame(({ clock }) => {
-    if (light.current) light.current.intensity = 3 + Math.sin(clock.elapsedTime * 7 + seed) * 0.4 + Math.sin(clock.elapsedTime * 13 + seed) * 0.25;
+    if (light.current) light.current.intensity = 1.8 + Math.sin(clock.elapsedTime * 7 + seed) * 0.25 + Math.sin(clock.elapsedTime * 13 + seed) * 0.15;
   });
-  return <pointLight ref={light} color={color} position={[0, y, 0]} distance={7} decay={1.6} />;
+  return <pointLight ref={light} color={color} position={[0, y, 0]} distance={5.5} decay={1.6} />;
 }
 
 // ── characters ────────────────────────────────────────────────
 
-function Character({ agent, look, mood }: { agent: Agent; look: CharacterLook; mood: () => Mood | null }) {
+function Character({ agent, look, mood, tint }: { agent: Agent; look: CharacterLook; mood: () => Mood | null; tint?: string }) {
   const joints = useJoints();
   const root = useRef<THREE.Group>(null);
   useAvatarPose(joints, look, () => agent.anim, mood);
@@ -329,7 +335,7 @@ function Character({ agent, look, mood }: { agent: Agent; look: CharacterLook; m
   };
   return (
     <group ref={root} position={[agent.pos.tx * T, 0, agent.pos.ty * T]} rotation={[0, agent.heading, 0]} {...handlers}>
-      <AvatarBody look={look} joints={joints} />
+      <AvatarBody look={look} joints={joints} tint={tint} />
     </group>
   );
 }
@@ -404,17 +410,18 @@ function Driver({ sim, me }: { sim: Sim; me: Agent }) {
 
 /** Moves the DOM labels after the camera has moved (mounted last, so it runs last). */
 function LabelSync({ labels }: { labels: Labels }) {
-  const { camera, size } = useThree();
+  const { camera, size, scene } = useThree();
   useFrame(() => labels.sync(camera, size.width, size.height));
   // dev-only seam for the browser tests: where a tile (at some height) is on screen
   useEffect(() => {
     if (!import.meta.env.DEV) return;
     (window as unknown as { __moa: object }).__moa = {
+      scene,
       toScreen: (tx: number, ty: number, y = 0) => {
         const v = new THREE.Vector3(tx * T, y, ty * T).project(camera);
         return { x: ((v.x + 1) / 2) * size.width, y: ((1 - v.y) / 2) * size.height };
       },
     };
-  }, [camera, size]);
+  }, [camera, size, scene]);
   return null;
 }

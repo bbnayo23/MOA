@@ -28,14 +28,14 @@
 
 .tag {
   display: block;
-  padding: 2px 8px;
-  border: 0;
+  padding: 2px 6px 1px;
+  border: 2px solid rgba(59, 49, 80, 0.55);
   font: inherit;
-  border-radius: var(--r-pill);
+  font-family: var(--font-pixel);
+  border-radius: var(--r-s);
   background: var(--c-tag);
   color: var(--c-ink);
   font-size: 12px;
-  font-weight: 700;
   white-space: nowrap;
   box-shadow: var(--shadow-s);
 }
@@ -47,6 +47,7 @@ button.tag {
 }
 
 .me {
+  border-color: #b8436a;
   background: var(--c-primary-deep);
   color: var(--c-on-primary);
 }
@@ -55,12 +56,13 @@ button.tag {
 .bubble {
   max-width: min(240px, 70vw);
   translate: 0 -29px; // the tag's height + the tail
-  padding: 6px 11px;
-  border: 2px solid var(--c-lavender);
-  border-radius: var(--r-m);
+  padding: 6px 10px 5px;
+  border: 2px solid var(--c-ink);
+  border-radius: var(--r-s);
   background: var(--c-surface);
   color: var(--c-ink);
-  font-size: 14px;
+  font-family: var(--font-pixel);
+  font-size: 13px;
   line-height: 1.35;
   text-align: center;
   text-wrap: pretty; // no lone word on the last line
@@ -79,7 +81,7 @@ button.tag {
     height: 10px;
     translate: -50% 0;
     rotate: 45deg;
-    border: solid var(--c-lavender);
+    border: solid var(--c-ink);
     border-width: 0 2px 2px 0;
     background: var(--c-surface);
   }
@@ -99,8 +101,10 @@ button.tag {
 .label,
 .sign {
   display: block;
-  padding: 3px 9px;
+  padding: 3px 8px 2px;
+  border: 2px solid rgba(59, 49, 80, 0.55);
   border-radius: var(--r-s);
+  font-family: var(--font-pixel);
   background: var(--c-surface);
   color: var(--c-ink);
   font-size: 12px;
@@ -133,8 +137,9 @@ button.tag {
 
 // doors' signs are always up, and tapping one walks you to that door
 .sign {
-  border: 2px solid var(--c-line);
+  border: 2px solid rgba(59, 49, 80, 0.55);
   font: inherit;
+  font-family: var(--font-pixel);
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
@@ -164,8 +169,9 @@ button.tag {
   min-width: 128px;
   margin-bottom: 6px;
   padding: 8px;
+  border: 2px solid rgba(59, 49, 80, 0.55);
   border-radius: var(--r-m);
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.94);
   box-shadow: var(--shadow-m);
   pointer-events: auto;
   animation: pop 0.18s cubic-bezier(0.3, 1.6, 0.6, 1);
