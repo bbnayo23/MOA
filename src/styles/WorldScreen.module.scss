@@ -66,23 +66,6 @@ $phone: 720px;
   }
 }
 
-// over the world for a moment after moving (doubled class: beats `.layout > *`)
-.curtain.curtain {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background: var(--stage-bg, var(--c-bg));
-  pointer-events: none;
-  animation: lift 0.7s ease-out forwards;
-}
-
-@keyframes lift {
-  to {
-    opacity: 0;
-    visibility: hidden;
-  }
-}
-
 // ── zoom ──────────────────────────────────
 
 .zoom {

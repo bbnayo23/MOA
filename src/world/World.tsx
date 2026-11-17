@@ -5,12 +5,13 @@ import { fromGame, toGame } from '../bridge';
 import { ACTIONS } from '../data/actions';
 import { ANIMS } from '../data/anims';
 import type { CharacterLook } from '../data/character';
-import type { InteractionObject, ThemeConfig } from '../data/themes';
+import { THEME_CONFIGS, type InteractionObject, type ThemeConfig } from '../data/themes';
 import { FRIENDS } from '../mock';
 import type { Motion } from '../net/link';
 import { supabase } from '../net/supabase';
 import { roomOf, useMoa } from '../store';
 import s from '../styles/World.module.scss';
+import { hideSplash } from '../ui/splash';
 import { AvatarBody, moodOf, NIGHT_TINT, SIT_BACK, SIT_UP, TAG_Y, useAvatarPose, useJoints, type Mood } from './Avatar';
 import { gesture } from './camera';
 import { CameraRig } from './CameraRig';
@@ -18,7 +19,7 @@ import { KINDS, type ArtKind } from './kinds';
 import { Labels } from './labels';
 import { Chair, MODELS } from './models';
 import { PIXEL_GL, PixelPost } from './pixel';
-import { Sim, type Agent } from './sim';
+import { ENTER_MS, Sim, type Agent } from './sim';
 import { Stage } from './Stage';
 import { FACE_CAMERA, T, headingOf, objectYaw, type Tile } from './space';
 import { castShadows, glow } from './toon';
@@ -68,6 +69,12 @@ export function World({ theme, className, paused = false, raised = false }: { th
   const [dpr, setDpr] = useState(0.4);
   const [near, setNear] = useState<InteractionObject | null>(null);
   const indoor = !!theme.background.walls;
+  // a curtain over the world while a space opens (until its first frames are drawn), falling as you take a door
+  const [ready, setReady] = useState<ThemeConfig | null>(null);
+  const [going, setGoing] = useState<ThemeConfig | null>(null);
+  useEffect(() => {
+    if (ready) hideSplash(); // the very first time, the page's loading screen stands in for it
+  }, [ready]);
 
   useEffect(() => {
     const offs = [
@@ -82,6 +89,7 @@ export function World({ theme, className, paused = false, raised = false }: { th
     // a new space: nothing from the last one is near or hovered any more
     setNear(sim.near);
     setHover(null);
+    setGoing(null);
     sim.onNear = setNear;
     if (import.meta.env.DEV) (window as unknown as { __moaSim: Sim }).__moaSim = sim; // for the browser tests
     return () => {
@@ -90,7 +98,12 @@ export function World({ theme, className, paused = false, raised = false }: { th
     };
   }, [sim, me]);
 
-  const pick = (o: InteractionObject) => (o.enter ? sim.goThrough(me, o) : fromGame.emit('objectClick', o.id));
+  const enter = (o: InteractionObject) => {
+    const to = THEME_CONFIGS[o.enter!]; // a space still being built only shows its preview: no curtain for that
+    if (sim.goThrough(me, o) && to) setGoing(to);
+  };
+  const pick = (o: InteractionObject) => (o.enter ? enter(o) : fromGame.emit('objectClick', o.id));
+  const curtain = going ?? theme;
   const above = (o: InteractionObject) => (): [number, number, number] => [o.at.tx * T, MODELS[o.kind].h + 0.3, o.at.ty * T];
   // door signs hang on the front wall above the door, where they stay in view (a shop's: on its sign band)
   const onFront = (o: InteractionObject) => (): [number, number, number] => {
@@ -103,6 +116,7 @@ export function World({ theme, className, paused = false, raised = false }: { th
     <div className={className}>
       <Canvas flat orthographic shadows="basic" gl={PIXEL_GL} dpr={dpr} camera={{ near: 1, far: 300, position: [60, 60, 60] }} frameloop={paused ? 'never' : 'always'}>
         <Driver sim={sim} me={me} />
+        <Ready theme={theme} onReady={setReady} />
         <Stage bg={theme.background} onTap={(t) => walkTo(sim, me, t)} />
         {theme.decorations.map((d, i) => (
           <Thing key={`d${i}`} kind={d.kind} at={d.at} yaw={d.yaw} indoor={indoor} night={theme.background.night} color={d.color} />
@@ -140,7 +154,7 @@ export function World({ theme, className, paused = false, raised = false }: { th
               {near.icon} {near.label}
             </strong>
             {near.enter ? (
-              <button onClick={() => sim.goThrough(me, near)}>🚪 들어가기</button>
+              <button onClick={() => enter(near)}>🚪 들어가기</button>
             ) : (
               near.actions.map((id) => (
                 <button key={id} onClick={() => sim.perform(me, id, near.id)}>
@@ -174,8 +188,33 @@ export function World({ theme, className, paused = false, raised = false }: { th
           );
         })}
       </div>
+
+      {/* keyed by the place: a new one starts covered (or, taking a door, falls over the old one first) */}
+      <div
+        key={curtain.themeId}
+        className={`${s.curtain} ${going ? s.falling : ready === theme ? s.lifted : ''}`}
+        style={{ background: curtain.background.sky[0], animationDuration: `${ENTER_MS}ms` }}
+        role="status"
+        aria-hidden={!going && ready === theme}
+      >
+        <p className={s.place}>
+          <span>{curtain.emoji}</span>
+          {curtain.name}
+        </p>
+        <i className={s.loading} aria-label="불러오는 중" />
+      </div>
     </div>
   );
+}
+
+/** Says when a space's first frames are drawn (its models built, their shaders compiled): the curtain can lift. */
+function Ready({ theme, onReady }: { theme: ThemeConfig; onReady: (t: ThemeConfig) => void }) {
+  const frames = useRef(0);
+  useLayoutEffect(() => void (frames.current = 0), [theme]);
+  useFrame(() => {
+    if (++frames.current === 3) onReady(theme);
+  });
+  return null;
 }
 
 /** A door's sign, with a bubble of who's inside right now. */

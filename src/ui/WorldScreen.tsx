@@ -67,8 +67,6 @@ export function WorldScreen() {
     <div className={s.layout} style={{ '--stage-bg': theme.background.sky[0] } as CSSProperties}>
       {/* a fresh world per room: only its people are in it */}
       <World key={roomId} theme={theme} className={s.game} paused={scene && !!game && game !== 'lobby'} raised={!scene && !!game && game !== 'lobby'} />
-      {/* moving to another space or room: the new one fades in from its sky */}
-      <div key={`${roomId}:${theme.themeId}`} className={s.curtain} aria-hidden />
       <TopBar theme={theme} drawer={drawer} toggleDrawer={() => setDrawer(!drawer)} open={toggle} />
       <ZoomControls />
       {drawer && <Sidebar theme={theme} close={() => setDrawer(false)} />}

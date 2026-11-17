@@ -27,6 +27,9 @@ export interface Agent {
   timer?: Timer;
 }
 
+/** How long you walk toward a door before going through it (the curtain falls meanwhile, see World). */
+export const ENTER_MS = 650;
+
 interface Timer {
   at: number;
   run: () => void;
@@ -242,10 +245,23 @@ export class Sim {
     if (a.isMe && had) fromGame.emit('actionChange', null);
   }
 
-  /** Walk up to a door, then let React decide what's behind it. */
+  /** On my way through a door (once is enough: a second tap doesn't go twice). */
+  leaving = false;
+
+  /**
+   * Head for a door and, a few steps in, go through (no walking all the way across the
+   * map first); React decides what's behind it. Returns false if already on the way.
+   */
   goThrough(a: Agent, o: InteractionObject) {
+    if (this.leaving) return false;
+    this.leaving = true;
     this.stop(a);
-    this.route(a, o.spots[0], () => fromGame.emit('portal', o.enter!));
+    this.route(a, o.spots[0]);
+    this.after(ENTER_MS, () => {
+      this.leaving = false; // (a space still being built only shows its preview: you stay here)
+      fromGame.emit('portal', o.enter!);
+    });
+    return true;
   }
 
   /** Mock friend brain: wander, use objects, repeat. */

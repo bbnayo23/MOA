@@ -14,8 +14,83 @@
     <meta name="apple-mobile-web-app-title" content="MOA" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>MOA · 우리의 순간이 모이는 곳</title>
+    <!-- the loading screen: up from the first moment, until the app has something to show (src/ui/splash.ts) -->
+    <style>
+      #splash {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        background: repeating-conic-gradient(#efe7fb 0 25%, #f4effd 0 50%) 0 0 / 16px 16px;
+        color: #3b3150;
+        font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
+        transition: opacity 0.5s ease-out, visibility 0.5s;
+      }
+      #splash.gone {
+        opacity: 0;
+        visibility: hidden;
+      }
+      #splash img {
+        width: 128px;
+        height: 128px;
+        border: 3px solid #d6c9ea;
+        border-radius: 8px;
+        box-shadow: 0 4px 0 rgba(59, 49, 80, 0.16);
+        image-rendering: pixelated;
+        animation: hop 1.2s steps(2) infinite;
+      }
+      #splash h1 {
+        margin: 8px 0 0;
+        font-size: 40px;
+        font-weight: 900;
+        letter-spacing: 6px;
+        color: #f2668b;
+        text-shadow: 3px 3px 0 #ffe08a;
+      }
+      #splash p {
+        margin: 0;
+        font-size: 14px;
+        color: #8a80a0;
+      }
+      /* a pixel bar filling up and over again (no real progress to show) */
+      #splash i {
+        width: 132px;
+        height: 12px;
+        margin-top: 14px;
+        border: 2px solid #d6c9ea;
+        border-radius: 3px;
+        background: linear-gradient(#ff8fab, #ff8fab) 0 0 / 0 100% no-repeat, #fff;
+        animation: fill 1.6s steps(8) infinite;
+      }
+      @keyframes hop {
+        50% {
+          transform: translateY(-6px);
+        }
+      }
+      @keyframes fill {
+        to {
+          background-size: 100% 100%;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #splash img,
+        #splash i {
+          animation: none;
+        }
+      }
+    </style>
   </head>
   <body>
+    <div id="splash" role="status" aria-label="MOA 불러오는 중">
+      <img src="/icons/icon-192.png" alt="" />
+      <h1>MOA</h1>
+      <p>우리의 순간이 모이는 곳</p>
+      <i></i>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
