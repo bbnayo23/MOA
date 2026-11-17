@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { shade } from '../art/pix';
 
 const cache = new Map<string, THREE.Material>();
@@ -60,12 +61,12 @@ export function glow(color: string, opacity = 1) {
   return m;
 }
 
-/** A small canvas texture, drawn once. */
-export function canvasTexture(w: number, h: number, draw: (ctx: CanvasRenderingContext2D) => void, repeat?: [number, number]) {
+/** A small canvas texture, drawn once (`read`: the drawing reads its pixels back — keep that canvas on the CPU). */
+export function canvasTexture(w: number, h: number, draw: (ctx: CanvasRenderingContext2D) => void, repeat?: [number, number], read = false) {
   const c = document.createElement('canvas');
   c.width = w;
   c.height = h;
-  draw(c.getContext('2d')!);
+  draw(c.getContext('2d', { willReadFrequently: read })!);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   // pixel art: texels stay crisp squares up close; far off (perspective scenes), the mipmaps pick one
@@ -94,6 +95,46 @@ export const shimmer = (alpha: number, repeat: [number, number]) =>
         ctx.stroke();
       }
   }, repeat);
+
+/**
+ * A model that never moves, drawn as one mesh per material instead of one per part: its parts
+ * (still there for React) are hidden, their shapes merged in place under `root`. A space has
+ * thousands of parts and each is a draw call (twice, with the shadows), which is what made
+ * phones slow. Returns the undo.
+ */
+export function bake(root: THREE.Object3D) {
+  root.updateWorldMatrix(true, true);
+  const inv = root.matrixWorld.clone().invert();
+  const byMaterial = new Map<THREE.Material, { parts: THREE.Mesh[]; shapes: THREE.BufferGeometry[] }>();
+  root.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (!m.isMesh || !m.visible || Array.isArray(m.material) || !m.geometry.attributes.uv) return;
+    const shape = m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone();
+    for (const name of Object.keys(shape.attributes)) if (name !== 'position' && name !== 'normal' && name !== 'uv') shape.deleteAttribute(name);
+    shape.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, m.matrixWorld));
+    const entry = byMaterial.get(m.material) ?? { parts: [], shapes: [] };
+    entry.parts.push(m);
+    entry.shapes.push(shape);
+    byMaterial.set(m.material, entry);
+  });
+  const baked: THREE.Mesh[] = [];
+  for (const [material, { parts, shapes }] of byMaterial) {
+    const merged = parts.length > 1 && mergeGeometries(shapes);
+    shapes.forEach((s) => s.dispose());
+    if (!merged) continue;
+    parts.forEach((p) => (p.visible = false));
+    const mesh = new THREE.Mesh(merged, material);
+    root.add(mesh);
+    baked.push(mesh);
+  }
+  return () => {
+    for (const mesh of baked) {
+      root.remove(mesh);
+      mesh.geometry.dispose();
+    }
+    root.traverse((o) => (o as THREE.Mesh).isMesh && (o.visible = true));
+  };
+}
 
 /** Turn on shadows for every mesh under `root`. */
 export function castShadows(root: THREE.Object3D | null, receive = false) {

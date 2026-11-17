@@ -26,6 +26,8 @@ export interface ModelDef {
   yaw?: number;
   /** People use it seated behind it: World puts a chair at each spot. */
   seats?: true;
+  /** Parts of it move every frame (flames, a train): drawn piece by piece, not baked into one (see bake in toon.ts). */
+  live?: true;
 }
 
 type V3 = [number, number, number];
@@ -902,7 +904,7 @@ const Mirror: FC = () => (
 
 export const MODELS: Record<ArtKind, ModelDef> = {
   building: { h: 3.1, Model: Building },
-  fountain: { h: 1.6, Model: Fountain },
+  fountain: { h: 1.6, Model: Fountain, live: true },
   pew: { h: 0.9, Model: Bench },
   bush: { h: 0.8, Model: Bush },
   plant: { h: 1.2, Model: Plant },
@@ -913,11 +915,11 @@ export const MODELS: Record<ArtKind, ModelDef> = {
   log: { h: 0.4, Model: Log },
   dock: { h: 0.6, Model: Dock },
   tent: { h: 2.0, Model: Tent },
-  campfire: { h: 0.9, Model: Campfire },
+  campfire: { h: 0.9, Model: Campfire, live: true },
   grill: { h: 1.1, Model: Grill },
   lantern: { h: 1.6, Model: Lantern },
-  altar: { h: 1.4, Model: Altar },
-  candles: { h: 1.1, Model: Candles },
+  altar: { h: 1.4, Model: Altar, live: true },
+  candles: { h: 1.1, Model: Candles, live: true },
   board: { h: 1.6, Model: Board },
   bookshelf: { h: 2.2, Model: Bookshelf },
   table: { h: 0.9, Model: Table, seats: true },
@@ -935,7 +937,7 @@ export const MODELS: Record<ArtKind, ModelDef> = {
   net: { h: 1.1, Model: Net, yaw: 0 },
   balls: { h: 0.5, Model: Balls },
   clothesRack: { h: 1.7, Model: ClothesRack },
-  fittingRoom: { h: 2.5, Model: FittingRoom },
+  fittingRoom: { h: 2.5, Model: FittingRoom, live: true },
   mirror: { h: 2.0, Model: Mirror },
   sofa: { h: 1.0, Model: Sofa },
   armchair: { h: 1.0, Model: Armchair },
@@ -955,8 +957,8 @@ export const MODELS: Record<ArtKind, ModelDef> = {
   shop: { h: 4.6, Model: Shop },
   house: { h: 4.9, Model: House },
   station: { h: 3.2, Model: Station, yaw: 0 },
-  railway: { h: 2, Model: Railway, yaw: 0 },
-  crossing: { h: 2.6, Model: Crossing, yaw: 0 },
+  railway: { h: 2, Model: Railway, yaw: 0, live: true },
+  crossing: { h: 2.6, Model: Crossing, yaw: 0, live: true },
   pole: { h: 5.2, Model: Pole, yaw: 0 },
   vending: { h: 1.9, Model: Vending },
   mailbox: { h: 1.2, Model: Mailbox },

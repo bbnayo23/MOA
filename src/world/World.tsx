@@ -22,7 +22,7 @@ import { PIXEL_GL, PixelPost } from './pixel';
 import { ENTER_MS, Sim, type Agent } from './sim';
 import { Stage } from './Stage';
 import { FACE_CAMERA, T, headingOf, objectYaw, type Tile } from './space';
-import { castShadows, glow } from './toon';
+import { bake, castShadows, glow } from './toon';
 
 /**
  * The 3D world for one theme, filling its box. React → world commands and
@@ -114,7 +114,10 @@ export function World({ theme, className, paused = false, raised = false }: { th
 
   return (
     <div className={className}>
-      <Canvas flat orthographic shadows="basic" gl={PIXEL_GL} dpr={dpr} camera={{ near: 1, far: 300, position: [60, 60, 60] }} frameloop={paused ? 'never' : 'always'}>
+      <Canvas flat orthographic shadows="basic" gl={PIXEL_GL} dpr={dpr} camera={{ near: 1, far: 300, position: [60, 60, 60] }} frameloop={paused ? 'never' : 'always'}
+        // reading back every shader's compile log stalls the first frame; only worth it while developing
+        onCreated={({ gl }) => void (gl.debug.checkShaderErrors = import.meta.env.DEV)}
+      >
         <Driver sim={sim} me={me} />
         <Ready theme={theme} onReady={setReady} />
         <Stage bg={theme.background} onTap={(t) => walkTo(sim, me, t)} />
@@ -329,12 +332,16 @@ interface ThingProps {
 
 /** One placed object: its model turned to face the camera (or away from its wall), and a light if it glows. */
 function Thing({ kind, at, yaw: turned, indoor, night, color, onPick, onHover }: ThingProps) {
-  const { Model, h } = MODELS[kind];
+  const { Model, h, live } = MODELS[kind];
   const yaw = turned ?? MODELS[kind].yaw;
   const light = KINDS[kind].light;
   const [hover, setHover] = useState(false);
   const group = useRef<THREE.Group>(null);
-  useLayoutEffect(() => castShadows(group.current));
+  useLayoutEffect(() => {
+    const undo = live ? undefined : bake(group.current!);
+    castShadows(group.current);
+    return undo;
+  }, [kind, color, live]);
   const over = (on: boolean) => {
     setHover(on);
     onHover?.(on);
@@ -481,18 +488,19 @@ function Driver({ sim, me }: { sim: Sim; me: Agent }) {
 
 /** Moves the DOM labels after the camera has moved (mounted last, so it runs last). */
 function LabelSync({ labels }: { labels: Labels }) {
-  const { camera, size, scene } = useThree();
+  const { camera, size, scene, gl } = useThree();
   useFrame(() => labels.sync(camera, size.width, size.height));
   // dev-only seam for the browser tests: where a tile (at some height) is on screen
   useEffect(() => {
     if (!import.meta.env.DEV) return;
     (window as unknown as { __moa: object }).__moa = {
       scene,
+      gl,
       toScreen: (tx: number, ty: number, y = 0) => {
         const v = new THREE.Vector3(tx * T, y, ty * T).project(camera);
         return { x: ((v.x + 1) / 2) * size.width, y: ((1 - v.y) / 2) * size.height };
       },
     };
-  }, [camera, size, scene]);
+  }, [camera, size, scene, gl]);
   return null;
 }

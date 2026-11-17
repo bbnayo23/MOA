@@ -6,7 +6,7 @@ import { gesture } from './camera';
 import { MODELS } from './models';
 import { walkRadius } from './path';
 import { FACE_CAMERA, T, type Tile } from './space';
-import { canvasTexture, castShadows, shimmer, toon } from './toon';
+import { bake, canvasTexture, castShadows, shimmer, toon } from './toon';
 
 /**
  * The space itself: light, the floor (with its rugs, paths and court lines
@@ -152,7 +152,7 @@ function disc(ctx: CanvasRenderingContext2D, cx: number, cy: number, rx: number,
 function cobbles(W: number, color: string) {
   const c = document.createElement('canvas');
   c.width = c.height = W;
-  const ctx = c.getContext('2d')!;
+  const ctx = c.getContext('2d', { willReadFrequently: true })!; // read back once: keep it on the CPU
   const rnd = seeded(13), S = 16;
   ctx.fillStyle = shade(color, -0.32);
   ctx.fillRect(0, 0, W, W);
@@ -176,7 +176,7 @@ function cobbles(W: number, color: string) {
 function asphalt(W: number, color: string) {
   const c = document.createElement('canvas');
   c.width = c.height = W;
-  const ctx = c.getContext('2d')!;
+  const ctx = c.getContext('2d', { willReadFrequently: true })!; // read back once: keep it on the CPU
   const rnd = seeded(17);
   ctx.fillStyle = color;
   ctx.fillRect(0, 0, W, W);
@@ -196,7 +196,7 @@ function asphalt(W: number, color: string) {
 function pavers(W: number, color: string) {
   const c = document.createElement('canvas');
   c.width = c.height = W;
-  const ctx = c.getContext('2d')!;
+  const ctx = c.getContext('2d', { willReadFrequently: true })!; // read back once: keep it on the CPU
   const rnd = seeded(23), Q = PX / 4;
   ctx.fillStyle = shade(color, -0.25);
   ctx.fillRect(0, 0, W, W);
@@ -217,7 +217,7 @@ function pavers(W: number, color: string) {
 function tactile(W: number, color: string) {
   const c = document.createElement('canvas');
   c.width = c.height = W;
-  const ctx = c.getContext('2d')!;
+  const ctx = c.getContext('2d', { willReadFrequently: true })!; // read back once: keep it on the CPU
   ctx.fillStyle = color;
   ctx.fillRect(0, 0, W, W);
   for (let y = 1; y < W; y += 4)
@@ -233,7 +233,7 @@ function tactile(W: number, color: string) {
 /** The floor as pixel art: grass with tufts, glazed tiles, wooden planks — then rugs / paths / lines on top. */
 function floorTexture(bg: Background) {
   const n = bg.size, W = n * PX;
-  return canvasTexture(W, W, (ctx) => {
+  const draw = (ctx: CanvasRenderingContext2D) => {
     const rnd = seeded(7);
     const [a, b] = bg.ground;
     ctx.fillStyle = a;
@@ -310,7 +310,12 @@ function floorTexture(bg: Background) {
       }
     }
     // rugs: every pixel within width/2 of the from→to segment, with a border band (and its pattern)
-    const img = ctx.getImageData(0, 0, W, W);
+    const img = ctx.getImageData(0, 0, W, W), px8 = img.data;
+    const put = (i: number, c: ArrayLike<number>, j = 0) => {
+      px8[i] = c[j];
+      px8[i + 1] = c[j + 1];
+      px8[i + 2] = c[j + 2];
+    };
     const surfaces = new Map<string, Uint8ClampedArray>();
     const surface = (pattern: string, color: string) => {
       const key = pattern + color;
@@ -324,28 +329,31 @@ function floorTexture(bg: Background) {
       // (from = to: a round patch)
       const ax = rug.from.tx, ay = rug.from.ty, dx = rug.to.tx - ax, dy = rug.to.ty - ay, len2 = dx * dx + dy * dy || 1, len = Math.sqrt(len2);
       const half = rug.width / 2, band = Math.min(0.1, half * 0.4);
-      for (let py = 0; py < W; py++)
-        for (let px = 0; px < W; px++) {
+      // only the pixels it can reach
+      const span = (a: number, b: number) => [Math.max(0, Math.floor((Math.min(a, b) - half) * PX)), Math.min(W, Math.ceil((Math.max(a, b) + half) * PX))];
+      const [x0, x1] = span(ax, ax + dx), [y0, y1] = span(ay, ay + dy);
+      for (let py = y0; py < y1; py++)
+        for (let px = x0; px < x1; px++) {
           const tx = (px + 0.5) / PX, ty = (py + 0.5) / PX;
           const raw = ((tx - ax) * dx + (ty - ay) * dy) / len2, k = Math.max(0, Math.min(1, raw));
-          const d = Math.hypot(tx - ax - dx * k, ty - ay - dy * k);
+          const ex = tx - ax - dx * k, ey = ty - ay - dy * k, d = Math.sqrt(ex * ex + ey * ey);
           if (d > half) continue;
           const i = (py * W + px) * 4;
           // a zebra crossing: stripes as you walk across, the road showing between
           if (rug.pattern === 'crosswalk') {
-            if (raw >= 0 && raw <= 1 && (k * len * 2.6) % 1 < 0.5) img.data.set(fill, i);
+            if (raw >= 0 && raw <= 1 && (k * len * 2.6) % 1 < 0.5) put(i, fill);
             continue;
           }
           // a road's dashed centre line
-          if (rug.pattern === 'road' && d < 0.035 && (k * len * 1.1) % 1 < 0.55) {
-            img.data.set(LINE, i);
-            continue;
-          }
-          img.data.set(d > half - band ? edge : tex ? tex.subarray(i, i + 3) : fill, i);
+          if (rug.pattern === 'road' && d < 0.035 && (k * len * 1.1) % 1 < 0.55) put(i, LINE);
+          else if (d > half - band) put(i, edge);
+          else if (tex) put(i, tex, i);
+          else put(i, fill);
         }
     }
     ctx.putImageData(img, 0, 0);
-  });
+  };
+  return canvasTexture(W, W, draw, undefined, true);
 }
 
 // ── indoors ───────────────────────────────────────────────────
@@ -508,7 +516,11 @@ function Land({ bg, S, onTap }: { bg: Background; S: number; onTap: (e: ThreeEve
     return out;
   }, [S, bg.size, bg.wild]);
   const group = useRef<THREE.Group>(null);
-  useLayoutEffect(() => castShadows(group.current));
+  useLayoutEffect(() => {
+    const undo = bake(group.current!); // the whole ring: a few draws, not a thousand
+    castShadows(group.current);
+    return undo;
+  }, [props]);
   return (
     <>
       <mesh material={toon(bg.grass ?? bg.ground[0])} rotation-x={-Math.PI / 2} position={[S / 2, 0, S / 2]} receiveShadow onClick={onTap}>
