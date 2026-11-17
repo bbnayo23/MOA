@@ -25,9 +25,12 @@ export interface Swimmer {
   at: number;
   /** Seconds since the start when they touched the wall (null: still swimming). */
   time: number | null;
+  /** Duck race: race time of the last dive, and ducks bumped into. */
+  diveAt: number;
+  bumps: number;
 }
 
-export const newSwimmer = (): Swimmer => ({ d: 0, v: 0, last: null, at: -1, time: null });
+export const newSwimmer = (): Swimmer => ({ d: 0, v: 0, last: null, at: -1, time: null, diveAt: -9, bumps: 0 });
 
 /** How good a stroke is (0 … 1): on the other arm, near the beat (flailing faster than it is worse than lagging). */
 export function strokeQuality(s: Swimmer, arm: Arm, t: number) {
@@ -44,14 +47,44 @@ export function stroke(s: Swimmer, arm: Arm, t: number): Swimmer {
   return { ...s, v, last: arm, at: t };
 }
 
-/** Move on by dt seconds (race time `t` at the end of it); touching the wall stops the clock. */
-export function swimFor(s: Swimmer, dt: number, t: number): Swimmer {
+/**
+ * Move on by dt seconds (race time `t` at the end of it); touching the wall stops the clock.
+ * Duck race: swimming into a duck (`ducks`, metres) without being under it costs most of the speed.
+ */
+export function swimFor(s: Swimmer, dt: number, t: number, ducks: number[] = []): Swimmer {
   if (s.time !== null) return s;
   const d = s.d + s.v * dt;
-  const v = s.v * Math.exp(-0.5 * dt);
+  const bump = !under(s, t) && ducks.some((x) => s.d < x && x <= d);
+  // (under water drags more: dive at the duck, not all the way)
+  const v = (bump ? s.v * 0.3 : s.v) * Math.exp(-(under(s, t) ? 1.4 : 0.5) * dt);
   if (d >= LENGTH) return { ...s, d: LENGTH, v: 0, time: +(t - (d - LENGTH) / Math.max(s.v, 0.01)).toFixed(2) };
-  return { ...s, d, v };
+  return bump ? { ...s, d: Math.min(d, s.d + 0.05), v, bumps: s.bumps + 1 } : { ...s, d, v };
 }
+
+// ── 🦆 the duck race: rubber ducks bob in every lane, dive under them ──
+/** Under water this long per dive, then up for a moment before the next. */
+export const DIVE = 0.7;
+export const DIVE_GAP = 0.3;
+
+/** Where the ducks float (metres from the start), the same in every lane. */
+export function ducks(seed: number) {
+  const rnd = seeded(seed + 99);
+  const out: number[] = [];
+  for (let d = 4 + rnd() * 2; d < LENGTH - 2.5; d += 3.2 + rnd() * 1.8) out.push(+d.toFixed(2));
+  return out;
+}
+
+export const under = (s: Swimmer, t: number) => t - s.diveAt < DIVE;
+
+export function dive(s: Swimmer, t: number): Swimmer {
+  return s.time !== null || t - s.diveAt < DIVE + DIVE_GAP ? s : { ...s, diveAt: t };
+}
+
+/** Which ducks a computer swimmer dives under (`skill` 0 … 1), the same on every screen. */
+export const cpuDives = (seed: number, i: number, ds: number[], skill: number) => {
+  const rnd = seeded(seed * 7 + i + 11);
+  return ds.map(() => rnd() < 0.45 + skill * 0.5);
+};
 
 /** Finishing order: fastest first, then those who didn't finish (null). */
 export const ranking = (times: Record<string, number | null>) =>

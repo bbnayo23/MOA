@@ -7,12 +7,13 @@ import { Fan } from './Fan';
 import { MODELS } from '../world/models';
 import { Sky } from '../world/Stage';
 import { canvasTexture, shimmer, toon } from '../world/toon';
-import { useTaps } from './controls';
+import { useKeys, useTaps } from './controls';
 import { ev, finish, onEvent, type Match, type Seat } from './session';
-import { BEAT, CUTOFF, cpuStrokes, LENGTH, newSwimmer, seeded, stroke, strokeQuality, swimFor, type Arm, type Swimmer } from './swim';
+import { BEAT, CUTOFF, cpuDives, cpuStrokes, dive, ducks, LENGTH, newSwimmer, seeded, stroke, strokeQuality, swimFor, under, type Arm, type Swimmer } from './swim';
 
 const LANE = 2.4;
-type SwimEv = { k: 'p'; d: number; v: number } | { k: 'fin'; time: number };
+/** My progress (`u`: under water, in the duck race), and my time at the wall. */
+type SwimEv = { k: 'p'; d: number; v: number; u?: 1 } | { k: 'fin'; time: number };
 
 /** Each lane: my own swimmer runs here; the others' arrive as reports (and coast between them). */
 interface Lane {
@@ -21,6 +22,10 @@ interface Lane {
   heard: number;
   strokes?: number[]; // a computer's stroke times
   next?: number;
+  /** A computer's dives (duck race): under each duck or not. */
+  plan?: boolean[];
+  /** Someone else under water (duck race) until this race time, as they last said. */
+  dip: number;
   splashAt: number;
   /** Swum up to this race time (in fixed steps, so a slow screen swims as far as a fast one). */
   simT: number;
@@ -29,21 +34,31 @@ interface Lane {
 const now = () => performance.now() / 1000;
 const STEP = 1 / 60;
 
-/** Swim this lane on to race time t (a computer takes its strokes on the way). */
-function advance(l: Lane, t: number) {
+/** Swim this lane on to race time t (a computer takes its strokes on the way, and dives under its ducks). */
+function advance(l: Lane, t: number, ds: number[]) {
   while (l.simT + STEP <= t) {
     l.simT += STEP;
     if (l.strokes) while (l.next! < l.strokes.length && l.strokes[l.next!] <= l.simT) l.sw = stroke(l.sw, (l.next! % 2 ? 'R' : 'L') as Arm, l.strokes[l.next!++]);
-    l.sw = swimFor(l.sw, STEP, l.simT);
+    if (l.plan) ds.forEach((x, k) => l.plan![k] && x > l.sw.d && x - l.sw.d < 0.6 && (l.sw = dive(l.sw, l.simT)));
+    l.sw = swimFor(l.sw, STEP, l.simT, ds);
   }
 }
 
 export function SwimGame({ match, meId }: { match: Match; meId: string }) {
   const mine = match.role === 'player' ? match.seats.findIndex((x) => x.id === meId) : -1;
+  // the duck race: the same ducks in every lane
+  const ds = useMemo(() => (match.game === 'hurdles' ? ducks(match.seed) : []), [match.game, match.seed]);
   const lanes = useMemo<Lane[]>(() => {
     const rnd = seeded(match.seed);
-    return match.seats.map((p, i) => ({ sw: newSwimmer(), heard: 0, splashAt: -9, simT: 0, ...(p.cpu ? { strokes: cpuStrokes(0.55 + 0.15 * i, rnd), next: 0 } : {}) }));
-  }, [match.seats, match.seed]);
+    return match.seats.map((p, i) => ({
+      sw: newSwimmer(),
+      heard: 0,
+      splashAt: -9,
+      simT: 0,
+      dip: -9,
+      ...(p.cpu ? { strokes: cpuStrokes(0.55 + 0.15 * i, rnd), next: 0, plan: cpuDives(match.seed, i, ds, 0.55 + 0.15 * i) } : {}),
+    }));
+  }, [match.seats, match.seed, ds]);
   const [hud, setHud] = useState({ order: [] as { name: string; d: number; time: number | null }[], q: 0, t: 0 });
   const done = useRef(false);
   const start = match.startAt / 1000;
@@ -52,13 +67,21 @@ export function SwimGame({ match, meId }: { match: Match; meId: string }) {
   const tap = (arm: Arm) => {
     if (mine < 0 || now() < start) return;
     const l = lanes[mine];
-    advance(l, raceTime());
+    advance(l, raceTime(), ds);
     const q = strokeQuality(l.sw, arm, raceTime());
     l.sw = stroke(l.sw, arm, raceTime());
     l.splashAt = now();
     setHud((h) => ({ ...h, q }));
   };
   useTaps(mine >= 0, tap);
+  /** Duck race: under water for a moment (Space · 잠수). */
+  const diveMe = () => {
+    if (mine < 0 || now() < start || !ds.length) return;
+    const l = lanes[mine];
+    advance(l, raceTime(), ds);
+    l.sw = dive(l.sw, raceTime());
+  };
+  useKeys(mine >= 0 && ds.length > 0, { Space: diveMe });
 
   useEffect(
     () =>
@@ -67,7 +90,7 @@ export function SwimGame({ match, meId }: { match: Match; meId: string }) {
         if (i < 0 || i === mine) return;
         const e = data as SwimEv;
         const l = lanes[i];
-        if (e.k === 'p') Object.assign(l, { sw: { ...l.sw, d: e.d, v: e.v }, heard: now(), splashAt: e.v > 0.4 ? now() : l.splashAt });
+        if (e.k === 'p') Object.assign(l, { sw: { ...l.sw, d: e.d, v: e.v }, heard: now(), splashAt: e.v > 0.4 ? now() : l.splashAt, dip: e.u ? raceTime() + 0.25 : l.dip });
         if (e.k === 'fin') l.sw = { ...l.sw, d: LENGTH, v: 0, time: e.time };
       }),
     [lanes, match.seats, mine],
@@ -81,7 +104,7 @@ export function SwimGame({ match, meId }: { match: Match; meId: string }) {
     lanes.forEach((l, i) => {
       if (i === mine || l.strokes) {
         // swum here: me, or a computer
-        advance(l, t);
+        advance(l, t, ds);
         if (i === mine && l.sw.time !== null && !told.current) {
           told.current = true;
           ev({ k: 'fin', time: l.sw.time } satisfies SwimEv);
@@ -90,7 +113,8 @@ export function SwimGame({ match, meId }: { match: Match; meId: string }) {
     });
     if (mine >= 0 && lanes[mine].sw.time === null && now() - sent.current > 0.12) {
       sent.current = now();
-      ev({ k: 'p', d: +lanes[mine].sw.d.toFixed(2), v: +lanes[mine].sw.v.toFixed(2) } satisfies SwimEv);
+      const u = under(lanes[mine].sw, t) ? { u: 1 as const } : {};
+      ev({ k: 'p', d: +lanes[mine].sw.d.toFixed(2), v: +lanes[mine].sw.v.toFixed(2), ...u } satisfies SwimEv);
     }
     // everyone in (or out: left, or past the cutoff) → results
     const out = (i: number) => lanes[i].sw.time !== null || match.left.includes(match.seats[i].id) || t > CUTOFF;
@@ -100,9 +124,11 @@ export function SwimGame({ match, meId }: { match: Match; meId: string }) {
     }
   };
 
-  // the leaderboard, a few times a second
+  // the leaderboard, a few times a second (and a quack when I hit a duck)
+  const bumped = useRef({ n: 0, at: -9 });
   useEffect(() => {
     const id = setInterval(() => {
+      if (mine >= 0 && lanes[mine].sw.bumps > bumped.current.n) bumped.current = { n: lanes[mine].sw.bumps, at: now() };
       const order = match.seats
         .map((p, i) => ({ name: i === mine ? '나' : p.nickname, d: lanes[i].sw.d, time: lanes[i].sw.time }))
         .sort((a, b) => (a.time ?? 1e9) - (b.time ?? 1e9) || b.d - a.d);
@@ -117,8 +143,15 @@ export function SwimGame({ match, meId }: { match: Match; meId: string }) {
       <Canvas flat shadows="percentage" dpr={[1, 2]} camera={{ fov: 42, position: [width / 2 + 4, 7, 6], near: 0.5, far: 150 }}>
         <Pool lanes={match.seats.length} fans={match.watchers ?? []} cheer={() => lanes.some((l) => l.sw.time !== null && raceTime() - l.sw.time < 2)} />
         {match.seats.map((p, i) => (
-          <SwimmerFigure key={p.id} look={p.look} lane={lanes[i]} x={(i - (match.seats.length - 1) / 2) * LANE} />
+          <SwimmerFigure
+            key={p.id}
+            look={p.look}
+            lane={lanes[i]}
+            x={(i - (match.seats.length - 1) / 2) * LANE}
+            dipped={() => (i === mine || lanes[i].strokes ? under(lanes[i].sw, raceTime()) : raceTime() < lanes[i].dip)}
+          />
         ))}
+        {ds.length > 0 && <Ducks ds={ds} lanes={match.seats.length} />}
         <Follow lanes={lanes} mine={mine} step={step} />
       </Canvas>
       <ol className={s.ranks} aria-live="polite">
@@ -128,7 +161,7 @@ export function SwimGame({ match, meId }: { match: Match; meId: string }) {
           </li>
         ))}
       </ol>
-      <p className={s.say}>{hud.t > 0 ? `${hud.t.toFixed(1)}초` : ''}</p>
+      <p className={s.say}>{now() - bumped.current.at < 1 ? '🦆 꽥! 오리에 부딪혔어요' : hud.t > 0 ? `${hud.t.toFixed(1)}초` : ds.length ? '🦆 오리 앞에서 잠수! (Space)' : ''}</p>
       {mine >= 0 && (
         <div className={s.pad}>
           <button aria-label="왼팔" onPointerDown={() => tap('L')}>
@@ -138,6 +171,11 @@ export function SwimGame({ match, meId }: { match: Match; meId: string }) {
           <span className={s.beat} style={{ '--q': hud.q } as CSSProperties} aria-label={`박자 ${Math.round(hud.q * 100)}%`}>
             박자 {BEAT}s
           </span>
+          {ds.length > 0 && (
+            <button aria-label="잠수" onPointerDown={diveMe}>
+              🤿 잠수
+            </button>
+          )}
           <button aria-label="오른팔" onPointerDown={() => tap('R')}>
             오른팔 ▶
           </button>
@@ -363,12 +401,42 @@ const DROPS = 7;
  * speed, a flutter kick), sitting up in a ring before the start and after the finish.
  * Each stroke throws up a splash.
  */
-function SwimmerFigure({ look, lane, x }: { look: Match['seats'][number]['look']; lane: Lane; x: number }) {
+/** Rubber ducks bobbing in every lane, at the same distances (the duck race). */
+function Ducks({ ds, lanes }: { ds: number[]; lanes: number }) {
+  const group = useRef<THREE.Group>(null);
+  useFrame(({ clock }) => group.current?.children.forEach((d, i) => (d.position.y = 0.04 + Math.sin(clock.elapsedTime * 2.4 + i) * 0.05)));
+  return (
+    <group ref={group}>
+      {Array.from({ length: lanes }, (_, lane) =>
+        ds.map((d) => (
+          <group key={`${lane}-${d}`} position={[(lane - (lanes - 1) / 2) * LANE, 0, -d]} rotation-y={Math.PI / 2}>
+            <mesh material={toon('#ffd23f')} scale={[1.25, 0.8, 1]} castShadow>
+              <sphereGeometry args={[0.26, 16, 12]} />
+            </mesh>
+            <mesh material={toon('#ffd23f')} position={[0.22, 0.27, 0]} castShadow>
+              <sphereGeometry args={[0.15, 14, 10]} />
+            </mesh>
+            <mesh material={toon('#ff8a3d')} position={[0.39, 0.25, 0]} rotation-z={-Math.PI / 2}>
+              <coneGeometry args={[0.06, 0.14, 10]} />
+            </mesh>
+            {[-1, 1].map((sd) => (
+              <mesh key={sd} material={toon('#3b3150')} position={[0.3, 0.32, sd * 0.08]}>
+                <sphereGeometry args={[0.022, 6, 6]} />
+              </mesh>
+            ))}
+          </group>
+        )),
+      )}
+    </group>
+  );
+}
+
+function SwimmerFigure({ look, lane, x, dipped }: { look: Match['seats'][number]['look']; lane: Lane; x: number; dipped: () => boolean }) {
   const joints = useJoints();
   const root = useRef<THREE.Group>(null);
   const body = useRef<THREE.Group>(null);
   const drops = useRef<THREE.Group>(null);
-  const st = useRef({ phase: 0, prone: 0 }).current;
+  const st = useRef({ phase: 0, prone: 0, dip: 0 }).current;
   const swimming = () => lane.sw.time === null && lane.sw.v >= 0.15;
   useAvatarPose(joints, look, () => (swimming() ? 'swim' : 'tube'));
   // after the pose (registered first): lay them down and wheel the arms
@@ -376,7 +444,9 @@ function SwimmerFigure({ look, lane, x }: { look: Match['seats'][number]['look']
     const dt = Math.min(dtRaw, 0.1);
     st.prone += ((swimming() ? 1 : 0) - st.prone) * (1 - Math.exp(-dt * 6));
     st.phase += dt * (2.2 + lane.sw.v * 2.4);
-    root.current?.position.set(x, 0, -lane.sw.d);
+    // under water (the duck race): down below the surface, back up after
+    st.dip += ((dipped() ? 1 : 0) - st.dip) * (1 - Math.exp(-dt * 10));
+    root.current?.position.set(x, -0.62 * st.dip, -lane.sw.d);
     body.current?.rotation.set(st.prone * 1.42, 0, 0);
     body.current?.position.set(0, -0.12 * st.prone, -0.5 * st.prone);
     const j = joints;

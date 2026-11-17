@@ -16,7 +16,7 @@ export const pool: ThemeConfig = {
   name: '수영장',
   emoji: '🏊',
   tagline: '첨벙첨벙 여름 한가운데',
-  activities: ['수영하기', '튜브 타기', '물장구치기', '선베드 휴식', '수영 레이스 (최대 4명)'],
+  activities: ['수영하기', '튜브 타기', '물장구치기', '선베드 휴식', '수영 레이스 (최대 4명)', '오리 피하기 레이스'],
   color: '#7cc4f0',
   background: {
     size: 8,
@@ -33,11 +33,11 @@ export const pool: ThemeConfig = {
     motes: 0xffffff,
   },
   spawnPosition: { tx: 6.6, ty: 6.0 },
-  availableActions: ['swimRace', 'swim', 'tube', 'splash', 'sit', 'wave', 'jump'],
+  availableActions: ['swimRace', 'duckRace', 'swim', 'tube', 'splash', 'sit', 'wave', 'jump'],
   interactionObjects: [
     {
       id: 'ladder', kind: 'ladder', label: '수영장', icon: '🏊', at: { tx: 4.0, ty: 2.1 },
-      actions: ['swimRace', 'swim', 'tube', 'splash'],
+      actions: ['swimRace', 'duckRace', 'swim', 'tube', 'splash'],
       // places well inside the water, so the waterline never overlaps the coping
       spots: [{ tx: 3.4, ty: 3.4 }, { tx: 4.6, ty: 3.2 }, { tx: 3.2, ty: 4.3 }, { tx: 4.4, ty: 4.2 }],
     },

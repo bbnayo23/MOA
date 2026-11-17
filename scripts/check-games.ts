@@ -1,7 +1,7 @@
 // Runnable check for the minigame rules (tennis 1:1, swim race): `pnpm check`
 import assert from 'node:assert/strict';
 import { ballAt, cpuReturns, EARLY, HALF_L, HALF_W, judge, laneOf, LATE, newScore, point, REACH, receiverOf, serve, serverOf, teamOf, winnerOf, WIN, type Flight } from '../src/games/tennis.ts';
-import { cpuStrokes, LENGTH, newSwimmer, ranking, seeded, stroke, swimFor, V_MAX, BEAT, type Swimmer } from '../src/games/swim.ts';
+import { cpuDives, cpuStrokes, dive, DIVE, ducks, LENGTH, newSwimmer, ranking, seeded, stroke, swimFor, under, V_MAX, BEAT, type Swimmer } from '../src/games/swim.ts';
 import {
   bites, cpuScore, deal, DRINKS, FISH, fits, gauge, grade, guide, isDrink, jerk, NEXT_LOOK, NEXT_ORDER, orders, rep, REP_LOCK, REQUESTS, requests, ROUND, wait, type TimedId,
   AFTER, cpuPick, cpuVote, fitOf, nextLen, NEXT_SHELF, notes, panes, pressLane, recallOrder, shelf, SHOW, sky, SKY, straight, tally, TAP_GAP, tapStar, voteTheme,
@@ -83,6 +83,29 @@ assert.ok(sloppy.time === null || sloppy.time > good.time!, 'off the beat is slo
 assert.ok(sameArm.time === null || sameArm.time > good.time! * 1.5, 'one arm only barely moves');
 assert.ok(mash.time === null || mash.time > good.time! * 1.3, 'mashing loses to rhythm');
 assert.deepEqual(ranking({ a: 14.2, b: null, c: 11.9 }).map(([id]) => id), ['c', 'a', 'b']);
+// the duck race: swimming into a duck costs most of the speed; under it, you pass
+const lane = ducks(4);
+assert.ok(lane.length >= 3 && lane.every((d) => d > 3 && d < LENGTH - 2) && lane.every((d, i) => i === 0 || d - lane[i - 1] >= 3));
+const before = { ...newSwimmer(), d: lane[0] - 0.05, v: 2 };
+const bump = swimFor(before, 0.05, 5, lane);
+assert.ok(bump.bumps === 1 && bump.v < 1, 'bumped: slowed right down');
+const dived = swimFor(dive(before, 4.9), 0.05, 5, lane);
+assert.ok(dived.bumps === 0 && dived.v > 1.8 && under(dive(before, 4.9), 5) && !under(dive(before, 4.9), 4.9 + DIVE + 0.01), 'under it: through');
+assert.equal(dive(dive(before, 5), 5.5).diveAt, 5, 'no diving again straight away');
+assert.deepEqual(cpuDives(9, 1, lane, 0.7), cpuDives(9, 1, lane, 0.7));
+// diving the whole way is slower than diving at the ducks
+const dives = (all: boolean) => {
+  let sw: Swimmer = newSwimmer();
+  for (let t = 0, i = 0, next = 0.2; t < 60 && sw.time === null; ) {
+    t += 0.02;
+    if (t >= next) [sw, next, i] = [stroke(sw, i % 2 ? 'R' : 'L', t), t + BEAT, i + 1];
+    if (all || lane.some((x) => x > sw.d && x - sw.d < 0.6)) sw = dive(sw, t);
+    sw = swimFor(sw, 0.02, t, lane);
+  }
+  return sw;
+};
+const timed = dives(false), spam = dives(true);
+assert.ok(timed.bumps === 0 && timed.time! < (spam.time ?? 99), `dive at the ducks (${timed.time}s) beats diving all the time (${spam.time}s)`);
 // computer swimmers are the same for everyone with the same seed
 assert.deepEqual(cpuStrokes(0.7, seeded(42)).slice(0, 5), cpuStrokes(0.7, seeded(42)).slice(0, 5));
 

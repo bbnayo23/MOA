@@ -22,7 +22,7 @@ export type ActionId =
   | 'order' | 'eat' | 'drink' | 'talk'
   | 'dumbbell' | 'treadmill' | 'stretch' | 'squat'
   | 'swim' | 'tube' | 'splash'
-  | 'serve' | 'swing' | 'rally' | 'minigame' | 'tennisMatch' | 'tennisDoubles' | 'swimRace'
+  | 'serve' | 'swing' | 'rally' | 'minigame' | 'tennisMatch' | 'tennisDoubles' | 'swimRace' | 'duckRace'
   | 'browse' | 'fitting' | 'pose'
   | 'fishing' | 'barista' | 'squatGame' | 'memoryGame' | 'stylingGame' | 'breathe'
   | 'starGame' | 'recallGame' | 'rhythmGame' | 'bookGame' | 'voteGame' | 'glassGame';
@@ -60,6 +60,7 @@ export const ACTIONS: Record<ActionId, ActionDef> = {
   tennisMatch: { label: '1:1 경기 신청', icon: '🏆', anim: 'ready', game: 'tennis' },
   tennisDoubles: { label: '2:2 복식', icon: '🎾', anim: 'ready', game: 'doubles' },
   swimRace: { label: '수영 레이스', icon: '🏁', anim: 'swim', game: 'swim' },
+  duckRace: { label: '오리 피하기 레이스', icon: '🦆', anim: 'swim', game: 'hurdles' },
   browse: { label: '옷 구경', icon: '👀', anim: 'browse' },
   fitting: { label: '피팅룸', icon: '👗', anim: 'tryOn', opens: 'wardrobe' },
   pose: { label: '거울 포즈', icon: '📸', anim: 'pose' },

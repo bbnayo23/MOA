@@ -6,7 +6,7 @@ import type { ThemeId } from './themes/types';
  * the lobby / countdown / results around it are shared (src/games/session.ts).
  */
 export type GameId =
-  | 'tennis' | 'doubles' | 'swim'
+  | 'tennis' | 'doubles' | 'swim' | 'hurdles'
   | 'fishing' | 'barista' | 'squat' | 'memory' | 'styling' | 'breath'
   | 'stars' | 'recall' | 'rhythm' | 'bookhunt' | 'vote' | 'glass';
 
@@ -61,6 +61,10 @@ export const GAMES: Record<GameId, GameDef> = {
     score: 'time',
     scene: true,
     howTo: ['← → (왼팔 · 오른팔)를 번갈아 눌러 헤엄쳐요', '박자를 맞출수록 빨라요 — 너무 빨리 연타하면 허우적', '같은 팔을 두 번 누르면 첨벙, 느려져요', '가장 먼저 25m를 찍으면 1등'],
+  },
+  hurdles: {
+    id: 'hurdles', name: '오리 피하기 레이스', icon: '🦆', themeId: 'pool', min: 2, max: 4, cpu: 2, score: 'time', scene: true,
+    howTo: ['수영 레이스처럼 ← → 를 번갈아 헤엄쳐요', '레인마다 고무 오리가 떠 있어요 — 바로 앞에서 잠수! (Space · 잠수)', '오리에 부딪히면 확 느려져요', '가장 먼저 25m를 찍으면 1등'],
   },
   // one per space: a round of N seconds on a card over the world (rules: src/games/timed.ts)
   fishing: {

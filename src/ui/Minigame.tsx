@@ -13,7 +13,7 @@ import p from '../styles/Panels.module.scss';
 import s from '../styles/Minigame.module.scss';
 
 /** Tennis and swimming have their own 3D scenes; every other game is a timed round on a card. */
-const view = (game: GameId) => (game === 'tennis' || game === 'doubles' ? TennisGame : game === 'swim' ? SwimGame : TimedGame);
+const view = (game: GameId) => (game === 'tennis' || game === 'doubles' ? TennisGame : game === 'swim' || game === 'hurdles' ? SwimGame : TimedGame);
 
 /** Leave the table and stop the action that opened it. */
 const leave = () => {
@@ -142,10 +142,10 @@ export function GameLobby({ invite }: { invite: () => void }) {
       )}
       {best.length > 0 && (
         <p className={s.records}>
-          🏅 {m.game === 'swim' ? '최고 기록' : m.game === 'tennis' || m.game === 'doubles' ? '최다 승리' : '최고 점수'}:{' '}
+          🏅 {def.score === 'time' ? '최고 기록' : m.game === 'tennis' || m.game === 'doubles' ? '최다 승리' : '최고 점수'}:{' '}
           {best.map((r, i) => (
             <span key={i}>
-              {r.nickname} {m.game === 'swim' ? `${Number(r.value).toFixed(2)}초` : m.game === 'tennis' || m.game === 'doubles' ? `${r.value}승` : `${r.value}점`}
+              {r.nickname} {def.score === 'time' ? `${Number(r.value).toFixed(2)}초` : m.game === 'tennis' || m.game === 'doubles' ? `${r.value}승` : `${r.value}점`}
             </span>
           ))}
         </p>
