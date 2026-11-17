@@ -14,7 +14,9 @@ export type ArtKind =
   | 'globe' | 'bookCart' | 'dressForm' | 'displayTable' | 'pillar' | 'bouquet'
   // the village (plaza)
   | 'shop' | 'house' | 'station' | 'railway' | 'crossing' | 'pole' | 'vending' | 'mailbox' | 'busStop'
-  | 'planterTree' | 'flowerbed' | 'hedge' | 'bicycle' | 'kiosk' | 'fence';
+  | 'planterTree' | 'flowerbed' | 'hedge' | 'bicycle' | 'kiosk' | 'fence'
+  // small outdoor things between the big pieces (props.tsx)
+  | 'campChair' | 'picnicTable' | 'woodpile' | 'canoe' | 'reeds' | 'signpost' | 'stump' | 'mushrooms' | 'flowers' | 'iceBox';
 
 /**
  * Physical facts about a kind, used by the simulation (not the renderer):
@@ -73,6 +75,16 @@ export const KINDS: Record<ArtKind, { foot?: number; light?: string; face?: numb
   dressForm: { foot: 0.25 },
   displayTable: { foot: 0.45 },
   pillar: { foot: 0.3 },
+  campChair: { foot: 0.15 },
+  picnicTable: { foot: 0.45 },
+  woodpile: { foot: 0.3 },
+  canoe: { foot: 0.35 },
+  reeds: {},
+  signpost: { foot: 0.1 },
+  stump: { foot: 0.15 },
+  mushrooms: {},
+  flowers: {},
+  iceBox: { foot: 0.15 },
   bouquet: { foot: 0.2 },
   // a shop stands on the map's back edge: its footprint reaches from the wall to its front
   shop: { foot: 0.95 },

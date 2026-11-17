@@ -2,8 +2,10 @@ import { RoundedBox } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef, type FC } from 'react';
 import * as THREE from 'three';
+import { shade } from '../art/pix';
 import type { ArtKind } from './kinds';
 import { canvasTexture, glow, leafy, toon } from './toon';
+import { CampChair, Canoe, Flowers, IceBox, Mushrooms, PicnicTable, Reeds, Signpost, Stump, Woodpile } from './props';
 import { Bicycle, BusStop, Crossing, Fence, Flowerbed, Hedge, House, Kiosk, Mailbox, PlanterTree, Pole, Railway, Shop, Station, Vending } from './town';
 
 /**
@@ -450,17 +452,17 @@ const Bouquet: FC<{ color?: string }> = ({ color = '#ffb3c6' }) => (
   </group>
 );
 
-const Tent: FC = () => (
+const Tent: FC<{ color?: string }> = ({ color = '#ff9a8a' }) => (
   <group>
     {/* A-frame: a triangular prism with its ridge running front to back */}
-    <mesh material={toon('#ff9a8a')} position={[0, 0.6, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+    <mesh material={toon(color)} position={[0, 0.6, 0]} rotation={[-Math.PI / 2, 0, 0]}>
       <cylinderGeometry args={[1.2, 1.2, 2.2, 3]} />
     </mesh>
     {/* doorway, flap, ridge pole, pegs */}
     <mesh material={toon('#7a4a52')} position={[0, 0.42, 1.11]}>
       <circleGeometry args={[0.55, 3, Math.PI / 2]} />
     </mesh>
-    <mesh material={toon('#ffc4b8')} position={[0.38, 0.42, 1.13]} rotation={[0, 0, -0.35]}>
+    <mesh material={toon(shade(color, 0.3))} position={[0.38, 0.42, 1.13]} rotation={[0, 0, -0.35]}>
       <circleGeometry args={[0.42, 3, Math.PI / 2]} />
     </mesh>
     <Cyl r={0.035} h={2.5} p={[0, 1.2, 0]} rot={[Math.PI / 2, 0, 0]} c={WOOD_DARK} seg={8} />
@@ -962,4 +964,14 @@ export const MODELS: Record<ArtKind, ModelDef> = {
   bicycle: { h: 1.0, Model: Bicycle },
   kiosk: { h: 2.5, Model: Kiosk },
   fence: { h: 1.0, Model: Fence },
+  campChair: { h: 0.9, Model: CampChair },
+  picnicTable: { h: 1.0, Model: PicnicTable },
+  woodpile: { h: 0.9, Model: Woodpile },
+  canoe: { h: 0.5, Model: Canoe },
+  reeds: { h: 1.1, Model: Reeds },
+  signpost: { h: 1.7, Model: Signpost },
+  stump: { h: 0.4, Model: Stump },
+  mushrooms: { h: 0.3, Model: Mushrooms },
+  flowers: { h: 0.4, Model: Flowers },
+  iceBox: { h: 0.5, Model: IceBox },
 };
