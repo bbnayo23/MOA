@@ -5,7 +5,9 @@ import * as THREE from 'three';
 import { shade } from '../art/pix';
 import type { ArtKind } from './kinds';
 import { canvasTexture, glow, leafy, toon } from './toon';
-import { CampChair, Canoe, Flowers, IceBox, Mushrooms, PicnicTable, Reeds, Signpost, Stump, Woodpile } from './props';
+import {
+  BallMachine, BeachBall, CampChair, Canoe, Flowers, HighChair, IceBox, Mushrooms, Palm, PicnicTable, Reeds, RubberDuck, Scoreboard, Shower, Signpost, Stump, Towel, Windscreen, Woodpile,
+} from './props';
 import { Bicycle, BusStop, Crossing, Fence, Flowerbed, Hedge, House, Kiosk, Mailbox, PlanterTree, Pole, Railway, Shop, Station, Vending } from './town';
 
 /**
@@ -974,4 +976,13 @@ export const MODELS: Record<ArtKind, ModelDef> = {
   mushrooms: { h: 0.3, Model: Mushrooms },
   flowers: { h: 0.4, Model: Flowers },
   iceBox: { h: 0.5, Model: IceBox },
+  highChair: { h: 2.7, Model: HighChair },
+  scoreboard: { h: 2.3, Model: Scoreboard },
+  windscreen: { h: 1.4, Model: Windscreen },
+  ballMachine: { h: 1.0, Model: BallMachine },
+  palm: { h: 3.3, Model: Palm },
+  towel: { h: 0.1, Model: Towel },
+  beachBall: { h: 0.5, Model: BeachBall },
+  rubberDuck: { h: 0.5, Model: RubberDuck },
+  shower: { h: 2.2, Model: Shower },
 };

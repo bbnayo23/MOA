@@ -211,3 +211,132 @@ export const IceBox: FC<{ color?: string }> = ({ color = '#ff8f8f' }) => (
     <Box s={[0.14, 0.08, 0.02]} p={[0, 0.26, 0.205]} c="#fff8ee" />
   </group>
 );
+
+// ── courts and pools ─────────────────────────────────────────
+
+/** A tall chair to watch from: the umpire's by the net, the lifeguard's by the pool (its colour). */
+export const HighChair: FC<{ color?: string }> = ({ color = '#5fae7e' }) => (
+  <group>
+    {[-0.3, 0.3].map((x) =>
+      [-0.25, 0.25].map((z) => <Box key={`${x}${z}`} s={[0.07, 1.5, 0.07]} p={[x * (1 - z * 0.3), 0.75, z]} c="#fffaf2" r={[z * 0.12, 0, -x * 0.12]} />),
+    )}
+    {[0.45, 0.9].map((y) => (
+      <Box key={y} s={[0.6, 0.05, 0.08]} p={[0, y, 0.24]} c="#fffaf2" />
+    ))}
+    <Box s={[0.66, 0.08, 0.56]} p={[0, 1.52, 0]} c={color} />
+    <Box s={[0.66, 0.5, 0.07]} p={[0, 1.8, -0.26]} c={color} />
+    {[-0.31, 0.31].map((x) => (
+      <Box key={x} s={[0.05, 0.05, 0.5]} p={[x, 1.75, 0]} c="#fffaf2" />
+    ))}
+    <Cyl r={0.02} h={0.8} p={[0.28, 2.2, -0.2]} c={IRON} seg={6} />
+    <mesh material={toon(shade(color, 0.25))} position={[0.28, 2.62, -0.2]}>
+      <coneGeometry args={[0.45, 0.22, 8]} />
+    </mesh>
+  </group>
+);
+
+/** A score board on two legs: a title strip and two rows of numbers. */
+export const Scoreboard: FC = () => (
+  <group>
+    {[-0.75, 0.75].map((x) => (
+      <Cyl key={x} r={0.05} h={1.9} p={[x, 0.95, -0.05]} c={IRON} seg={8} />
+    ))}
+    <Box s={[1.8, 1.0, 0.1]} p={[0, 1.55, 0]} c="#2f5a49" />
+    <Box s={[1.8, 0.2, 0.12]} p={[0, 2.12, 0]} c="#f2a37e" />
+    {[1.72, 1.36].map((y, row) =>
+      [-0.55, -0.15, 0.3, 0.6].map((x, i) => <Box key={`${row}${i}`} s={[i < 2 ? 0.3 : 0.2, 0.22, 0.02]} p={[x, y, 0.06]} c={i < 2 ? '#fffaf2' : '#ffd166'} />),
+    )}
+  </group>
+);
+
+/** One tile of a court's green windscreen: posts and a top rail. */
+export const Windscreen: FC = () => (
+  <group>
+    <Box s={[2.4, 1.25, 0.04]} p={[0, 0.72, 0]} c="#3f7a5c" />
+    <Box s={[2.4, 0.05, 0.06]} p={[0, 1.36, 0]} c={IRON} />
+    {[-1.2, 1.2].map((x) => (
+      <Cyl key={x} r={0.04} h={1.4} p={[x, 0.7, 0]} c={IRON} seg={6} />
+    ))}
+    <Box s={[0.9, 0.22, 0.02]} p={[0, 0.95, 0.03]} c="#fffaf2" />
+  </group>
+);
+
+/** A ball machine: a box on wheels, a hopper full of balls. */
+export const BallMachine: FC = () => (
+  <group>
+    <Box s={[0.6, 0.42, 0.5]} p={[0, 0.33, 0]} c="#5b9de0" />
+    {[-0.32, 0.32].map((x) => (
+      <Cyl key={x} r={0.12} h={0.06} p={[x, 0.12, -0.12]} rot={[0, 0, Math.PI / 2]} c={IRON} />
+    ))}
+    <Cyl r={0.34} top={0.42} h={0.32} p={[0, 0.7, 0]} c="#e7edf5" seg={12} />
+    {Array.from({ length: 7 }, (_, i) => (
+      <Ball key={i} r={0.08} p={[Math.cos(i * 2.4) * (i ? 0.2 : 0), 0.88, Math.sin(i * 2.4) * (i ? 0.2 : 0)]} c="#e5f27a" />
+    ))}
+    <Cyl r={0.07} h={0.3} p={[0, 0.4, 0.32]} rot={[Math.PI / 2, 0, 0]} c={IRON} seg={8} />
+  </group>
+);
+
+/** A palm tree: a leaning, ringed trunk and drooping fronds, coconuts under them. */
+export const Palm: FC = () => (
+  <group>
+    {Array.from({ length: 6 }, (_, i) => (
+      <Cyl key={i} r={0.17 - i * 0.012} top={0.15 - i * 0.012} h={0.48} p={[i * i * 0.012, 0.24 + i * 0.46, 0]} rot={[0, 0, -0.06 - i * 0.02]} c={i % 2 ? '#c7a07a' : '#b48a62'} />
+    ))}
+    <group position={[0.42, 2.85, 0]}>
+      {Array.from({ length: 7 }, (_, i) => (
+        <group key={i} rotation={[0, (i / 7) * Math.PI * 2, 0]}>
+          <mesh material={leafy(i % 2 ? LEAF_DARK : LEAF)} position={[0.62, -0.18, 0]} rotation={[0, 0, -0.45]} scale={[1, 0.12, 0.32]}>
+            <sphereGeometry args={[0.72, 10, 6]} />
+          </mesh>
+        </group>
+      ))}
+      {[0, 2.1, 4.2].map((a) => (
+        <Ball key={a} r={0.1} p={[Math.cos(a) * 0.14, -0.14, Math.sin(a) * 0.14]} c="#8a5a3c" />
+      ))}
+    </group>
+  </group>
+);
+
+/** A beach towel laid out flat: stripes across. */
+export const Towel: FC<{ color?: string }> = ({ color = '#ffb3c6' }) => (
+  <group>
+    <Box s={[0.7, 0.02, 1.25]} p={[0, 0.012, 0]} c={color} />
+    {[-0.4, 0, 0.4].map((z) => (
+      <Box key={z} s={[0.7, 0.022, 0.12]} p={[0, 0.014, z]} c="#fffaf2" />
+    ))}
+  </group>
+);
+
+/** A beach ball: six coloured panels. */
+export const BeachBall: FC = () => (
+  <group position={[0, 0.24, 0]} rotation={[0.4, 0.3, 0.2]}>
+    {['#ff8f8f', '#fffaf2', '#ffd166', '#fffaf2', '#7fb7e8', '#fffaf2'].map((c, i) => (
+      <mesh key={i} material={toon(c)}>
+        <sphereGeometry args={[0.24, 4, 10, (i / 6) * Math.PI * 2, Math.PI / 3]} />
+      </mesh>
+    ))}
+  </group>
+);
+
+/** A rubber duck bobbing on the water. */
+export const RubberDuck: FC = () => (
+  <group position={[0, 0.02, 0]}>
+    <Ball r={0.26} p={[0, 0.12, 0]} c="#ffd84d" s={[1.25, 0.8, 1]} />
+    <Ball r={0.15} p={[0.2, 0.36, 0]} c="#ffd84d" />
+    <Ball r={0.07} p={[0.36, 0.33, 0]} c="#ff9a4a" s={[1.4, 0.6, 1]} />
+    {[-0.07, 0.07].map((z) => (
+      <Ball key={z} r={0.025} p={[0.31, 0.41, z]} c="#3b3150" />
+    ))}
+  </group>
+);
+
+/** An outdoor shower: a bent pipe, a big head, a tap, a drain plate. */
+export const Shower: FC = () => (
+  <group>
+    <Box s={[0.6, 0.03, 0.6]} p={[0, 0.015, 0]} c="#c9d6e2" />
+    <Cyl r={0.04} h={2.1} p={[0, 1.05, -0.2]} c="#d7dbe2" seg={8} />
+    <Cyl r={0.035} h={0.32} p={[0, 2.08, -0.05]} rot={[Math.PI / 2, 0, 0]} c="#d7dbe2" seg={8} />
+    <Cyl r={0.15} top={0.06} h={0.1} p={[0, 2.0, 0.1]} c="#d7dbe2" seg={12} />
+    <Box s={[0.12, 0.05, 0.08]} p={[0, 1.1, -0.14]} c="#ff8f8f" />
+  </group>
+);

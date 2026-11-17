@@ -10,6 +10,7 @@ import { makePlaza } from './plaza';
 import { pool } from './pool';
 import { restaurant } from './restaurant';
 import { tennis } from './tennis';
+import { EDGE, SIZE } from './grid';
 import type { ThemeConfig, ThemeId, ThemeMeta } from './types';
 
 export * from './types';
@@ -30,8 +31,6 @@ export const THEMES: ThemeMeta[] = [
 ];
 
 
-/** How many tiles across every space is played on (the theme files draw them on 8). */
-const SIZE = 16;
 /** Outdoors the space isn't boxed in: you can walk this far past it, over a round stretch of land. */
 const WILD = 6;
 
@@ -62,7 +61,7 @@ function scatter(seedText: string): ThemeConfig['decorations'] {
  * baselines, in the pool) stretch with the floor, like the rugs and the water.
  */
 function widen(t: ThemeConfig): ThemeConfig {
-  const n = t.background.size, E = 1.2, k = (SIZE - 2 * E) / (n - 2 * E);
+  const n = t.background.size, E = EDGE, k = (SIZE - 2 * E) / (n - 2 * E);
   const v = (x: number) => (x <= E ? x : x >= n - E ? x + SIZE - n : E + (x - E) * k);
   const m = (p: Tile): Tile => ({ tx: v(p.tx), ty: v(p.ty) });
   const strip = <R extends { from: Tile; to: Tile; width: number }>(r: R): R => ({ ...r, from: m(r.from), to: m(r.to), width: r.width * k });
