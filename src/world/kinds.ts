@@ -17,7 +17,8 @@ export type ArtKind =
   | 'planterTree' | 'flowerbed' | 'hedge' | 'bicycle' | 'kiosk' | 'fence'
   // small outdoor things between the big pieces (props.tsx)
   | 'campChair' | 'picnicTable' | 'woodpile' | 'canoe' | 'reeds' | 'signpost' | 'stump' | 'mushrooms' | 'flowers' | 'iceBox'
-  | 'highChair' | 'scoreboard' | 'windscreen' | 'ballMachine' | 'palm' | 'towel' | 'beachBall' | 'rubberDuck' | 'shower';
+  | 'highChair' | 'scoreboard' | 'windscreen' | 'ballMachine' | 'palm' | 'towel' | 'beachBall' | 'rubberDuck' | 'shower'
+  | 'punchBag' | 'kettlebells' | 'lockers' | 'plyoBoxes' | 'powerRack' | 'piano' | 'lectern' | 'candelabra';
 
 /**
  * Physical facts about a kind, used by the simulation (not the renderer):
@@ -95,6 +96,14 @@ export const KINDS: Record<ArtKind, { foot?: number; light?: string; face?: numb
   beachBall: {},
   rubberDuck: {},
   shower: { foot: 0.1 },
+  punchBag: { foot: 0.25 },
+  kettlebells: { foot: 0.2 },
+  lockers: { foot: 0.4 },
+  plyoBoxes: { foot: 0.3 },
+  powerRack: { foot: 0.45 },
+  piano: { foot: 0.45 },
+  lectern: { foot: 0.2 },
+  candelabra: { foot: 0.15, light: '#ffc870' },
   bouquet: { foot: 0.2 },
   // a shop stands on the map's back edge: its footprint reaches from the wall to its front
   shop: { foot: 0.95 },

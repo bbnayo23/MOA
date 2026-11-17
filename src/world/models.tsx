@@ -6,7 +6,8 @@ import { shade } from '../art/pix';
 import type { ArtKind } from './kinds';
 import { canvasTexture, glow, leafy, toon } from './toon';
 import {
-  BallMachine, BeachBall, CampChair, Canoe, Flowers, HighChair, IceBox, Mushrooms, Palm, PicnicTable, Reeds, RubberDuck, Scoreboard, Shower, Signpost, Stump, Towel, Windscreen, Woodpile,
+  BallMachine, BeachBall, CampChair, Candelabra, Canoe, Flowers, HighChair, IceBox, Kettlebells, Lectern, Lockers, Mushrooms, Palm, PicnicTable, Piano,
+  PlyoBoxes, PowerRack, PunchBag, Reeds, RubberDuck, Scoreboard, Shower, Signpost, Stump, Towel, Windscreen, Woodpile,
 } from './props';
 import { Bicycle, BusStop, Crossing, Fence, Flowerbed, Hedge, House, Kiosk, Mailbox, PlanterTree, Pole, Railway, Shop, Station, Vending } from './town';
 
@@ -985,4 +986,12 @@ export const MODELS: Record<ArtKind, ModelDef> = {
   beachBall: { h: 0.5, Model: BeachBall },
   rubberDuck: { h: 0.5, Model: RubberDuck },
   shower: { h: 2.2, Model: Shower },
+  punchBag: { h: 2.4, Model: PunchBag },
+  kettlebells: { h: 0.5, Model: Kettlebells },
+  lockers: { h: 2.0, Model: Lockers },
+  plyoBoxes: { h: 1.1, Model: PlyoBoxes },
+  powerRack: { h: 2.2, Model: PowerRack },
+  piano: { h: 1.4, Model: Piano },
+  lectern: { h: 1.3, Model: Lectern },
+  candelabra: { h: 1.8, Model: Candelabra },
 };

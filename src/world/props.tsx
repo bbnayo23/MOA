@@ -1,11 +1,11 @@
 import type { FC } from 'react';
 import { shade } from '../art/pix';
-import { leafy, toon } from './toon';
+import { glow, leafy, toon } from './toon';
 
 /**
- * Small outdoor things that fill a space between its big pieces: camp chairs, a picnic
- * table, firewood, a canoe, reeds by the water, a signpost, stumps, mushrooms, flowers,
- * an ice box. Same local space as models.tsx: standing on y = 0, front facing +z.
+ * Smaller things that fill a space between its big pieces: by the campfire, round the
+ * court and the pool, in the gym and the church. Same local space as models.tsx:
+ * standing on y = 0, front facing +z.
  */
 
 type V3 = [number, number, number];
@@ -338,5 +338,142 @@ export const Shower: FC = () => (
     <Cyl r={0.035} h={0.32} p={[0, 2.08, -0.05]} rot={[Math.PI / 2, 0, 0]} c="#d7dbe2" seg={8} />
     <Cyl r={0.15} top={0.06} h={0.1} p={[0, 2.0, 0.1]} c="#d7dbe2" seg={12} />
     <Box s={[0.12, 0.05, 0.08]} p={[0, 1.1, -0.14]} c="#ff8f8f" />
+  </group>
+);
+
+// ── gym ──────────────────────────────────────────────────────
+
+/** A punching bag hanging from its stand. */
+export const PunchBag: FC<{ color?: string }> = ({ color = '#ff7a7a' }) => (
+  <group>
+    <Box s={[0.7, 0.06, 0.7]} p={[0, 0.03, 0]} c={IRON} />
+    <Box s={[0.08, 2.3, 0.08]} p={[0, 1.15, -0.3]} c={IRON} />
+    <Box s={[0.08, 0.08, 0.5]} p={[0, 2.28, -0.08]} c={IRON} />
+    <Cyl r={0.01} h={0.3} p={[0, 2.1, 0.12]} c={IRON} seg={4} />
+    <mesh material={toon(color)} position={[0, 1.35, 0.12]}>
+      <capsuleGeometry args={[0.22, 0.75, 4, 12]} />
+    </mesh>
+    <Cyl r={0.225} h={0.08} p={[0, 1.55, 0.12]} c={shade(color, -0.3)} seg={12} />
+  </group>
+);
+
+/** Kettlebells in a row on a little rubber mat. */
+export const Kettlebells: FC = () => (
+  <group>
+    <Box s={[1.5, 0.03, 0.45]} p={[0, 0.015, 0]} c="#4a4458" />
+    {['#ffb3c6', '#a9cdfc', '#ffd38a', '#b5e8c9'].map((c, i) => {
+      const k = 0.8 + i * 0.12;
+      return (
+        <group key={c} position={[-0.5 + i * 0.34, 0, 0]} scale={k}>
+          <Ball r={0.15} p={[0, 0.15, 0]} c={c} s={[1, 0.9, 1]} />
+          <mesh material={toon(IRON)} position={[0, 0.3, 0]}>
+            <torusGeometry args={[0.09, 0.025, 6, 12, Math.PI]} />
+          </mesh>
+        </group>
+      );
+    })}
+  </group>
+);
+
+/** A row of three lockers: vents, handles, a bench in front. */
+export const Lockers: FC<{ color?: string }> = ({ color = '#a9cdfc' }) => (
+  <group>
+    {[-0.55, 0, 0.55].map((x, i) => (
+      <group key={x} position={[x, 0, 0]}>
+        <Box s={[0.52, 1.9, 0.5]} p={[0, 0.95, 0]} c={i === 1 ? shade(color, -0.08) : color} />
+        {[1.6, 1.68, 1.76].map((y) => (
+          <Box key={y} s={[0.3, 0.025, 0.02]} p={[0, y, 0.255]} c={shade(color, -0.3)} />
+        ))}
+        <Box s={[0.04, 0.16, 0.03]} p={[0.18, 1.05, 0.26]} c="#fffaf2" />
+        <Box s={[0.2, 0.12, 0.02]} p={[0, 1.4, 0.255]} c="#fffaf2" />
+      </group>
+    ))}
+    <Box s={[1.5, 0.06, 0.32]} p={[0, 0.42, 0.55]} c="#c58f63" />
+    {[-0.6, 0.6].map((x) => (
+      <Box key={x} s={[0.06, 0.4, 0.26]} p={[x, 0.2, 0.55]} c={IRON} />
+    ))}
+  </group>
+);
+
+/** Stacked plyo boxes: big, middle, small. */
+export const PlyoBoxes: FC = () => (
+  <group>
+    <Box s={[0.75, 0.6, 0.6]} p={[0, 0.3, 0]} c="#ffb3c6" />
+    <Box s={[0.6, 0.45, 0.5]} p={[0.05, 0.825, -0.02]} c="#a9cdfc" />
+    <Box s={[0.45, 0.3, 0.4]} p={[0.55, 0.15, 0.3]} c="#ffd38a" />
+    {[0.3, 0.825].map((y) => (
+      <Box key={y} s={[0.25, 0.06, 0.02]} p={[0, y, y < 0.5 ? 0.305 : 0.235]} c="#fffaf2" />
+    ))}
+  </group>
+);
+
+/** A squat rack: four posts, a barbell on the hooks, plates on it and on a peg. */
+export const PowerRack: FC = () => (
+  <group>
+    {[-0.6, 0.6].map((x) =>
+      [-0.4, 0.4].map((z) => <Box key={`${x}${z}`} s={[0.08, 2.1, 0.08]} p={[x, 1.05, z]} c={IRON} />),
+    )}
+    {[-0.4, 0.4].map((z) => (
+      <Box key={z} s={[1.28, 0.08, 0.08]} p={[0, 2.08, z]} c={IRON} />
+    ))}
+    <Box s={[1.4, 0.04, 0.9]} p={[0, 0.02, 0]} c="#4a4458" />
+    <Cyl r={0.025} h={2.0} p={[0, 1.3, 0.4]} rot={[0, 0, Math.PI / 2]} c="#c9cbd6" seg={6} />
+    {[-0.82, 0.82].map((x) => (
+      <Cyl key={x} r={0.24} h={0.08} p={[x, 1.3, 0.4]} rot={[0, 0, Math.PI / 2]} c={x < 0 ? '#ff7a7a' : '#ff7a7a'} seg={14} />
+    ))}
+    {[0.1, 0.2].map((y, i) => (
+      <Cyl key={y} r={0.22 - i * 0.05} h={0.07} p={[0.95, y + 0.15, -0.3]} rot={[0, 0, Math.PI / 2]} c={i ? '#7fb7e8' : '#ffd166'} seg={14} />
+    ))}
+  </group>
+);
+
+// ── church ───────────────────────────────────────────────────
+
+/** An upright piano with its stool and a hymn book open on the stand. */
+export const Piano: FC<{ color?: string }> = ({ color = '#6b4a3c' }) => (
+  <group>
+    <Box s={[1.5, 1.25, 0.55]} p={[0, 0.625, -0.1]} c={color} />
+    <Box s={[1.5, 0.1, 0.36]} p={[0, 0.78, 0.33]} c={color} />
+    <Box s={[1.36, 0.04, 0.2]} p={[0, 0.84, 0.36]} c="#fffaf2" />
+    {Array.from({ length: 9 }, (_, i) => (
+      <Box key={i} s={[0.05, 0.03, 0.11]} p={[-0.56 + i * 0.14, 0.87, 0.31]} c="#3b3150" />
+    ))}
+    <Box s={[0.5, 0.32, 0.04]} p={[0, 1.08, 0.2]} c="#fffaf2" r={[-0.25, 0, 0]} />
+    {[-0.62, 0.62].map((x) => (
+      <Box key={x} s={[0.08, 0.7, 0.08]} p={[x, 0.35, 0.42]} c={shade(color, -0.2)} />
+    ))}
+    <Box s={[0.6, 0.08, 0.34]} p={[0, 0.48, 0.85]} c={shade(color, -0.1)} />
+    {[-0.24, 0.24].map((x) => (
+      <Box key={x} s={[0.06, 0.44, 0.26]} p={[x, 0.22, 0.85]} c={shade(color, -0.2)} />
+    ))}
+  </group>
+);
+
+/** A reading stand: a slanted top with an open book, on a column. */
+export const Lectern: FC = () => (
+  <group>
+    <Box s={[0.6, 0.06, 0.5]} p={[0, 0.03, 0]} c="#a8734d" />
+    <Box s={[0.3, 1.0, 0.3]} p={[0, 0.55, 0]} c="#c58f63" />
+    <Box s={[0.66, 0.06, 0.5]} p={[0, 1.1, 0.04]} c="#a8734d" r={[0.4, 0, 0]} />
+    <Box s={[0.48, 0.03, 0.34]} p={[0, 1.15, 0.06]} c="#fffaf2" r={[0.4, 0, 0]} />
+    <Box s={[0.02, 0.035, 0.34]} p={[0, 1.16, 0.06]} c="#e98aa2" r={[0.4, 0, 0]} />
+  </group>
+);
+
+/** A tall brass candle stand with three candles burning. */
+export const Candelabra: FC = () => (
+  <group>
+    <Cyl r={0.22} top={0.12} h={0.12} p={[0, 0.06, 0]} c="#e2c47d" seg={12} />
+    <Cyl r={0.035} h={1.3} p={[0, 0.75, 0]} c="#e2c47d" seg={8} />
+    <Box s={[0.7, 0.05, 0.05]} p={[0, 1.38, 0]} c="#e2c47d" />
+    {[-0.32, 0, 0.32].map((x) => (
+      <group key={x} position={[x, x ? 1.4 : 1.5, 0]}>
+        <Cyl r={0.06} h={0.05} c="#e2c47d" seg={8} />
+        <Cyl r={0.035} h={0.2} p={[0, 0.12, 0]} c="#fff4e6" seg={8} />
+        <mesh material={glow('#ffc870')} position={[0, 0.28, 0]}>
+          <coneGeometry args={[0.04, 0.12, 6]} />
+        </mesh>
+      </group>
+    ))}
   </group>
 );

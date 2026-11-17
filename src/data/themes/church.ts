@@ -1,3 +1,4 @@
+import { fine } from './grid';
 import type { InteractionObject, ThemeConfig } from './types';
 
 // Pews in four rows either side of the aisle (which runs up the screen's centre line).
@@ -25,7 +26,11 @@ export const church: ThemeConfig = {
     ground: ['#efd8b6', '#e0c39b'],
     side: ['#c99b7a', '#b5876a'],
     walls: { left: '#f8eee0', right: '#ecdcc6', trim: '#c49a68', glass: ['#ffb3c6', '#a9cdfc', '#ffe08a', '#b5e8c9', '#cbb8ff'] },
-    rugs: [{ from: { tx: 2.4, ty: 2.4 }, to: { tx: 8, ty: 8 }, width: 1.1, color: '#e98aa2', border: '#f6c76b' }],
+    rugs: [
+      { from: { tx: 2.4, ty: 2.4 }, to: { tx: 8, ty: 8 }, width: 1.1, color: '#e98aa2', border: '#f6c76b' },
+      // the chancel: a pale rug across the front of the altar
+      { from: { tx: 0.9, ty: 3.0 }, to: { tx: 3.0, ty: 0.9 }, width: 0.75, color: '#f6e6cc', border: '#e2c47d' },
+    ],
     motes: 0xfff8e1,
   },
   spawnPosition: { tx: 6.6, ty: 6.6 },
@@ -59,6 +64,15 @@ export const church: ThemeConfig = {
     { kind: 'plant', at: { tx: 3.4, ty: 7.4 } },
     // columns either side of the front pews, flowers by the altar
     ...[[1.6, 4.4], [4.4, 1.6], [2.6, 5.4], [5.4, 2.6]].map(([tx, ty]) => ({ kind: 'pillar' as const, at: { tx, ty } })),
+    // pews in the rows between (only the ones above are for sitting)
+    ...[7, 9, 11].flatMap((sum) => [-1.7, 1.7].map((d) => ({ kind: 'pew' as const, at: { tx: (sum - d) / 2, ty: (sum + d) / 2 } }))),
+    // and further out, behind the pillars
+    ...[9, 10, 11, 12].flatMap((sum) => [-2.8, 2.8].map((d) => ({ kind: 'pew' as const, at: { tx: (sum - d) / 2, ty: (sum + d) / 2 } }))),
+    // by the altar: a reading stand, candle stands either side of the aisle; a piano by the left wall
+    { kind: 'lectern', at: { tx: fine(4.6), ty: fine(1.6) } },
+    { kind: 'candelabra', at: { tx: fine(3.2), ty: fine(6.0) } },
+    { kind: 'candelabra', at: { tx: fine(6.0), ty: fine(3.2) } },
+    { kind: 'piano', at: { tx: 0.5, ty: fine(12.6) } },
     { kind: 'bouquet', at: { tx: 1.1, ty: 2.6 }, color: '#fffaf2' },
     { kind: 'bouquet', at: { tx: 2.6, ty: 1.1 }, color: '#ffb3c6' },
     // and at the door, either side of the aisle

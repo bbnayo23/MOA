@@ -1,4 +1,5 @@
 import type { Tile } from '../../world/space';
+import { fine } from './grid';
 import type { InteractionObject, ThemeConfig } from './types';
 
 /** You stand on the belt, just in front of the console. */
@@ -34,7 +35,7 @@ export const gym: ThemeConfig = {
       { from: { tx: 2.4, ty: 1.4 }, to: { tx: 6.8, ty: 1.4 }, width: 1.2, color: '#cbc4e0', border: '#b3abd3' },
     ],
   },
-  spawnPosition: { tx: 6.0, ty: 6.0 },
+  spawnPosition: { tx: fine(10.8), ty: fine(11.4) }, // in the middle of it all
   availableActions: ['dumbbell', 'treadmill', 'stretch', 'squat', 'squatGame', 'rhythmGame', 'wave', 'jump'],
   interactionObjects: [
     treadmill('treadmill-1', { tx: 0.6, ty: 2.0 }),
@@ -69,6 +70,27 @@ export const gym: ThemeConfig = {
     { kind: 'cooler', at: { tx: 6.6, ty: 0.45 } },
     { kind: 'frame', at: { tx: 0.12, ty: 2.9 }, color: '#9fe3c4' },
     { kind: 'frame', at: { tx: 0.12, ty: 5.1 }, color: '#ffd38a' },
+    { kind: 'frame', at: { tx: fine(7.6), ty: 0.12 }, color: '#ffb3c6' },
+    // free weights at the front left: a squat rack, kettlebells, plyo boxes
+    { kind: 'powerRack', at: { tx: fine(4.8), ty: fine(10.2) } },
+    { kind: 'powerRack', at: { tx: fine(7.6), ty: fine(10.2) } },
+    { kind: 'weightBench', at: { tx: fine(6.4), ty: fine(12.9) } },
+    { kind: 'kettlebells', at: { tx: fine(4.2), ty: fine(13.2) } },
+    { kind: 'rack', at: { tx: fine(9.0), ty: fine(14.4) } },
+    { kind: 'plyoBoxes', at: { tx: fine(2.4), ty: fine(15.0) } },
+    // the stretching corner by the mats
+    { kind: 'kettlebells', at: { tx: fine(10.0), ty: fine(9.4) } },
+    { kind: 'mat', at: { tx: fine(10.2), ty: fine(5.2) } },
+    { kind: 'mat', at: { tx: fine(12.6), ty: fine(10.4) } },
+    { kind: 'gymBalls', at: { tx: fine(13.0), ty: fine(13.4) } },
+    { kind: 'plyoBoxes', at: { tx: fine(15.0), ty: fine(12.6) } },
+    // a full row of machines along the left wall (the ones above are for using)
+    ...[5.45, 10.07].map((ty) => ({ kind: 'treadmill' as const, at: { tx: 0.6, ty: fine(ty) } })),
+    { kind: 'bike', at: { tx: 1.9, ty: fine(12.1) } },
+    // punching bags along the right, lockers by the back wall
+    { kind: 'punchBag', at: { tx: fine(15.3), ty: fine(5.4) } },
+    { kind: 'punchBag', at: { tx: fine(15.3), ty: fine(8.9) }, color: '#7fb7e8' },
+    { kind: 'lockers', at: { tx: fine(2.0), ty: 0.35 } },
   ],
   recommendedOutfits: [
     { name: '💪 트레이닝룩', look: { top: 'tee', topColor: '#a9cdfc', bottom: 'shorts', bottomColor: '#5c6185', hat: 'cap' } },
