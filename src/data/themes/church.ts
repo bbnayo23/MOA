@@ -57,6 +57,13 @@ export const church: ThemeConfig = {
     { kind: 'plant', at: { tx: 5.2, ty: 0.5 } },
     { kind: 'plant', at: { tx: 7.4, ty: 3.4 } },
     { kind: 'plant', at: { tx: 3.4, ty: 7.4 } },
+    // columns either side of the front pews, flowers by the altar
+    ...[[1.6, 4.4], [4.4, 1.6], [2.6, 5.4], [5.4, 2.6]].map(([tx, ty]) => ({ kind: 'pillar' as const, at: { tx, ty } })),
+    { kind: 'bouquet', at: { tx: 1.1, ty: 2.6 }, color: '#fffaf2' },
+    { kind: 'bouquet', at: { tx: 2.6, ty: 1.1 }, color: '#ffb3c6' },
+    // and at the door, either side of the aisle
+    { kind: 'bouquet', at: { tx: 6.1, ty: 7.5 }, color: '#fffaf2' },
+    { kind: 'bouquet', at: { tx: 7.5, ty: 6.1 }, color: '#fffaf2' },
   ],
   recommendedOutfits: [
     { name: '👔 단정한 재킷', look: { top: 'jacket', topColor: '#5c6185', bottom: 'pants', bottomColor: '#5c6185', hat: 'none' } },

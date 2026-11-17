@@ -36,14 +36,23 @@ export const restaurant: ThemeConfig = {
     ground: ['#fffaf5', '#ffd9d0'],
     side: ['#e3b7a8', '#d5a596'],
     walls: { left: '#fff6f0', right: '#ffe9e1', trim: '#e98a7a', glass: ['#ffe8b8', '#ffd6e0'] },
+    // a round rug in the sofa corner
+    rugs: [
+      { from: { tx: 1.5, ty: 5.1 }, to: { tx: 1.5, ty: 5.1 }, width: 1.3, color: '#ffe0b8', border: '#f3c78f' },
+    ],
   },
   spawnPosition: { tx: 6.4, ty: 6.4 },
-  availableActions: ['order', 'barista', 'eat', 'drink', 'talk', 'wave', 'jump'],
+  availableActions: ['order', 'barista', 'eat', 'drink', 'talk', 'sit', 'wave', 'jump'],
   interactionObjects: [
     {
       id: 'counter', kind: 'counter', label: '카운터 · 커피 바', icon: '☕', at: { tx: 3.0, ty: 0.75 },
       actions: ['order', 'barista'],
       spots: [{ tx: 3.55, ty: 1.3 }, { tx: 4.05, ty: 0.8 }],
+    },
+    {
+      id: 'sofa', kind: 'sofa', label: '소파', icon: '🛋️', at: { tx: 0.45, ty: 5.1 }, color: '#ffb3a6',
+      actions: ['sit', 'drink', 'talk'],
+      spots: [{ tx: 0.51, ty: 4.91 }, { tx: 0.51, ty: 5.29 }],
     },
     table('table-1', { tx: 2.2, ty: 3.8 }),
     table('table-2', { tx: 3.8, ty: 2.2 }),
@@ -59,6 +68,16 @@ export const restaurant: ThemeConfig = {
     { kind: 'plant', at: { tx: 7.4, ty: 0.6 } },
     { kind: 'plant', at: { tx: 7.4, ty: 4.8 } },
     { kind: 'plant', at: { tx: 4.8, ty: 7.4 } },
+    { kind: 'pastryCase', at: { tx: 1.7, ty: 0.6 } },
+    { kind: 'floorLamp', at: { tx: 0.45, ty: 4.4 } },
+    { kind: 'floorLamp', at: { tx: 0.45, ty: 5.8 } },
+    { kind: 'frame', at: { tx: 0.12, ty: 2.9 }, color: '#ffd38a' },
+    { kind: 'frame', at: { tx: 0.12, ty: 5.1 }, color: '#ff9a8a' },
+    { kind: 'bouquet', at: { tx: 0.7, ty: 0.7 }, color: '#ff9fc0' },
+    // the way in: today's menu on a chalkboard, flowers either side
+    { kind: 'menuboard', at: { tx: 6.9, ty: 5.8 } },
+    { kind: 'bouquet', at: { tx: 5.7, ty: 7.3 }, color: '#ffd38a' },
+    { kind: 'bouquet', at: { tx: 7.4, ty: 6.6 }, color: '#ff9fc0' },
   ],
   recommendedOutfits: [
     { name: '🍷 디너 재킷', look: { top: 'jacket', topColor: '#5c6185', bottom: 'pants', bottomColor: '#5c6185', hat: 'none' } },

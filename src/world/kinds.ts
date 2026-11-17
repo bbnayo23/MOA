@@ -8,7 +8,10 @@ export type ArtKind =
   | 'treadmill' | 'rack' | 'mat'
   | 'ladder' | 'lounger' | 'parasol' | 'ring'
   | 'net' | 'balls'
-  | 'clothesRack' | 'fittingRoom' | 'mirror';
+  | 'clothesRack' | 'fittingRoom' | 'mirror'
+  | 'sofa' | 'armchair' | 'floorLamp' | 'pastryCase' | 'frame'
+  | 'bike' | 'weightBench' | 'gymBalls' | 'cooler'
+  | 'globe' | 'bookCart' | 'dressForm' | 'displayTable' | 'pillar' | 'bouquet';
 
 /**
  * Physical facts about a kind, used by the simulation (not the renderer):
@@ -53,4 +56,19 @@ export const KINDS: Record<ArtKind, { foot?: number; light?: string; face?: numb
   clothesRack: { foot: 0.45 },
   fittingRoom: { foot: 0.5 },
   mirror: { foot: 0.3 },
+  sofa: {},
+  armchair: {},
+  floorLamp: { foot: 0.15, light: '#ffe2a8' },
+  pastryCase: { foot: 0.45 },
+  frame: {},
+  bike: { foot: 0.35 },
+  weightBench: { foot: 0.4 },
+  gymBalls: { foot: 0.4 },
+  cooler: { foot: 0.2 },
+  globe: { foot: 0.2 },
+  bookCart: { foot: 0.35 },
+  dressForm: { foot: 0.25 },
+  displayTable: { foot: 0.45 },
+  pillar: { foot: 0.3 },
+  bouquet: { foot: 0.2 },
 };

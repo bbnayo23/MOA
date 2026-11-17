@@ -16,8 +16,8 @@ export interface Background {
   sky: string[];
   /** Floor colours: checker tiles, or soft patches on a `grass` floor. */
   ground: [string, string];
-  /** Paved / tiled (default) or a grassy field. */
-  floor?: 'tiles' | 'grass';
+  /** Paved / tiled (default), a grassy field, or wooden planks. */
+  floor?: 'tiles' | 'grass' | 'wood';
   /** Platform side colours under an indoor floor. */
   side: [left: string, right: string];
   // outdoor
@@ -74,6 +74,7 @@ export interface ThemeConfig extends ThemeMeta {
   spawnPosition: Tile;
   availableActions: ActionId[];
   interactionObjects: InteractionObject[];
-  decorations: { kind: ArtKind; at: Tile }[];
+  /** Scenery (`color`: a tint for the art — a sofa's fabric, a dress, a painting's sun). */
+  decorations: { kind: ArtKind; at: Tile; color?: string }[];
   recommendedOutfits: { name: string; look: Partial<CharacterLook> }[];
 }

@@ -54,6 +54,7 @@ const METAL = '#d7dbe2';
 const IRON = '#5f5870';
 const WAX = '#fff4e6';
 const PASTELS = ['#ffb3c6', '#a9cdfc', '#ffd38a', '#b5e8c9', '#cbb8ff', '#ff9a7a'];
+const WHITE_RIBBON = '#fffaf2';
 
 /** A small flickering flame (unlit, so it glows). */
 function Flame({ p = [0, 0, 0], size = 1 }: { p?: V3; size?: number }) {
@@ -235,6 +236,216 @@ const Dock: FC = () => (
     <Cyl r={0.15} top={0.18} h={0.26} p={[-0.32, 0.33, -0.1]} c="#a9cdfc" />
     <Ball r={0.06} p={[-0.3, 0.45, -0.1]} c="#7fc8f2" s={[1.6, 0.4, 1.6]} />
     <Cyl r={0.014} h={1.7} p={[0.1, 0.85, 0.05]} rot={[0.45, 0, -0.4]} c={IRON} />
+  </group>
+);
+
+// ── room furniture: lounges, shop, gym, library, church ───────
+
+/** A two-seat sofa with cushions (`color`: its fabric). Sat on: no footprint. */
+const Sofa: FC<{ color?: string }> = ({ color = '#a9cdfc' }) => (
+  <group>
+    <RBox s={[1.9, 0.42, 0.85]} p={[0, 0.3, 0]} c={color} rad={0.12} />
+    <RBox s={[1.9, 0.62, 0.26]} p={[0, 0.72, -0.31]} c={color} rad={0.12} />
+    {[-1, 1].map((s) => (
+      <RBox key={s} s={[0.24, 0.52, 0.85]} p={[0.86 * s, 0.5, 0]} c={color} rad={0.1} />
+    ))}
+    {[-0.4, 0.4].map((x) => (
+      <RBox key={x} s={[0.72, 0.12, 0.6]} p={[x, 0.55, 0.05]} c={CREAM} rad={0.05} />
+    ))}
+    {[-0.5, 0.5].map((x, i) => (
+      <Ball key={x} r={0.17} p={[x, 0.8, -0.14]} s={[1, 1, 0.5]} c={PASTELS[(i * 3 + 1) % PASTELS.length]} />
+    ))}
+    {[-0.8, 0.8].flatMap((x) => [-0.32, 0.32].map((z) => <Cyl key={`${x}${z}`} r={0.04} h={0.12} p={[x, 0.05, z]} c={WOOD_DARK} />))}
+  </group>
+);
+
+const Armchair: FC<{ color?: string }> = ({ color = '#ffb3c6' }) => (
+  <group>
+    <RBox s={[0.95, 0.4, 0.8]} p={[0, 0.3, 0]} c={color} rad={0.1} />
+    <RBox s={[0.95, 0.68, 0.24]} p={[0, 0.72, -0.29]} c={color} rad={0.1} />
+    {[-1, 1].map((s) => (
+      <RBox key={s} s={[0.2, 0.46, 0.8]} p={[0.43 * s, 0.52, 0]} c={color} rad={0.08} />
+    ))}
+    <RBox s={[0.62, 0.1, 0.56]} p={[0, 0.54, 0.06]} c={CREAM} rad={0.04} />
+  </group>
+);
+
+/** A standing lamp with a fabric shade (World gives it a warm light). */
+const FloorLamp: FC = () => (
+  <group>
+    <Cyl r={0.22} h={0.05} p={[0, 0.03, 0]} c={IRON} />
+    <Cyl r={0.025} h={1.7} p={[0, 0.88, 0]} c={IRON} seg={8} />
+    <Cyl r={0.3} top={0.18} h={0.38} p={[0, 1.82, 0]} c="#ffe9c7" seg={20} />
+    <Ball r={0.1} p={[0, 1.66, 0]} c="#fff6d8" lit />
+  </group>
+);
+
+/** A glass case of cakes and tarts by the café counter. */
+const PastryCase: FC = () => (
+  <group>
+    <RBox s={[1.6, 0.8, 0.7]} p={[0, 0.4, 0]} c="#ffd0cc" />
+    <RBox s={[1.65, 0.05, 0.75]} p={[0, 0.82, 0]} c={CREAM} />
+    {['#fff4e6', '#8b5a3c', '#ffd6e0'].map((c, i) => (
+      <group key={c} position={[-0.5 + i * 0.5, 0.85, 0.02]}>
+        <Cyl r={0.17} h={0.16} p={[0, 0.08, 0]} c={c} />
+        <Ball r={0.045} p={[0, 0.2, 0]} c="#ff5b7a" />
+      </group>
+    ))}
+    <mesh material={glow('#e8f4ff', 0.3)} position={[0, 1.08, 0]}>
+      <boxGeometry args={[1.6, 0.48, 0.7]} />
+    </mesh>
+    <RBox s={[1.65, 0.05, 0.75]} p={[0, 1.34, 0]} c={CREAM} />
+  </group>
+);
+
+/** A little painting hung on the wall behind it (hills and a sun in `color`). */
+const Frame: FC<{ color?: string }> = ({ color = '#ffb3c6' }) => (
+  <group position={[0, 0, -0.26]}>
+    <RBox s={[1.2, 0.9, 0.06]} p={[0, 2.0, 0]} c={WOOD} rad={0.02} />
+    <Box s={[1.04, 0.74, 0.02]} p={[0, 2.0, 0.035]} c="#e3f2ff" />
+    <Box s={[1.04, 0.26, 0.02]} p={[0, 1.76, 0.04]} c={LEAF} />
+    <Ball r={0.2} p={[-0.18, 1.86, 0.045]} s={[1.6, 0.6, 0.05]} c={LEAF_DARK} />
+    <Ball r={0.09} p={[0.28, 2.17, 0.045]} s={[1, 1, 0.1]} c={color} />
+  </group>
+);
+
+/** Exercise bike, side on (front wheel toward +x). */
+const Bike: FC = () => (
+  <group>
+    <RBox s={[1.25, 0.08, 0.42]} p={[0, 0.04, 0]} c={IRON} />
+    <Cyl r={0.27} h={0.1} p={[0.38, 0.36, 0]} rot={[Math.PI / 2, 0, 0]} c={METAL} seg={20} />
+    <Box s={[0.08, 0.78, 0.08]} p={[-0.24, 0.44, 0]} r={[0, 0, 0.25]} c={IRON} />
+    <RBox s={[0.38, 0.09, 0.24]} p={[-0.34, 0.86, 0]} c="#3f3a4d" rad={0.04} />
+    <Box s={[0.08, 1.0, 0.08]} p={[0.36, 0.62, 0]} r={[0, 0, -0.2]} c={IRON} />
+    <Cyl r={0.03} h={0.5} p={[0.47, 1.12, 0]} rot={[Math.PI / 2, 0, 0]} c={METAL} seg={8} />
+    <mesh material={glow('#9fe3c4')} position={[0.5, 1.2, 0]} rotation={[0, Math.PI / 2, 0]}>
+      <planeGeometry args={[0.2, 0.12]} />
+    </mesh>
+  </group>
+);
+
+/** A bench under a barbell on its rack. */
+const WeightBench: FC = () => (
+  <group>
+    <RBox s={[1.3, 0.12, 0.36]} p={[0.1, 0.45, 0]} c="#a99fd0" rad={0.04} />
+    {[-0.4, 0.6].map((x) => (
+      <Box key={x} s={[0.08, 0.42, 0.3]} p={[x, 0.2, 0]} c={IRON} />
+    ))}
+    {[-0.34, 0.34].map((z) => (
+      <Box key={z} s={[0.06, 1.0, 0.06]} p={[-0.62, 0.5, z]} c={IRON} />
+    ))}
+    <Cyl r={0.025} h={1.5} p={[-0.62, 1.0, 0]} rot={[Math.PI / 2, 0, 0]} c={METAL} seg={8} />
+    {[-0.62, 0.62].map((z) => (
+      <Cyl key={z} r={0.2} h={0.06} p={[-0.62, 1.0, z]} rot={[Math.PI / 2, 0, 0]} c={IRON} />
+    ))}
+  </group>
+);
+
+const GymBalls: FC = () => (
+  <group>
+    <Ball r={0.42} p={[-0.3, 0.42, 0]} c="#a9cdfc" />
+    <Ball r={0.36} p={[0.42, 0.36, 0.15]} c="#ffb3c6" />
+    <Ball r={0.3} p={[0.1, 0.3, -0.48]} c="#b5e8c9" />
+  </group>
+);
+
+const Cooler: FC = () => (
+  <group>
+    <RBox s={[0.46, 1.0, 0.44]} p={[0, 0.5, 0]} c={CREAM} />
+    <mesh material={glow('#a9dcff', 0.75)} position={[0, 1.26, 0]}>
+      <cylinderGeometry args={[0.17, 0.19, 0.5, 16]} />
+    </mesh>
+    {['#7fc8f2', '#ff9a8a'].map((c, i) => (
+      <Box key={c} s={[0.08, 0.08, 0.06]} p={[-0.1 + i * 0.2, 0.78, 0.23]} c={c} />
+    ))}
+  </group>
+);
+
+const Globe: FC = () => (
+  <group>
+    <Cyl r={0.24} h={0.05} p={[0, 0.03, 0]} c={WOOD_DARK} />
+    <Cyl r={0.04} h={0.7} p={[0, 0.4, 0]} c={WOOD_DARK} seg={8} />
+    <group position={[0, 1.02, 0]} rotation={[0, 0, 0.4]}>
+      <Ball r={0.3} c="#7fc8f2" />
+      {([[0.12, 0.1, 0.22], [-0.2, 0.15, 0.12], [0.05, -0.2, 0.18]] as const).map((p, i) => (
+        <Ball key={i} r={0.1} p={[p[0], p[1], p[2]]} s={[1.4, 1, 0.6]} c={i % 2 ? LEAF_DARK : LEAF} />
+      ))}
+      <mesh material={toon('#e6c35c')}>
+        <torusGeometry args={[0.37, 0.02, 6, 24, Math.PI]} />
+      </mesh>
+    </group>
+  </group>
+);
+
+/** A library trolley of books to shelve. */
+const BookCart: FC = () => (
+  <group>
+    {[0.3, 0.74].map((y) => (
+      <RBox key={y} s={[1.0, 0.06, 0.5]} p={[0, y, 0]} c={WOOD} rad={0.02} />
+    ))}
+    {[-0.46, 0.46].flatMap((x) => [-0.21, 0.21].map((z) => <Box key={`${x}${z}`} s={[0.05, 0.8, 0.05]} p={[x, 0.42, z]} c={WOOD_DARK} />))}
+    {[-0.42, 0.42].flatMap((x) => [-0.2, 0.2].map((z) => <Ball key={`w${x}${z}`} r={0.06} p={[x, 0.06, z]} c={IRON} />))}
+    {Array.from({ length: 6 }, (_, i) => (
+      <Box key={i} s={[0.1, 0.3, 0.26]} p={[-0.36 + i * 0.13, 0.92, 0]} r={[0, 0, i === 5 ? 0.35 : 0]} c={PASTELS[i]} />
+    ))}
+    {Array.from({ length: 5 }, (_, i) => (
+      <Box key={`b${i}`} s={[0.1, 0.27, 0.26]} p={[-0.3 + i * 0.14, 0.47, 0]} c={PASTELS[(i + 3) % PASTELS.length]} />
+    ))}
+  </group>
+);
+
+/** A shop's dress form: a dress in `color` on a stand. */
+const DressForm: FC<{ color?: string }> = ({ color = '#ffb3c6' }) => (
+  <group>
+    <Cyl r={0.3} h={0.06} p={[0, 0.03, 0]} c={WOOD_DARK} />
+    <Cyl r={0.03} h={0.85} p={[0, 0.45, 0]} c={WOOD_DARK} seg={8} />
+    <Cyl r={0.4} top={0.2} h={0.55} p={[0, 1.05, 0]} c={color} seg={20} />
+    <Ball r={0.25} p={[0, 1.45, 0]} s={[1, 1.2, 0.78]} c={color} />
+    <mesh material={toon(WHITE_RIBBON)} position={[0, 1.3, 0]} rotation={[Math.PI / 2, 0, 0]}>
+      <torusGeometry args={[0.215, 0.025, 6, 20]} />
+    </mesh>
+    <Cyl r={0.06} h={0.14} p={[0, 1.77, 0]} c="#f4e7da" />
+    <Ball r={0.08} p={[0, 1.88, 0]} c={WOOD_DARK} />
+  </group>
+);
+
+/** A shop table of folded clothes and a bag. */
+const DisplayTable: FC = () => (
+  <group>
+    <RBox s={[1.5, 0.08, 0.8]} p={[0, 0.72, 0]} c={CREAM} rad={0.03} />
+    {[-0.66, 0.66].map((x) => (
+      <Box key={x} s={[0.08, 0.7, 0.72]} p={[x, 0.35, 0]} c="#f3d6e3" />
+    ))}
+    {[-0.45, 0, 0.45].flatMap((x, i) =>
+      [0, 1, 2].map((k) => <RBox key={`${x}${k}`} s={[0.36, 0.07, 0.3]} p={[x, 0.8 + k * 0.075, -0.12]} c={PASTELS[(i * 2 + k) % PASTELS.length]} rad={0.02} />),
+    )}
+    <RBox s={[0.3, 0.22, 0.14]} p={[0.25, 0.88, 0.2]} c="#ff9fc0" rad={0.05} />
+    <mesh material={toon('#ff9fc0')} position={[0.25, 1.0, 0.2]}>
+      <torusGeometry args={[0.09, 0.015, 6, 16, Math.PI]} />
+    </mesh>
+  </group>
+);
+
+/** A plain stone column. */
+const Pillar: FC = () => (
+  <group>
+    <RBox s={[0.72, 0.26, 0.72]} p={[0, 0.13, 0]} c="#efe4d4" rad={0.04} />
+    <Cyl r={0.25} h={2.9} p={[0, 1.7, 0]} c="#f8f1e6" seg={20} />
+    <RBox s={[0.68, 0.22, 0.68]} p={[0, 3.2, 0]} c="#efe4d4" rad={0.04} />
+  </group>
+);
+
+/** Flowers in a vase on a tall stand (`color`: the blooms). */
+const Bouquet: FC<{ color?: string }> = ({ color = '#ffb3c6' }) => (
+  <group>
+    <Cyl r={0.13} top={0.18} h={0.7} p={[0, 0.35, 0]} c={CREAM} />
+    <Cyl r={0.16} top={0.12} h={0.3} p={[0, 0.85, 0]} c="#a9cdfc" />
+    {Array.from({ length: 4 }, (_, i) => (
+      <Ball key={`l${i}`} r={0.08} p={[Math.cos(i * 1.6) * 0.2, 1.02, Math.sin(i * 1.6) * 0.2]} s={[1.5, 0.6, 1]} c={LEAF} />
+    ))}
+    {Array.from({ length: 7 }, (_, i) => (
+      <Ball key={i} r={0.09} p={[Math.cos(i * 2.4) * 0.14, 1.1 + (i % 3) * 0.06, Math.sin(i * 2.4) * 0.14]} c={i % 3 ? color : '#fff1a8'} />
+    ))}
   </group>
 );
 
@@ -720,4 +931,19 @@ export const MODELS: Record<ArtKind, ModelDef> = {
   clothesRack: { h: 1.7, Model: ClothesRack },
   fittingRoom: { h: 2.5, Model: FittingRoom },
   mirror: { h: 2.0, Model: Mirror },
+  sofa: { h: 1.0, Model: Sofa },
+  armchair: { h: 1.0, Model: Armchair },
+  floorLamp: { h: 2.0, Model: FloorLamp },
+  pastryCase: { h: 1.4, Model: PastryCase },
+  frame: { h: 2.5, Model: Frame },
+  bike: { h: 1.3, Model: Bike },
+  weightBench: { h: 1.2, Model: WeightBench },
+  gymBalls: { h: 0.9, Model: GymBalls },
+  cooler: { h: 1.5, Model: Cooler },
+  globe: { h: 1.4, Model: Globe },
+  bookCart: { h: 1.1, Model: BookCart },
+  dressForm: { h: 1.9, Model: DressForm },
+  displayTable: { h: 1.1, Model: DisplayTable },
+  pillar: { h: 3.3, Model: Pillar },
+  bouquet: { h: 1.3, Model: Bouquet },
 };

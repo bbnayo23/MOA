@@ -160,12 +160,33 @@ function floorTexture(bg: Background) {
     ctx.fillStyle = bg.ground[0];
     ctx.fillRect(0, 0, W, W);
     ctx.fillStyle = bg.ground[1];
-    if (bg.floor !== 'grass') {
-      for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if ((x + y) % 2) ctx.fillRect(x * PX, y * PX, PX, PX);
+    if (bg.floor === 'wood') {
+      // planks a third of a tile wide in both colours, joints staggered, a fine grain
+      const P = PX / 3;
+      for (let row = 0; row * P < W; row++) {
+        for (let x = -rnd() * PX * 2; x < W; ) {
+          const len = PX * (1.4 + rnd() * 1.6);
+          ctx.fillStyle = bg.ground[rnd() < 0.5 ? 0 : 1];
+          ctx.fillRect(x, row * P, len, P);
+          ctx.fillStyle = 'rgba(80,45,20,0.2)';
+          ctx.fillRect(x, row * P, 2, P);
+          x += len;
+        }
+        ctx.fillStyle = 'rgba(80,45,20,0.16)';
+        ctx.fillRect(0, row * P, W, 1.5);
+      }
+      for (let i = 0; i < n * n * 40; i++) {
+        ctx.fillStyle = rnd() < 0.5 ? 'rgba(255,255,255,0.08)' : 'rgba(80,45,20,0.07)';
+        ctx.fillRect(rnd() * W, rnd() * W, 6 + rnd() * 14, 1);
+      }
+    } else if (bg.floor !== 'grass') {
+      // tiles half a map tile across (whole-tile squares read as a toy board, not a floor)
+      const Q = PX / 2;
+      for (let y = 0; y < n * 2; y++) for (let x = 0; x < n * 2; x++) if ((x + y) % 2) ctx.fillRect(x * Q, y * Q, Q, Q);
       ctx.fillStyle = 'rgba(0,0,0,0.05)';
-      for (let i = 0; i <= n; i++) {
-        ctx.fillRect(i * PX - 1, 0, 2, W);
-        ctx.fillRect(0, i * PX - 1, W, 2);
+      for (let i = 0; i <= n * 2; i++) {
+        ctx.fillRect(i * Q - 1, 0, 2, W);
+        ctx.fillRect(0, i * Q - 1, W, 2);
       }
     } else {
       ctx.globalAlpha = 0.55;
@@ -238,6 +259,13 @@ function Room({ bg, S, floor, onTap }: { bg: Background; S: number; floor: THREE
           </mesh>
           <mesh material={toon(trim)} position={[pos[0], 0.1, pos[2]]}>
             <boxGeometry args={[size[0] + 0.04, 0.2, size[2] + 0.04]} />
+          </mesh>
+          {/* wainscoting: the lower wall a shade toward the trim, a rail along its top */}
+          <mesh material={toon(`#${new THREE.Color(color).lerp(new THREE.Color(trim), 0.22).getHexString()}`)} position={[pos[0], 0.45, pos[2]]}>
+            <boxGeometry args={[size[0] + 0.03, 0.9, size[2] + 0.03]} />
+          </mesh>
+          <mesh material={toon(trim)} position={[pos[0], 0.92, pos[2]]}>
+            <boxGeometry args={[size[0] + 0.07, 0.07, size[2] + 0.07]} />
           </mesh>
           {[1 / 6, 3 / 6, 5 / 6].map((f) => {
             const along = f * S;

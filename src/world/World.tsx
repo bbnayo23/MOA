@@ -99,7 +99,7 @@ export function World({ theme, className, paused = false, raised = false }: { th
         <Driver sim={sim} me={me} />
         <Stage bg={theme.background} onTap={(t) => walkTo(sim, me, t)} />
         {theme.decorations.map((d, i) => (
-          <Thing key={`d${i}`} kind={d.kind} at={d.at} indoor={indoor} />
+          <Thing key={`d${i}`} kind={d.kind} at={d.at} indoor={indoor} color={d.color} />
         ))}
         {theme.interactionObjects.map((o) => (
           <Thing key={o.id} kind={o.kind} at={o.at} indoor={indoor} color={o.color} onPick={() => pick(o)} onHover={(on) => setHover(on ? o : null)} />

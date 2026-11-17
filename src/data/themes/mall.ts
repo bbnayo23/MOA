@@ -37,13 +37,18 @@ export const mall: ThemeConfig = {
     motes: 0xffe0ec,
   },
   spawnPosition: { tx: 6.6, ty: 6.6 },
-  availableActions: ['browse', 'fitting', 'pose', 'stylingGame', 'wave', 'jump', 'dance'],
+  availableActions: ['browse', 'fitting', 'pose', 'stylingGame', 'sit', 'wave', 'jump', 'dance'],
   interactionObjects: [
     rack('rack-1', { tx: 0.6, ty: 2.0 }),
     rack('rack-2', { tx: 0.6, ty: 4.2 }),
     rack('rack-3', { tx: 0.6, ty: 6.0 }),
     rack('rack-4', { tx: 3.4, ty: 5.0 }),
     rack('rack-5', { tx: 5.0, ty: 3.4 }),
+    {
+      id: 'sofa', kind: 'sofa', label: '쉼터 소파', icon: '🛋️', at: { tx: 7.2, ty: 3.2 }, color: '#cbb8ff',
+      actions: ['sit'],
+      spots: [-0.13, 0.13].map((o) => ({ tx: 7.2 + o + 0.04, ty: 3.2 - o + 0.04 })),
+    },
     {
       id: 'fitting', kind: 'fittingRoom', label: '피팅룸', icon: '👗', at: { tx: 3.4, ty: 0.6 },
       actions: ['fitting'],
@@ -61,6 +66,16 @@ export const mall: ThemeConfig = {
     { kind: 'plant', at: { tx: 1.6, ty: 0.5 } },
     { kind: 'plant', at: { tx: 7.4, ty: 4.4 } },
     { kind: 'plant', at: { tx: 4.4, ty: 7.4 } },
+    // dresses on forms along the back wall, tables of folded clothes
+    { kind: 'dressForm', at: { tx: 2.2, ty: 0.6 }, color: '#ffb3c6' },
+    { kind: 'dressForm', at: { tx: 4.5, ty: 0.55 }, color: '#a9cdfc' },
+    { kind: 'dressForm', at: { tx: 6.7, ty: 0.55 }, color: '#ffd38a' },
+    { kind: 'displayTable', at: { tx: 2.0, ty: 4.0 } },
+    { kind: 'displayTable', at: { tx: 4.0, ty: 2.0 } },
+    { kind: 'displayTable', at: { tx: 5.6, ty: 7.2 } },
+    { kind: 'displayTable', at: { tx: 7.2, ty: 5.6 } },
+    { kind: 'frame', at: { tx: 0.12, ty: 2.9 }, color: '#ff9fc0' },
+    { kind: 'frame', at: { tx: 0.12, ty: 5.1 }, color: '#cbb8ff' },
   ],
   recommendedOutfits: OUTFITS.slice(0, 2),
 };

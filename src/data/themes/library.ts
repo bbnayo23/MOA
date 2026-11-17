@@ -24,10 +24,13 @@ export const library: ThemeConfig = {
   background: {
     size: 8,
     sky: ['#e4efe6', '#e8f0e4', '#edf1e2', '#f1f2e0'],
+    floor: 'wood',
     ground: ['#d9b48a', '#cfa87e'],
     side: ['#a8825f', '#94704f'],
     walls: { left: '#f4ead8', right: '#e8dcc6', trim: '#9c7a5a', glass: ['#cfe8ff', '#e3f2ff'] },
-    rugs: [{ from: { tx: 2.2, ty: 4.2 }, to: { tx: 6.4, ty: 4.2 }, width: 3.2, color: '#a9d6b0', border: '#86c093' }],
+    rugs: [
+      { from: { tx: 2.2, ty: 4.2 }, to: { tx: 6.4, ty: 4.2 }, width: 3.2, color: '#a9d6b0', border: '#86c093' },
+    ],
     motes: 0xfff8e1,
   },
   spawnPosition: { tx: 6.0, ty: 6.0 },
@@ -37,6 +40,12 @@ export const library: ThemeConfig = {
     table('table-r', { tx: 4.9, ty: 3.1 }),
     table('table-3', { tx: 2.2, ty: 6.4 }),
     table('table-4', { tx: 6.4, ty: 4.4 }),
+    // reading nooks by the left wall
+    ...[4.45, 6.45].map((ty, i) => ({
+      id: `armchair-${i + 1}`, kind: 'armchair' as const, label: '안락의자', icon: '🛋️', at: { tx: 0.5, ty }, color: i ? '#b5e8c9' : '#ffd38a',
+      actions: ['sit' as const, 'read' as const],
+      spots: [{ tx: 0.56, ty }],
+    })),
     desk('desk-1', { tx: 5.2, ty: 0.95 }),
     desk('desk-2', { tx: 7.2, ty: 0.95 }),
   ],
@@ -48,6 +57,16 @@ export const library: ThemeConfig = {
     { kind: 'plant', at: { tx: 0.5, ty: 7.3 } },
     { kind: 'plant', at: { tx: 7.4, ty: 6.2 } },
     { kind: 'plant', at: { tx: 7.6, ty: 2.4 } },
+    // a short row of shelves standing out in the room
+    ...[[2.2, 2.6], [2.4, 2.4], [2.6, 2.2]].map(([tx, ty]) => ({ kind: 'bookshelf' as const, at: { tx, ty } })),
+    { kind: 'globe', at: { tx: 1.4, ty: 1.6 } },
+    { kind: 'bookCart', at: { tx: 4.3, ty: 6.0 } },
+    { kind: 'bookCart', at: { tx: 6.9, ty: 5.2 } },
+    { kind: 'globe', at: { tx: 5.3, ty: 7.1 } },
+    { kind: 'floorLamp', at: { tx: 0.4, ty: 3.95 } },
+    { kind: 'floorLamp', at: { tx: 0.4, ty: 5.95 } },
+    { kind: 'frame', at: { tx: 0.12, ty: 4.45 }, color: '#ffd38a' },
+    { kind: 'frame', at: { tx: 2.55, ty: 0.12 }, color: '#a9cdfc' },
   ],
   recommendedOutfits: [
     { name: '📚 니트 + 안경', look: { top: 'stripe', topColor: '#cbb8ff', accessory: 'glasses', hat: 'none' } },

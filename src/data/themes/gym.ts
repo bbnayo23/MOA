@@ -28,7 +28,11 @@ export const gym: ThemeConfig = {
     side: ['#b8b0cc', '#a69dbd'],
     // tall mirror panes
     walls: { left: '#f3f1f8', right: '#e6e2f0', trim: '#a99fd0', glass: ['#dff3ff', '#eef9ff'] },
-    rugs: [{ from: { tx: 3.6, ty: 4.0 }, to: { tx: 6.0, ty: 1.6 }, width: 1.6, color: '#d3cdea', border: '#b3abd3' }],
+    rugs: [
+      { from: { tx: 3.6, ty: 4.0 }, to: { tx: 6.0, ty: 1.6 }, width: 1.6, color: '#d3cdea', border: '#b3abd3' },
+      // rubber flooring under the free weights
+      { from: { tx: 2.4, ty: 1.4 }, to: { tx: 6.8, ty: 1.4 }, width: 1.2, color: '#cbc4e0', border: '#b3abd3' },
+    ],
   },
   spawnPosition: { tx: 6.0, ty: 6.0 },
   availableActions: ['dumbbell', 'treadmill', 'stretch', 'squat', 'squatGame', 'wave', 'jump'],
@@ -56,6 +60,15 @@ export const gym: ThemeConfig = {
     { kind: 'plant', at: { tx: 7.3, ty: 0.6 } },
     { kind: 'plant', at: { tx: 7.4, ty: 5.4 } },
     { kind: 'plant', at: { tx: 5.4, ty: 7.4 } },
+    ...[2.4, 3.5, 4.6].map((ty) => ({ kind: 'bike' as const, at: { tx: 1.9, ty } })),
+    { kind: 'weightBench', at: { tx: 3.7, ty: 1.45 } },
+    { kind: 'weightBench', at: { tx: 6.4, ty: 1.45 } },
+    { kind: 'gymBalls', at: { tx: 7.0, ty: 5.4 } },
+    { kind: 'weightBench', at: { tx: 5.0, ty: 7.0 } },
+    { kind: 'cooler', at: { tx: 7.4, ty: 6.5 } },
+    { kind: 'cooler', at: { tx: 6.6, ty: 0.45 } },
+    { kind: 'frame', at: { tx: 0.12, ty: 2.9 }, color: '#9fe3c4' },
+    { kind: 'frame', at: { tx: 0.12, ty: 5.1 }, color: '#ffd38a' },
   ],
   recommendedOutfits: [
     { name: '💪 트레이닝룩', look: { top: 'tee', topColor: '#a9cdfc', bottom: 'shorts', bottomColor: '#5c6185', hat: 'cap' } },
