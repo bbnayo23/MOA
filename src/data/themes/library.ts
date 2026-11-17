@@ -4,7 +4,7 @@ import type { InteractionObject, ThemeConfig } from './types';
 
 const table = (id: string, at: Tile): InteractionObject => ({
   id, kind: 'table', label: '열람 테이블', icon: '📖', at,
-  actions: ['read', 'study'],
+  actions: ['read', 'study', 'memoryGame'],
   spots: [behind(at, 0.25), behind(at, -0.25)],
 });
 
@@ -19,7 +19,7 @@ export const library: ThemeConfig = {
   name: '도서관',
   emoji: '📚',
   tagline: '사각사각 집중 모드',
-  activities: ['책 읽기', '공부하기', '집중 타이머'],
+  activities: ['책 읽기', '공부하기', '집중 타이머', '기억력 카드 대결'],
   color: '#c9a27e',
   background: {
     size: 8,
@@ -31,7 +31,7 @@ export const library: ThemeConfig = {
     motes: 0xfff8e1,
   },
   spawnPosition: { tx: 6.0, ty: 6.0 },
-  availableActions: ['read', 'study', 'focus', 'sit', 'wave', 'jump'],
+  availableActions: ['read', 'study', 'focus', 'memoryGame', 'sit', 'wave', 'jump'],
   interactionObjects: [
     table('table-l', { tx: 3.4, ty: 4.6 }),
     table('table-r', { tx: 4.9, ty: 3.1 }),

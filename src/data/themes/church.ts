@@ -6,7 +6,7 @@ const pews: InteractionObject[] = [6, 8, 10, 12].flatMap((sum, row) =>
     const at = { tx: (sum - d) / 2, ty: (sum + d) / 2 };
     return {
       id: `pew-${row}-${side}`, kind: 'pew' as const, label: '긴 의자', icon: '🪑', at,
-      actions: ['sit' as const],
+      actions: ['sit' as const, 'breathe' as const],
       spots: [-0.25, 0.25].map((o) => ({ tx: at.tx + o + 0.08, ty: at.ty - o + 0.08 })),
     };
   }),
@@ -17,7 +17,7 @@ export const church: ThemeConfig = {
   name: '교회',
   emoji: '⛪',
   tagline: '조용히 마음을 모으는 곳',
-  activities: ['기도하기', '앉기', '촛불 켜기', '응원 메시지 남기기'],
+  activities: ['기도하기', '앉기', '촛불 켜기', '응원 메시지 남기기', '함께 호흡하기 (점수 없음)'],
   color: '#d6b48c',
   background: {
     size: 8,
@@ -29,7 +29,7 @@ export const church: ThemeConfig = {
     motes: 0xfff8e1,
   },
   spawnPosition: { tx: 6.6, ty: 6.6 },
-  availableActions: ['pray', 'sit', 'lightCandle', 'cheer', 'wave'],
+  availableActions: ['pray', 'sit', 'breathe', 'lightCandle', 'cheer', 'wave'],
   interactionObjects: [
     {
       id: 'altar', kind: 'altar', label: '제단', icon: '✝️', at: { tx: 1.4, ty: 1.4 },

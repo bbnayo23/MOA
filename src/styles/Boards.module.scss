@@ -1,0 +1,622 @@
+// The "points in N seconds" games: a card over the world (it keeps going behind),
+// the round's clock and everyone's points on top, the game's board below.
+
+$phone: 520px;
+
+.card {
+  position: absolute;
+  left: 50%;
+  bottom: var(--sp-3);
+  translate: -50% 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  width: min(580px, calc(100% - 2 * var(--sp-3)));
+  max-height: calc(100% - 56px);
+  overflow-y: auto;
+  padding: var(--sp-3) var(--sp-4) var(--sp-4);
+  border-radius: var(--r-l);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--shadow-m);
+  backdrop-filter: blur(6px);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+// ── the round ──
+.hud {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px var(--sp-2);
+  font-size: var(--fs-s);
+}
+
+.secs {
+  margin-left: auto;
+  font-family: var(--font-pixel);
+  color: var(--c-primary-deep);
+}
+
+.time {
+  flex: 1 1 100%;
+  height: 8px;
+  border-radius: var(--r-pill);
+  background: linear-gradient(90deg, var(--c-mint) calc(var(--left, 1) * 100%), var(--c-line) 0);
+}
+
+.scores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+
+  li {
+    padding: 1px 10px;
+    border: 2px solid var(--c-line);
+    border-radius: var(--r-pill);
+    background: var(--c-surface-soft);
+    font-size: var(--fs-xs);
+
+    b {
+      margin-left: 6px;
+      font-family: var(--font-pixel);
+      color: var(--c-primary-deep);
+    }
+  }
+
+  .me {
+    border-color: var(--c-primary);
+    background: #fff0f5;
+  }
+}
+
+.say {
+  font-size: var(--fs-s);
+  color: var(--c-ink-soft);
+  text-align: center;
+}
+
+// ── shared bits ──
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.act {
+  margin-left: auto;
+  height: 52px;
+  min-width: 140px;
+  font-size: var(--fs-m);
+  touch-action: manipulation;
+}
+
+.mine {
+  font-size: var(--fs-s);
+  color: var(--c-ink-soft);
+
+  b {
+    font-family: var(--font-pixel);
+    font-size: var(--fs-l);
+    color: var(--c-ink);
+  }
+}
+
+// a word for a moment ("+2!")
+.pop {
+  min-height: 1.5em;
+  font-weight: 700;
+  font-size: var(--fs-s);
+  color: var(--c-primary-deep);
+  animation: pop 0.25s ease-out;
+}
+
+@keyframes pop {
+  from {
+    scale: 0.9;
+    opacity: 0.4;
+  }
+}
+
+.ticket {
+  padding: var(--sp-2) var(--sp-3);
+  border: 2px dashed #e9c98a;
+  border-radius: var(--r-m);
+  background: #fff8e6;
+  font-size: var(--fs-s);
+  text-align: center;
+
+  b {
+    font-size: var(--fs-m);
+  }
+}
+
+// ── 🎣 fishing: a pond, a bobber that twitches, then dips ──
+.pond {
+  position: relative;
+  height: 160px;
+  border-radius: var(--r-m);
+  overflow: hidden;
+  background: radial-gradient(ellipse 90% 70% at 50% 110%, #3aa7e0, #6cc8f2 55%, #a8e2fb 80%, #c9efc0 81%, #b4e3a6);
+
+  .pop {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 4px;
+    text-align: center;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0, 60, 110, 0.5);
+  }
+}
+
+.deco {
+  position: absolute;
+  font-size: 26px;
+}
+
+.line {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  height: 56%;
+  width: 1.5px;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.ripple {
+  position: absolute;
+  left: 50%;
+  top: 58%;
+  width: 64px;
+  height: 18px;
+  translate: -50% -50%;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  animation: ripple 1.8s ease-out infinite;
+}
+
+@keyframes ripple {
+  from {
+    scale: 0.4;
+    opacity: 1;
+  }
+  to {
+    scale: 1.4;
+    opacity: 0;
+  }
+}
+
+.bobber {
+  position: absolute;
+  left: 50%;
+  top: 58%;
+  width: 22px;
+  height: 30px;
+  translate: -50% -75%;
+  border-radius: 50% 50% 45% 45%;
+  background: linear-gradient(#ff5d73 52%, #fff 52%);
+  box-shadow: 0 2px 0 rgba(0, 60, 110, 0.25);
+  transition: translate 0.08s;
+  animation: float 1.8s ease-in-out infinite;
+
+  &.nibble {
+    animation: nibble 0.14s linear infinite;
+  }
+
+  &.bite {
+    translate: -50% -15%;
+    animation: none;
+  }
+}
+
+@keyframes float {
+  50% {
+    rotate: 6deg;
+  }
+}
+
+@keyframes nibble {
+  50% {
+    rotate: -12deg;
+  }
+}
+
+.bang {
+  position: absolute;
+  left: calc(50% + 20px);
+  top: 18%;
+  font-family: var(--font-pixel);
+  font-size: 34px;
+  color: #ff5d73;
+  animation: pop 0.2s ease-out;
+}
+
+// ── ☕ barista: the order, the cup, the ingredients ──
+.cafe {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: var(--sp-3);
+
+  // phones: one column — order, cup, a compact menu, then the ingredients
+  @media (max-width: $phone) {
+    display: flex;
+    gap: var(--sp-2);
+
+    .counter {
+      display: contents;
+    }
+
+    .cup {
+      width: 64px;
+      height: 56px;
+    }
+
+    .menu {
+      grid-template-columns: 1fr 1fr;
+      font-size: 10px;
+    }
+  }
+}
+
+.counter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  text-align: center;
+}
+
+.cup {
+  display: flex;
+  flex-direction: column-reverse;
+  width: 84px;
+  height: 92px;
+  margin: 0 auto;
+  overflow: hidden;
+  border: 4px solid #e6ddf7;
+  border-top: 0;
+  border-radius: 0 0 26px 26px;
+  background: #fff;
+
+  i {
+    height: 25%;
+    animation: pop 0.2s ease-out;
+  }
+}
+
+.menu {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2px var(--sp-2);
+  padding: var(--sp-2);
+  border-radius: var(--r-s);
+  background: #5b4636;
+  color: #fff6e8;
+  font-size: 11px;
+  text-align: left;
+
+  li {
+    display: flex;
+    justify-content: space-between;
+    gap: 4px;
+    white-space: nowrap;
+  }
+}
+
+.keys {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  align-content: start;
+
+  button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 56px;
+    border: 2px solid var(--c-line);
+    border-radius: var(--r-m);
+    background: #fff;
+    font-size: 22px;
+    touch-action: manipulation;
+
+    small {
+      max-width: 100%;
+      overflow: hidden;
+      font-size: 10px;
+      color: var(--c-ink-soft);
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    &:active:not(:disabled) {
+      scale: 0.95;
+    }
+  }
+
+  .on {
+    border-color: var(--c-primary);
+    background: #fff0f5;
+  }
+
+  .serve {
+    grid-column: span 2;
+    border-color: transparent;
+    background: var(--c-primary);
+    color: var(--c-on-primary);
+    font-size: var(--fs-m);
+    font-weight: 700;
+
+    &:disabled {
+      opacity: 0.5;
+    }
+
+    small {
+      color: inherit;
+      opacity: 0.8;
+    }
+  }
+
+  .mine {
+    grid-column: span 2;
+    align-self: center;
+    text-align: center;
+  }
+}
+
+// ── 🦵 squats: a gauge that swings down and up ──
+.squat {
+  flex-direction: row;
+  align-items: stretch;
+
+  .side {
+    flex: 1;
+  }
+}
+
+.meter {
+  position: relative;
+  flex: none;
+  width: 46px;
+  height: 190px;
+  overflow: hidden;
+  border: 3px solid #fff;
+  border-radius: var(--r-pill);
+  background: linear-gradient(#efeaf8, #ddd6ee);
+  box-shadow: inset 0 2px 6px rgba(80, 60, 140, 0.15);
+
+  .zone,
+  .sweet {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(var(--a) * 100%);
+    bottom: calc((1 - var(--b)) * 100%);
+    background: #b8f0cf;
+  }
+
+  .sweet {
+    background: var(--c-online);
+  }
+}
+
+.marker {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--p) * 100% - 4px);
+  height: 8px;
+  border-radius: 4px;
+  background: var(--c-ink);
+}
+
+.big {
+  font-family: var(--font-pixel);
+  font-size: var(--fs-xl);
+
+  small {
+    margin-left: 4px;
+    font-size: var(--fs-s);
+  }
+}
+
+// ── 🃏 memory: cards that flip ──
+.cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  width: min(100%, 300px);
+  margin: 0 auto;
+}
+
+.card3 {
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  background: none;
+  perspective: 500px;
+  touch-action: manipulation;
+}
+
+.inner {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.25s;
+  transform-style: preserve-3d;
+
+  .up & {
+    transform: rotateY(180deg);
+  }
+}
+
+.back,
+.front {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-s);
+  backface-visibility: hidden;
+}
+
+.back {
+  border: 3px solid #fff;
+  background: repeating-linear-gradient(45deg, #c9b6ff 0 6px, #d8caff 6px 12px);
+  box-shadow: var(--shadow-s);
+}
+
+.front {
+  transform: rotateY(180deg);
+  border: 2px solid var(--c-line);
+  background: #fff;
+  font-size: 26px;
+
+  .got & {
+    border-color: var(--c-mint);
+    background: #eafbf2;
+  }
+}
+
+// ── 👗 styling: me in the look, the order, the picks ──
+.style {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: var(--sp-3);
+
+  @media (max-width: $phone) {
+    grid-template-columns: 110px 1fr;
+  }
+}
+
+.preview {
+  height: 230px;
+  border-radius: var(--r-m);
+  overflow: hidden;
+  background: linear-gradient(#fff1f6, #ffe0ec);
+
+  @media (max-width: $phone) {
+    height: 160px;
+  }
+}
+
+.want {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px var(--sp-2);
+  font-size: var(--fs-xs);
+  color: var(--c-ink-soft);
+
+  b {
+    color: var(--c-ink);
+  }
+}
+
+.pickRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+
+  button {
+    height: 30px;
+    padding: 0 10px;
+    border: 2px solid var(--c-line);
+    border-radius: var(--r-pill);
+    background: #fff;
+    font-size: var(--fs-xs);
+    touch-action: manipulation;
+  }
+
+  .on {
+    border-color: var(--c-primary);
+    background: #fff0f5;
+    font-weight: 700;
+  }
+}
+
+// ── 🕊️ breathing together: a guide ring, my circle, friends' little circles ──
+.breathe {
+  align-items: center;
+  text-align: center;
+
+  .act {
+    margin: 0 auto;
+    min-width: 220px;
+  }
+}
+
+.circles {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 210px;
+  border-radius: var(--r-m);
+  background: radial-gradient(circle at 50% 45%, #fff8ec, #f6e6ec 70%);
+
+  p {
+    position: relative;
+    font-weight: 700;
+    color: #9c7a5a;
+  }
+}
+
+.guideRing,
+.mineCircle {
+  position: absolute;
+  aspect-ratio: 1;
+  border-radius: 50%;
+}
+
+.guideRing {
+  width: calc(70px + var(--g) * 120px);
+  border: 3px dashed #d6b48c;
+}
+
+.mineCircle {
+  width: calc(50px + var(--m) * 120px);
+  background: radial-gradient(#fffdf6, #ffe7b8);
+  box-shadow: 0 0 36px #ffe2a8;
+}
+
+.together {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--sp-3);
+  font-size: var(--fs-xs);
+
+  li {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  i {
+    width: calc(14px + var(--s) * 22px);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(#fffdf6, #ffd98a);
+  }
+}
+
+.calm {
+  font-size: var(--fs-s);
+  color: #9c7a5a;
+}

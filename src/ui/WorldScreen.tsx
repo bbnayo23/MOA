@@ -40,6 +40,8 @@ export function WorldScreen() {
   const [sheet, setSheet] = useState<Sheet>(null);
   const roomId = useMoa((st) => roomOf(st).id);
   const game = useGame((g) => g.match?.phase ?? null);
+  // a game in its own 3D scene stops the world meanwhile; the others are a card over it
+  const scene = useGame((g) => !!g.match && !!GAMES[g.match.game].scene);
   // the whisper window and the right-hand panels share that side: one up at a time
   const dmUp = useSocial((x) => x.dm.open && !x.dm.min);
   useEffect(() => {
@@ -64,7 +66,7 @@ export function WorldScreen() {
   return (
     <div className={s.layout} style={{ '--stage-bg': theme.background.sky[0] } as CSSProperties}>
       {/* a fresh world per room: only its people are in it */}
-      <World key={roomId} theme={theme} className={s.game} paused={!!game && game !== 'lobby'} />
+      <World key={roomId} theme={theme} className={s.game} paused={scene && !!game && game !== 'lobby'} raised={!scene && !!game && game !== 'lobby'} />
       {/* moving to another space or room: the new one fades in from its sky */}
       <div key={`${roomId}:${theme.themeId}`} className={s.curtain} aria-hidden />
       <TopBar theme={theme} drawer={drawer} toggleDrawer={() => setDrawer(!drawer)} open={toggle} />

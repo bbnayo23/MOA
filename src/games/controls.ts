@@ -58,3 +58,25 @@ export function useTaps(active: boolean, tap: (side: 'L' | 'R') => void) {
     return () => window.removeEventListener('keydown', down);
   }, [active]);
 }
+
+/** One-shot keys by code (Space, Digit1…), no auto-repeat; `up` fires on release. Ignored while typing in the chat. */
+export function useKeys(active: boolean, down: Record<string, () => void>, up: Record<string, () => void> = {}) {
+  const fns = useRef({ down, up });
+  fns.current = { down, up };
+  useEffect(() => {
+    if (!active) return;
+    const on = (which: 'down' | 'up') => (e: KeyboardEvent) => {
+      const fn = fns.current[which][e.code];
+      if (!fn || typing() || e.repeat) return;
+      e.preventDefault(); // and no "click" on a focused button
+      fn();
+    };
+    const d = on('down'), u = on('up');
+    window.addEventListener('keydown', d);
+    window.addEventListener('keyup', u);
+    return () => {
+      window.removeEventListener('keydown', d);
+      window.removeEventListener('keyup', u);
+    };
+  }, [active]);
+}

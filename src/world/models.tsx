@@ -223,6 +223,21 @@ const Log: FC = () => (
   </group>
 );
 
+/** A little wooden jetty running out over a pond (toward +z), a bucket and a rod at its foot. */
+const Dock: FC = () => (
+  <group>
+    {[-0.36, 0, 0.36].map((x) => (
+      <RBox key={x} s={[0.34, 0.07, 2.4]} p={[x, 0.16, 0.85]} c={x ? WOOD : WOOD_DARK} rad={0.025} />
+    ))}
+    {[-0.55, 0.55].flatMap((x) =>
+      [-0.25, 1.95].map((z) => <Cyl key={`${x}${z}`} r={0.07} h={0.55} p={[x, 0.1, z]} c={WOOD_DARK} />),
+    )}
+    <Cyl r={0.15} top={0.18} h={0.26} p={[-0.32, 0.33, -0.1]} c="#a9cdfc" />
+    <Ball r={0.06} p={[-0.3, 0.45, -0.1]} c="#7fc8f2" s={[1.6, 0.4, 1.6]} />
+    <Cyl r={0.014} h={1.7} p={[0.1, 0.85, 0.05]} rot={[0.45, 0, -0.4]} c={IRON} />
+  </group>
+);
+
 const Tent: FC = () => (
   <group>
     {/* A-frame: a triangular prism with its ridge running front to back */}
@@ -679,6 +694,7 @@ export const MODELS: Record<ArtKind, ModelDef> = {
   tree: { h: 2.9, Model: Tree },
   lamp: { h: 2.7, Model: Lamp },
   log: { h: 0.4, Model: Log },
+  dock: { h: 0.6, Model: Dock },
   tent: { h: 2.0, Model: Tent },
   campfire: { h: 0.9, Model: Campfire },
   grill: { h: 1.1, Model: Grill },

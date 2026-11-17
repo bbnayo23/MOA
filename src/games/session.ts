@@ -170,7 +170,7 @@ export async function start(solo = false) {
     ? [mySeat(true), ...Array.from({ length: def.cpu }, (_, i) => ({ id: `cpu${i + 1}`, nickname: `컴퓨터 ${i + 1}`, look: me().look, ready: true, cpu: true }))]
     : m.seats;
   if (!solo && (seats.length < def.min || seats.some((s) => !s.ready))) return;
-  const serverId = await record(m.game, seats);
+  const serverId = def.score === 'none' ? null : await record(m.game, seats); // nothing to win: nothing to record
   const seed = Math.floor(Math.random() * 2 ** 31);
   if (!solo) sendRaw({ k: 'start', mid: m.mid, seed, seats, serverId });
   begin(seed, seats, serverId);
@@ -198,7 +198,7 @@ export function onEvent(fn: (data: unknown, from: string) => void) {
 export function finish(scores: Scores) {
   const m = get().match;
   if (!m || m.phase === 'result') return;
-  patch({ phase: 'result', scores, verdict: m.role === 'watch' ? null : m.serverId ? 'pending' : 'local' });
+  patch({ phase: 'result', scores, verdict: m.role === 'watch' || GAMES[m.game].score === 'none' ? null : m.serverId ? 'pending' : 'local' });
   if (m.role === 'player' && m.serverId) void report(m.serverId, scores);
 }
 

@@ -122,6 +122,17 @@ $phone: 720px;
   @media (max-width: $phone) {
     grid-row: 2;
   }
+
+  // a card over the world, which carries on behind it
+  &.overlay {
+    background: none;
+    box-shadow: none;
+    pointer-events: none;
+
+    > * {
+      pointer-events: auto;
+    }
+  }
 }
 
 .game {

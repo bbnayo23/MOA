@@ -188,9 +188,26 @@ await age(bogus, 60);
 assert.equal(await report(A, bogus, { [A]: 9, [B]: 0 }), 'disputed');
 ok('tennis: more than five points is refused');
 await fails(A, `insert into matches (game, place, players) values ('tennis', 'x', '{}')`, [], 'write a match row directly');
+// the timed games (0005): kept once the round is over, with whole points the game can give
+const fish = await startMatch(A, 'fishing', `room:${room}`, [A, B]);
+await age(fish, 20);
+assert.equal(await report(A, fish, { [A]: 12, [B]: 9 }), 'disputed');
+const fish2 = await startMatch(A, 'fishing', `room:${room}`, [A, B]);
+await age(fish2, 45);
+assert.equal(await report(A, fish2, { [A]: 12, [B]: 9 }), 'pending');
+assert.equal(await report(B, fish2, { [A]: 12, [B]: 9 }), 'done');
+const greedy = await startMatch(A, 'barista', `space:${A}`, [A]);
+await age(greedy, 60);
+assert.equal(await report(A, greedy, { [A]: 99, cpu1: 10 }), 'disputed');
+const half = await startMatch(A, 'memory', `space:${A}`, [A]);
+await age(half, 70);
+assert.equal(await report(A, half, { [A]: 7.5, cpu1: 3 }), 'disputed');
+await fails(A, `select public.start_match('breath', $1, $2::uuid[])`, [`space:${A}`, `{${A}}`], 'record a game with no score');
+ok('timed games: kept after the round with sane points; early, too many or half points, or a no-score game refused');
 assert.deepEqual((await as(C, `select * from public.game_records('swim')`)).map((r) => [r.nickname, Number(r.value)]), [['에이', 12.5]]);
 assert.deepEqual((await as(C, `select * from public.game_records('tennis')`)).map((r) => [r.nickname, Number(r.value)]), [['에이', 1]]);
-ok('records: fastest swims, most tennis wins');
+assert.deepEqual((await as(C, `select * from public.game_records('fishing')`)).map((r) => [r.nickname, Number(r.value)]), [['에이', 12], ['비', 9]]);
+ok('records: fastest swims, most tennis wins, best scores');
 
 console.log(out.join('\n'));
 console.log('all permission rules ok');

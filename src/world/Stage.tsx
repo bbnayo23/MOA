@@ -37,7 +37,7 @@ export function Stage({ bg, onTap }: { bg: Background; onTap: (t: Tile) => void 
           <Land bg={bg} S={S} onTap={tap} />
         </>
       )}
-      {bg.water && <Water {...bg.water} />}
+      {bg.water && <Water {...bg.water} night={bg.night} />}
       {bg.motes !== undefined && <Motes color={bg.motes} S={S} />}
     </>
   );
@@ -377,7 +377,7 @@ function Flowers({ colors, S, reach, rugs, onMap }: { colors: string[]; S: numbe
  * with ripples drifting across. Swimmers sink below the floor, so only their heads
  * and shoulders come up through it.
  */
-function Water({ from, to, width }: NonNullable<Background['water']>) {
+function Water({ from, to, width, night }: NonNullable<Background['water']> & { night?: boolean }) {
   const geo = useMemo(() => {
     const ax = from.tx * T, az = from.ty * T, bx = to.tx * T, bz = to.ty * T;
     const len = Math.hypot(bx - ax, bz - az), r = (width / 2) * T - 0.18;
@@ -390,16 +390,16 @@ function Water({ from, to, width }: NonNullable<Background['water']>) {
     g.translate(ax, 0, az);
     return g;
   }, [from, to, width]);
-  // clear blue, and two layers of light rippling across it (the shape's UVs are world units: a pattern every 3).
-  // Two-sided: turning the shape flat leaves it facing down.
+  // clear blue (a deep pond blue at night), and two layers of light rippling across it (the shape's
+  // UVs are world units: a pattern every 3). Two-sided: turning the shape flat leaves it facing down.
   const mats = useMemo(
     () => [
-      new THREE.MeshBasicMaterial({ color: '#45b8ec', transparent: true, opacity: 0.8, depthWrite: false, side: THREE.DoubleSide }),
-      ...[0.5, 0.3].map(
+      new THREE.MeshBasicMaterial({ color: night ? '#2c5f8f' : '#45b8ec', transparent: true, opacity: night ? 0.88 : 0.8, depthWrite: false, side: THREE.DoubleSide }),
+      ...(night ? [0.2, 0.12] : [0.5, 0.3]).map(
         (a) => new THREE.MeshBasicMaterial({ map: shimmer(a, [1 / 3, 1 / 3]), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }),
       ),
     ],
-    [],
+    [night],
   );
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;

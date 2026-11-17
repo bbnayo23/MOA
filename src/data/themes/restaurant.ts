@@ -28,7 +28,7 @@ export const restaurant: ThemeConfig = {
   name: '레스토랑',
   emoji: '🍝',
   tagline: '맛있는 수다 타임',
-  activities: ['음식 주문', '식사하기', '음료 마시기', '대화하기'],
+  activities: ['음식 주문', '식사하기', '음료 마시기', '대화하기', '바리스타 챌린지'],
   color: '#ff9a8a',
   background: {
     size: 8,
@@ -38,11 +38,11 @@ export const restaurant: ThemeConfig = {
     walls: { left: '#fff6f0', right: '#ffe9e1', trim: '#e98a7a', glass: ['#ffe8b8', '#ffd6e0'] },
   },
   spawnPosition: { tx: 6.4, ty: 6.4 },
-  availableActions: ['order', 'eat', 'drink', 'talk', 'wave', 'jump'],
+  availableActions: ['order', 'barista', 'eat', 'drink', 'talk', 'wave', 'jump'],
   interactionObjects: [
     {
-      id: 'counter', kind: 'counter', label: '주문 카운터', icon: '🧾', at: { tx: 3.0, ty: 0.75 },
-      actions: ['order'],
+      id: 'counter', kind: 'counter', label: '카운터 · 커피 바', icon: '☕', at: { tx: 3.0, ty: 0.75 },
+      actions: ['order', 'barista'],
       spots: [{ tx: 3.55, ty: 1.3 }, { tx: 4.05, ty: 0.8 }],
     },
     table('table-1', { tx: 2.2, ty: 3.8 }),

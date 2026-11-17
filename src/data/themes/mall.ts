@@ -24,7 +24,7 @@ export const mall: ThemeConfig = {
   name: '쇼핑몰',
   emoji: '🛍️',
   tagline: '오늘의 코디 쇼핑',
-  activities: ['옷 구경', '피팅룸', '의상 변경', '코디 공유'],
+  activities: ['옷 구경', '피팅룸', '의상 변경', '코디 공유', '스타일링 챌린지'],
   color: '#ff9fc0',
   background: {
     size: 8,
@@ -37,7 +37,7 @@ export const mall: ThemeConfig = {
     motes: 0xffe0ec,
   },
   spawnPosition: { tx: 6.6, ty: 6.6 },
-  availableActions: ['browse', 'fitting', 'pose', 'wave', 'jump', 'dance'],
+  availableActions: ['browse', 'fitting', 'pose', 'stylingGame', 'wave', 'jump', 'dance'],
   interactionObjects: [
     rack('rack-1', { tx: 0.6, ty: 2.0 }),
     rack('rack-2', { tx: 0.6, ty: 4.2 }),
@@ -51,7 +51,7 @@ export const mall: ThemeConfig = {
     },
     {
       id: 'mirror', kind: 'mirror', label: '전신 거울', icon: '🪞', at: { tx: 5.6, ty: 0.55 },
-      actions: ['pose'],
+      actions: ['pose', 'stylingGame'],
       spots: [{ tx: 6.0, ty: 1.1 }, { tx: 5.5, ty: 1.6 }],
     },
   ],

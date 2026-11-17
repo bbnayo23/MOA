@@ -26,6 +26,8 @@ interface Cam {
   /** Gliding back to me at 100% ("기본 화면"). */
   homing: boolean;
   dragging: boolean;
+  /** Eased `raised`: how far (0 … 1) the view has slid to show me above a game card. */
+  lift: number;
 }
 
 /**
@@ -35,9 +37,9 @@ interface Cam {
  * drifting to its middle on the way; zoomed in it never shows past the map,
  * and once I walk off it comes back to me.
  */
-export function CameraRig({ sim, me }: { sim: Sim; me: Agent }) {
+export function CameraRig({ sim, me, raised = false }: { sim: Sim; me: Agent; raised?: boolean }) {
   const { camera, gl } = useThree();
-  const c = useRef<Cam>({ zoom: 1, zoomTo: 1, min: 0.5, focus: null, pan: new THREE.Vector3(), anchor: null, homing: false, dragging: false }).current;
+  const c = useRef<Cam>({ zoom: 1, zoomTo: 1, min: 0.5, focus: null, pan: new THREE.Vector3(), anchor: null, homing: false, dragging: false, lift: 0 }).current;
   const reported = useRef('');
   const fitted = useRef('');
   // a new space: start on me, not wherever the view was dragged to in the last one
@@ -65,8 +67,9 @@ export function CameraRig({ sim, me }: { sim: Sim; me: Agent }) {
     // zooming out drifts the view to the middle: all the way out, the whole space is in view
     const out = THREE.MathUtils.clamp((1 / c.zoom - 1) / (1 / c.min - 1), 0, 1);
     centre.lerp(ground.mid, out);
-    // a little past me so I stand slightly below the middle; on phones a bit higher, clear of the chat dock
-    const ahead = aspect < 1 ? 0.45 : -0.5;
+    // a little past me so I stand slightly below the middle; on phones a bit higher, clear of the chat dock;
+    // with a game card over the bottom of the screen, up in the top part
+    const ahead = (aspect < 1 ? 0.45 : -0.5) + (c.lift * (aspect < 1 ? 5.5 : 4.6)) / c.zoom;
     return centre.add(new THREE.Vector3(ahead, 0.6, ahead));
   };
 
@@ -82,6 +85,7 @@ export function CameraRig({ sim, me }: { sim: Sim; me: Agent }) {
       if (c.homing && c.pan.lengthSq() < 1e-4 && Math.abs(c.zoom - 1) < 1e-3) c.homing = false;
     }
     c.zoom += (c.zoomTo - c.zoom) * (1 - Math.exp(-dt * 10));
+    c.lift += (+raised - c.lift) * (1 - Math.exp(-dt * 3));
     if (Math.abs(c.zoomTo - c.zoom) < 1e-3) c.zoom = c.zoomTo;
 
     const aspect = size.width / size.height;

@@ -23,7 +23,8 @@ export type ActionId =
   | 'dumbbell' | 'treadmill' | 'stretch' | 'squat'
   | 'swim' | 'tube' | 'splash'
   | 'serve' | 'swing' | 'rally' | 'minigame' | 'tennisMatch' | 'swimRace'
-  | 'browse' | 'fitting' | 'pose';
+  | 'browse' | 'fitting' | 'pose'
+  | 'fishing' | 'barista' | 'squatGame' | 'memoryGame' | 'stylingGame' | 'breathe';
 
 export const ACTIONS: Record<ActionId, ActionDef> = {
   sit: { label: '앉기', icon: '🪑', anim: 'sit' },
@@ -60,4 +61,11 @@ export const ACTIONS: Record<ActionId, ActionDef> = {
   browse: { label: '옷 구경', icon: '👀', anim: 'browse' },
   fitting: { label: '피팅룸', icon: '👗', anim: 'tryOn', opens: 'wardrobe' },
   pose: { label: '거울 포즈', icon: '📸', anim: 'pose' },
+  // each space's minigame (opens a table others here can join)
+  fishing: { label: '낚시 대결', icon: '🎣', anim: 'sit', game: 'fishing' },
+  barista: { label: '바리스타 챌린지', icon: '☕', anim: 'cook', game: 'barista' },
+  squatGame: { label: '스쿼트 챌린지', icon: '🏆', anim: 'squat', game: 'squat' },
+  memoryGame: { label: '기억력 카드', icon: '🃏', anim: 'read', game: 'memory' },
+  stylingGame: { label: '스타일링 챌린지', icon: '⏱️', anim: 'pose', game: 'styling' },
+  breathe: { label: '함께 호흡하기', icon: '🕊️', anim: 'sit', game: 'breath' },
 };

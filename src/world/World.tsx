@@ -27,8 +27,11 @@ import { castShadows, glow } from './toon';
  * world → React events go through bridge.ts; the rules live in Sim, this file
  * only draws it. Name tags, bubbles and signs are DOM labels over the canvas.
  */
-/** `paused`: a minigame covers the world — stop drawing it (and walking in it) meanwhile. */
-export function World({ theme, className, paused = false }: { theme: ThemeConfig; className?: string; paused?: boolean }) {
+/**
+ * `paused`: a minigame covers the world — stop drawing it (and walking in it) meanwhile.
+ * `raised`: a game card covers the bottom of it — keep me in view above it.
+ */
+export function World({ theme, className, paused = false, raised = false }: { theme: ThemeConfig; className?: string; paused?: boolean; raised?: boolean }) {
   const meLook = useMoa((st) => st.me.look);
   const peers = useMoa((st) => st.peers);
   const roomId = useMoa((st) => roomOf(st).id);
@@ -108,7 +111,7 @@ export function World({ theme, className, paused = false }: { theme: ThemeConfig
           <Character key={a.player.id} agent={a} look={a.isMe ? meLook : a.player.look} mood={() => moods(a.player.id)} />
         ))}
         <TapMarker sim={sim} />
-        <CameraRig sim={sim} me={me} />
+        <CameraRig sim={sim} me={me} raised={raised} />
         <LabelSync labels={labels} />
       </Canvas>
 

@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { toGame } from '../bridge';
-import type { GameId } from '../data/games';
+import { GAMES, type GameId } from '../data/games';
 import { HUB, THEME_CONFIGS, type ThemeId } from '../data/themes';
 import { ask } from '../games/session';
 import { ownRoom, spaceOwner, type Room } from '../net/rooms';
@@ -91,6 +91,7 @@ export function useProfileCard() {
   const p = usePerson(id);
   const myId = useMoa((st) => st.me.id);
   const here = useMoa(useShallow((st) => roomOf(st)));
+  const themeId = useMoa((st) => st.themeId);
   const owner = usePlaceOwner();
   const canInvite = useCanInviteHere();
   const { friends, blocked } = useSocial(useShallow((s) => ({ friends: s.friends, blocked: !!id && s.blocks.includes(id) })));
@@ -127,6 +128,8 @@ export function useProfileCard() {
     toggleBlock: () => void (blocked ? unblock(id) : block(id)),
     // here with me: ask them to a game (opens my table for it)
     canAsk: inMyPlace && !blocked,
+    // this space's games (where there are none, e.g. the plaza, any of them)
+    games: Object.values(GAMES).filter((g, _, all) => g.themeId === themeId || !all.some((x) => x.themeId === themeId)),
     challenge: (game: GameId) => {
       close();
       if (!ask(game, id)) useMoa.getState().system('🎲 하던 게임을 마치고 신청해 주세요.');

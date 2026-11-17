@@ -5,7 +5,7 @@ export const camping: ThemeConfig = {
   name: '캠핑장',
   emoji: '🏕️',
   tagline: '별 아래 모닥불 앞에서',
-  activities: ['모닥불 피우기', '바비큐', '불멍', '텐트에서 쉬기'],
+  activities: ['모닥불 피우기', '바비큐', '불멍', '텐트에서 쉬기', '호숫가 낚시 대결'],
   color: '#86cfa0',
   background: {
     size: 8,
@@ -17,9 +17,12 @@ export const camping: ThemeConfig = {
     night: true,
     flowers: ['#ffb3c6', '#fff1a8', '#c9b6ff', '#ffffff'],
     motes: 0xfff3a0,
+    // a pond off to the right, a sandy bank round it
+    rugs: [{ from: { tx: 6.0, ty: 3.4 }, to: { tx: 6.8, ty: 3.4 }, width: 1.7, color: '#e9d6a8', border: '#d9c08a' }],
+    water: { from: { tx: 6.0, ty: 3.4 }, to: { tx: 6.8, ty: 3.4 }, width: 1.45 },
   },
   spawnPosition: { tx: 5.6, ty: 5.6 },
-  availableActions: ['fireGaze', 'roast', 'bbq', 'rest', 'sit', 'wave', 'jump', 'dance'],
+  availableActions: ['fireGaze', 'roast', 'bbq', 'rest', 'fishing', 'sit', 'wave', 'jump', 'dance'],
   interactionObjects: [
     {
       id: 'campfire', kind: 'campfire', label: '모닥불', icon: '🔥', at: { tx: 4.2, ty: 4.2 },
@@ -30,6 +33,11 @@ export const camping: ThemeConfig = {
       id: 'grill', kind: 'grill', label: '바비큐 그릴', icon: '🍖', at: { tx: 4.4, ty: 1.4 },
       actions: ['bbq'],
       spots: [{ tx: 3.9, ty: 1.9 }, { tx: 4.9, ty: 0.9 }],
+    },
+    {
+      id: 'dock', kind: 'dock', label: '낚시터', icon: '🎣', at: { tx: 5.5, ty: 2.9 },
+      actions: ['fishing'],
+      spots: [{ tx: 5.95, ty: 3.35 }],
     },
     {
       id: 'tent', kind: 'tent', label: '텐트', icon: '⛺', at: { tx: 1.3, ty: 4.0 },
@@ -46,8 +54,9 @@ export const camping: ThemeConfig = {
     { kind: 'log', at: { tx: 3.3, ty: 4.9 } },
     { kind: 'log', at: { tx: 4.9, ty: 3.3 } },
     { kind: 'lantern', at: { tx: 2.2, ty: 6.4 } },
-    { kind: 'lantern', at: { tx: 6.6, ty: 2.0 } },
-    { kind: 'bush', at: { tx: 7.4, ty: 4.6 } },
+    { kind: 'lantern', at: { tx: 6.6, ty: 1.9 } },
+    { kind: 'bush', at: { tx: 7.6, ty: 4.6 } },
+    { kind: 'rock', at: { tx: 5.6, ty: 4.2 } },
     { kind: 'bush', at: { tx: 1.6, ty: 7.4 } },
     { kind: 'rock', at: { tx: 7.0, ty: 7.0 } },
     { kind: 'rock', at: { tx: 0.8, ty: 6.8 } },

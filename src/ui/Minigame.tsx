@@ -6,12 +6,13 @@ import { ask, exit, join, ready, rematch, records, start, useGame, watch, type M
 import { ranking } from '../games/swim';
 import { SwimGame } from '../games/SwimGame';
 import { TennisGame } from '../games/TennisGame';
+import { TimedGame } from '../games/TimedGame';
 import { roomOf, useMoa } from '../store';
 import c from '../styles/common.module.scss';
 import p from '../styles/Panels.module.scss';
 import s from '../styles/Minigame.module.scss';
 
-const VIEWS = { tennis: TennisGame, swim: SwimGame };
+const VIEWS = { tennis: TennisGame, swim: SwimGame, fishing: TimedGame, barista: TimedGame, squat: TimedGame, memory: TimedGame, styling: TimedGame, breath: TimedGame };
 
 /** Leave the table and stop the action that opened it. */
 const leave = () => {
@@ -105,7 +106,7 @@ export function GameLobby({ invite }: { invite: () => void }) {
                 {allReady ? '시작!' : `친구 기다리는 중 (${def.min}명부터)`}
               </button>
               <button className={c.btn} onClick={() => void start(true)}>
-                🤖 혼자 하기
+                {def.cpu ? '🤖 혼자 하기' : '혼자 하기'}
               </button>
             </>
           ) : (
@@ -138,10 +139,10 @@ export function GameLobby({ invite }: { invite: () => void }) {
       )}
       {best.length > 0 && (
         <p className={s.records}>
-          🏅 {m.game === 'swim' ? '최고 기록' : '최다 승리'}:{' '}
+          🏅 {m.game === 'swim' ? '최고 기록' : m.game === 'tennis' ? '최다 승리' : '최고 점수'}:{' '}
           {best.map((r, i) => (
             <span key={i}>
-              {r.nickname} {m.game === 'swim' ? `${Number(r.value).toFixed(2)}초` : `${r.value}승`}
+              {r.nickname} {m.game === 'swim' ? `${Number(r.value).toFixed(2)}초` : m.game === 'tennis' ? `${r.value}승` : `${r.value}점`}
             </span>
           ))}
         </p>
@@ -174,7 +175,7 @@ export function GameStage() {
     return () => clearInterval(id);
   }, [m.phase, m.startAt]);
   return (
-    <section className={s.stage} aria-label={GAMES[m.game].name}>
+    <section className={GAMES[m.game].scene ? s.stage : `${s.stage} ${s.overlay}`} aria-label={GAMES[m.game].name}>
       <View key={m.seed} match={m} meId={myId} />
       <button className={s.quit} onClick={leave} aria-label="게임 나가기">
         나가기
@@ -190,18 +191,26 @@ function Results({ m, me }: { m: Match; me: string }) {
   const scores = m.scores ?? {};
   const name = (id: string) => (id === me ? '나' : m.seats.find((x) => x.id === id)?.nickname ?? id);
   const order = def.score === 'time' ? ranking(scores) : Object.entries(scores).sort(([, a], [, b]) => (b ?? -1) - (a ?? -1));
-  const won = order[0]?.[0] === me;
+  // first (tied first, too) — a game with no winner just says thanks
+  const best = order[0]?.[1];
+  const won = best != null && scores[me] === best;
+  const firsts = order.filter(([, v]) => v === best).length;
+  const title = def.score === 'none' ? `${def.icon} 함께해서 좋았어요` : m.role === 'player' && won ? (firsts > 1 ? '🤝 공동 1위!' : '🏆 승리!') : '🏁 경기 종료';
   return (
     <div className={`${c.card} ${s.results}`} role="dialog" aria-label="결과">
-      <h2>{m.role === 'watch' ? '🏁 경기 종료' : won ? '🏆 승리!' : '🏁 경기 종료'}</h2>
-      <ol>
-        {order.map(([id, v], i) => (
-          <li key={id} className={id === me ? s.me : undefined}>
-            <b>{i + 1}</b> {name(id)}
-            <span>{v === null ? (m.left.includes(id) ? '나감' : '기권') : def.score === 'time' ? `${v.toFixed(2)}초` : `${v}점`}</span>
-          </li>
-        ))}
-      </ol>
+      <h2>{title}</h2>
+      {def.score === 'none' ? (
+        <p className={p.tagline}>{m.seats.map((x) => name(x.id)).join(' · ')}</p>
+      ) : (
+        <ol>
+          {order.map(([id, v], i) => (
+            <li key={id} className={id === me ? s.me : undefined}>
+              <b>{i + 1}</b> {name(id)}
+              <span>{v === null ? (m.left.includes(id) ? '나감' : '기권') : def.score === 'time' ? `${v.toFixed(2)}초` : `${v}점`}</span>
+            </li>
+          ))}
+        </ol>
+      )}
       <p className={s.verdict}>
         {m.verdict === 'done' && '✓ 서버가 확인하고 기록했어요'}
         {m.verdict === 'pending' && '서버 확인 중… (모두의 결과를 기다려요)'}
