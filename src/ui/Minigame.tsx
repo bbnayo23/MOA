@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { toGame } from '../bridge';
-import { GAMES } from '../data/games';
+import { GAMES, type GameId } from '../data/games';
 import { useShallow } from 'zustand/react/shallow';
 import { ask, exit, join, ready, rematch, records, start, useGame, watch, type Match } from '../games/session';
 import { ranking } from '../games/swim';
@@ -12,7 +12,8 @@ import c from '../styles/common.module.scss';
 import p from '../styles/Panels.module.scss';
 import s from '../styles/Minigame.module.scss';
 
-const VIEWS = { tennis: TennisGame, swim: SwimGame, fishing: TimedGame, barista: TimedGame, squat: TimedGame, memory: TimedGame, styling: TimedGame, breath: TimedGame };
+/** Tennis and swimming have their own 3D scenes; every other game is a timed round on a card. */
+const view = (game: GameId) => (game === 'tennis' ? TennisGame : game === 'swim' ? SwimGame : TimedGame);
 
 /** Leave the table and stop the action that opened it. */
 const leave = () => {
@@ -168,7 +169,7 @@ function useRecords(game: Match['game']) {
 export function GameStage() {
   const m = useGame((g) => g.match)!;
   const myId = useMoa((st) => st.me.id);
-  const View = VIEWS[m.game];
+  const View = view(m.game);
   const [count, setCount] = useState(3);
   useEffect(() => {
     if (m.phase !== 'countdown') return;
@@ -201,7 +202,10 @@ function Results({ m, me }: { m: Match; me: string }) {
     <div className={`${c.card} ${s.results}`} role="dialog" aria-label="결과">
       <h2>{title}</h2>
       {def.score === 'none' ? (
-        <p className={p.tagline}>{m.seats.map((x) => name(x.id)).join(' · ')}</p>
+        <>
+          {def.together && !!scores[me] && <p className={s.verdict}>{def.together.replace('{n}', String(scores[me]))}</p>}
+          <p className={p.tagline}>{m.seats.map((x) => name(x.id)).join(' · ')}</p>
+        </>
       ) : (
         <ol>
           {order.map(([id, v], i) => (

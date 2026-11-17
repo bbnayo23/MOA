@@ -10,7 +10,7 @@ const table = (id: string, at: Tile): InteractionObject => ({
 
 const desk = (id: string, at: Tile): InteractionObject => ({
   id, kind: 'desk', label: '스터디 데스크', icon: '✏️', at,
-  actions: ['focus', 'study'],
+  actions: ['focus', 'study', 'bookGame'],
   spots: [behind(at, 0.15)],
 });
 
@@ -19,7 +19,7 @@ export const library: ThemeConfig = {
   name: '도서관',
   emoji: '📚',
   tagline: '사각사각 집중 모드',
-  activities: ['책 읽기', '공부하기', '집중 타이머', '기억력 카드 대결'],
+  activities: ['책 읽기', '공부하기', '집중 타이머', '안락의자에서 독서', '기억력 카드 대결', '책 찾기'],
   color: '#c9a27e',
   background: {
     size: 8,
@@ -34,7 +34,7 @@ export const library: ThemeConfig = {
     motes: 0xfff8e1,
   },
   spawnPosition: { tx: 6.0, ty: 6.0 },
-  availableActions: ['read', 'study', 'focus', 'memoryGame', 'sit', 'wave', 'jump'],
+  availableActions: ['read', 'study', 'focus', 'memoryGame', 'bookGame', 'sit', 'wave', 'jump'],
   interactionObjects: [
     table('table-l', { tx: 3.4, ty: 4.6 }),
     table('table-r', { tx: 4.9, ty: 3.1 }),

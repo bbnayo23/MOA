@@ -6,7 +6,9 @@
 import type { CharacterLook } from '../data/character';
 import { seeded } from './swim.ts'; // (with its extension: scripts/check-games.ts runs this in node)
 
-export type TimedId = 'fishing' | 'barista' | 'squat' | 'memory' | 'styling' | 'breath';
+export type TimedId =
+  | 'fishing' | 'barista' | 'squat' | 'memory' | 'styling' | 'breath'
+  | 'stars' | 'recall' | 'rhythm' | 'bookhunt' | 'vote' | 'glass';
 
 /**
  * How long a round lasts, and the most points anyone could make in it. The server
@@ -20,6 +22,13 @@ export const ROUND: Record<TimedId, { secs: number; cap: number }> = {
   memory: { secs: 60, cap: 120 },
   styling: { secs: 45, cap: 45 },
   breath: { secs: 64, cap: 0 },
+  // second games (supabase/migrations/0006)
+  stars: { secs: 45, cap: 180 },
+  recall: { secs: 50, cap: 75 },
+  rhythm: { secs: 40, cap: 150 },
+  bookhunt: { secs: 45, cap: 115 },
+  vote: { secs: 45, cap: 3 },
+  glass: { secs: 60, cap: 0 },
 };
 
 const pickNot = (n: number, last: number, rnd: () => number) => {
@@ -196,6 +205,150 @@ export function guide(t: number) {
   return k < 1 ? { inhale: true, size: ease(k) } : { inhale: false, size: 1 - ease(k - 1) };
 }
 
+// ── 🌌 constellations (camping) ─────────────────────────────────────────────
+/** Star patterns to join up, in the order you tap them (0 … 1 across the sky). */
+export const SKY: { name: string; stars: [number, number][] }[] = [
+  { name: '북두칠성', stars: [[0.08, 0.3], [0.24, 0.26], [0.38, 0.34], [0.5, 0.46], [0.56, 0.72], [0.82, 0.76], [0.86, 0.5]] },
+  { name: '카시오페이아', stars: [[0.08, 0.32], [0.3, 0.68], [0.5, 0.38], [0.7, 0.72], [0.92, 0.3]] },
+  { name: '오리온', stars: [[0.7, 0.12], [0.28, 0.1], [0.42, 0.46], [0.5, 0.5], [0.58, 0.54], [0.76, 0.9], [0.24, 0.86]] },
+  { name: '백조자리', stars: [[0.5, 0.08], [0.5, 0.32], [0.18, 0.4], [0.5, 0.56], [0.82, 0.48], [0.5, 0.9]] },
+  { name: '사자자리', stars: [[0.8, 0.2], [0.7, 0.1], [0.58, 0.18], [0.6, 0.36], [0.42, 0.5], [0.16, 0.56], [0.3, 0.82]] },
+  { name: '작은곰자리', stars: [[0.1, 0.2], [0.28, 0.3], [0.44, 0.36], [0.58, 0.46], [0.84, 0.48], [0.82, 0.78], [0.6, 0.74]] },
+];
+/** Taps closer together than this are ignored; a wrong star holds you up; a finished one waits for the next. */
+export const TAP_GAP = 0.25;
+export const STAR_MISS = 0.6;
+export const NEXT_SKY = 1;
+
+/** Constellation k tonight: the patterns in a seeded order, each maybe mirrored. */
+export function sky(seed: number, k: number) {
+  const order = shuffle(SKY.map((_, i) => i), seeded(seed));
+  const c = SKY[order[k % order.length]];
+  const flip = seeded(seed + (k + 1) * 313)() < 0.5;
+  return { name: c.name, stars: c.stars.map(([x, y]) => [flip ? 1 - x : x, y] as [number, number]) };
+}
+
+/** Where I am in the sky: constellation k, the next star to tap, my points, no taps before `hold`. */
+export interface StarRun {
+  k: number;
+  next: number;
+  pts: number;
+  hold: number;
+  last: number;
+}
+
+/** Tap star i at t (in a constellation of `len`): the next one scores; any other holds me up; too fast is ignored (null). */
+export function tapStar(r: StarRun, i: number, t: number, len: number): { run: StarRun; ok: boolean | null } {
+  if (t < r.hold || t - r.last < TAP_GAP) return { run: r, ok: null };
+  if (i !== r.next) return { run: { ...r, hold: t + STAR_MISS, last: t }, ok: false };
+  const done = r.next + 1 === len;
+  return { run: { k: done ? r.k + 1 : r.k, next: done ? 0 : r.next + 1, pts: r.pts + 1, hold: done ? t + NEXT_SKY : r.hold, last: t }, ok: true };
+}
+
+// ── 🧾 remember the order (cafe) ────────────────────────────────────────────
+export const DISHES = ['🍝', '🍕', '🍔', '🥗', '🍰', '🧋'];
+/** Each dish of an order shows this long; then a word about it this long before the next. */
+export const SHOW = 0.7;
+export const AFTER = 0.8;
+
+/** Order n (len dishes), never the same dish twice running. */
+export function recallOrder(seed: number, n: number, len: number) {
+  const rnd = seeded(seed + (n + 1) * 59);
+  const out: number[] = [];
+  for (let i = 0; i < len; i++) out.push(pickNot(DISHES.length, out[i - 1] ?? -1, rnd));
+  return out;
+}
+
+/** Orders get a dish longer after one remembered right, a dish shorter after a slip (3 … 9). */
+export const nextLen = (len: number, ok: boolean) => (ok ? Math.min(9, len + 1) : Math.max(3, len - 1));
+
+// ── 🎵 rhythm workout (gym) ─────────────────────────────────────────────────
+/** A note falls this long to the line; beats this far apart; three lanes (← · Space · →). */
+export const FALL = 1.6;
+export const BEATS = 0.5;
+
+export interface Note {
+  at: number;
+  lane: 0 | 1 | 2;
+}
+
+/** The song: most beats have a note, in some lane. */
+export function notes(seed: number, secs = 40): Note[] {
+  const rnd = seeded(seed);
+  const out: Note[] = [];
+  for (let t = 2; t < secs - 0.5; t += BEATS) if (rnd() < 0.7) out.push({ at: +t.toFixed(2), lane: Math.floor(rnd() * 3) as Note['lane'] });
+  return out;
+}
+
+/** A press in a lane at t: the nearest note there not yet hit, if in reach — 2 spot on, 1 close; null: a stray press (−1). */
+export function pressLane(ns: Note[], hit: Set<number>, lane: number, t: number): { i: number; pts: 1 | 2 } | null {
+  let best = -1, d = 0.26;
+  ns.forEach((n, i) => {
+    if (n.lane === lane && !hit.has(i) && Math.abs(n.at - t) < d) [best, d] = [i, Math.abs(n.at - t)];
+  });
+  return best < 0 ? null : { i: best, pts: d <= 0.1 ? 2 : 1 };
+}
+
+// ── 📖 find the book (library) ──────────────────────────────────────────────
+export const BOOK_COLORS = ['#ff8fab', '#7fb8f0', '#ffd166', '#8fd6a4', '#b79cf2', '#ff9a7a'];
+export const SYMBOLS = ['★', '●', '▲', '♥', '◆', '✿'];
+/** Book b is colour ⌊b / 6⌋ with symbol b % 6. A wrong pick holds you up; a found one waits for the next shelf. */
+export const WRONG_BOOK = 0.7;
+export const NEXT_SHELF = 0.4;
+
+/** Shelf k: 24 different books in a row, and the one to find. */
+export function shelf(seed: number, k: number) {
+  const rnd = seeded(seed + (k + 1) * 97);
+  const books = shuffle(Array.from({ length: 36 }, (_, i) => i), rnd).slice(0, 24);
+  return { books, want: books[Math.floor(rnd() * books.length)] };
+}
+
+// ── 👗 dress to the theme, then vote (mall) ─────────────────────────────────
+/** Dressing until this many seconds in; voting after. */
+export const DRESS_SECS = 28;
+
+export type Pick = Omit<Request, 'name'> & { topColor: string };
+
+/** The day's theme (one of the styling requests). */
+export const voteTheme = (seed: number) => REQUESTS[Math.floor(seeded(seed + 7)() * REQUESTS.length)];
+
+/** How well a look fits the theme: how many of its hat / top / extra you wore. */
+export const fitOf = (p: Omit<Request, 'name'>, r: Request) => (['hat', 'top', 'accessory'] as const).filter((k) => p[k] === r[k]).length;
+
+/** A computer's look: each part on theme about half the time. */
+export function cpuPick(seed: number, i: number, r: Request, opts: { hat: readonly string[]; top: readonly string[]; accessory: readonly string[]; color: readonly string[] }): Pick {
+  const rnd = seeded(seed * 17 + i + 3);
+  const any = <T extends string>(xs: readonly T[]) => xs[Math.floor(rnd() * xs.length)];
+  return {
+    hat: (rnd() < 0.5 ? r.hat : any(opts.hat)) as Pick['hat'],
+    top: (rnd() < 0.5 ? r.top : any(opts.top)) as Pick['top'],
+    accessory: (rnd() < 0.5 ? r.accessory : any(opts.accessory)) as Pick['accessory'],
+    topColor: any(opts.color),
+  };
+}
+
+/** Who a computer votes for: the best fit among the others (on a tie, the first of them in seat order). */
+export function cpuVote(voter: string, looks: [string, Pick][], r: Request) {
+  return looks.filter(([id]) => id !== voter).sort(([, a], [, b]) => fitOf(b, r) - fitOf(a, r))[0]?.[0] ?? null;
+}
+
+/** Votes each got. */
+export function tally(votes: Record<string, string | null>) {
+  const n: Record<string, number> = {};
+  for (const [voter, to] of Object.entries(votes)) if (to && to !== voter) n[to] = (n[to] ?? 0) + 1;
+  return n;
+}
+
+// ── 🧩 a stained-glass window, together (church): no score ─────────────────
+/** Window k: each of its 3 × 3 panes' starting quarter turns (never all straight). */
+export function panes(seed: number, k: number) {
+  const rnd = seeded(seed + (k + 1) * 131);
+  const turns = Array.from({ length: 9 }, () => Math.floor(rnd() * 4));
+  if (!turns.some(Boolean)) turns[4] = 1;
+  return turns;
+}
+export const straight = (turns: number[]) => turns.every((x) => x % 4 === 0);
+
 // ── computer players ─────────────────────────────────────────────────────────
 /** How many times something that takes `each()` seconds fits in the round. */
 const fit = (secs: number, each: () => number) => {
@@ -228,7 +381,39 @@ export function cpuScore(game: TimedId, seed: number, i: number) {
       return fit(secs, () => 3 + rnd() * 2.5 - skill);
     case 'styling':
       return fit(secs, () => NEXT_LOOK + 3.2 + rnd() * 2.5 - skill);
+    case 'stars': {
+      // a star every so often, a pause between constellations
+      let n = 0;
+      for (let t = 0, k = 0; ; k++) {
+        const len = sky(seed, k).stars.length;
+        for (let s = 0; s < len; s++) {
+          t += 0.75 + rnd() * 0.7 - skill * 0.3;
+          if (t > secs) return n;
+          n++;
+        }
+        t += NEXT_SKY;
+      }
+    }
+    case 'recall': {
+      let n = 0;
+      for (let t = 0, len = 3; ; ) {
+        t += len * SHOW + len * (0.45 + rnd() * 0.4) + AFTER;
+        if (t > secs) return n;
+        const ok = rnd() < skill + 0.45 - len * 0.07;
+        if (ok) n += len;
+        len = nextLen(len, ok);
+      }
+    }
+    case 'rhythm':
+      return notes(seed, secs).reduce((n: number) => {
+        const r = rnd();
+        return n + (r < 0.3 + skill * 0.25 ? 2 : r < 0.8 ? 1 : 0);
+      }, 0);
+    case 'bookhunt':
+      return fit(secs, () => NEXT_SHELF + 1.6 + rnd() * 1.6 - skill);
     case 'breath':
+    case 'vote': // (votes: the board counts them)
+    case 'glass':
       return 0;
   }
 }

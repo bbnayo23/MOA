@@ -620,3 +620,276 @@ $phone: 520px;
   font-size: var(--fs-s);
   color: #9c7a5a;
 }
+
+// ── 🌌 constellations: a night sky to tap ──
+.sky {
+  display: block;
+  width: 100%;
+  aspect-ratio: 100 / 60;
+  max-height: 230px;
+  border-radius: var(--r-m);
+  background: radial-gradient(ellipse at 50% 120%, #4b4f9e, #2b2e66 55%, #1d1f4a);
+  touch-action: manipulation;
+}
+
+.star {
+  cursor: pointer;
+}
+
+.nextStar {
+  animation: twinkle 0.9s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes twinkle {
+  50% {
+    scale: 1.5;
+  }
+}
+
+// ── 🧾 remember the order: the order on a plate, the dishes to press ──
+.plate {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 4px;
+  min-height: 130px;
+  border-radius: var(--r-m);
+  background: radial-gradient(circle, #fffdf8 45%, #ffe9e1);
+  text-align: center;
+  font-size: var(--fs-s);
+  color: var(--c-ink-soft);
+}
+
+.dish {
+  font-size: 64px;
+  line-height: 1;
+  animation: pop 0.2s ease-out;
+}
+
+.dots {
+  font-size: var(--fs-l);
+  letter-spacing: 2px;
+  color: var(--c-primary-deep);
+}
+
+.dishes {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+
+  @media (max-width: $phone) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 56px;
+    justify-content: center;
+    border: 2px solid var(--c-line);
+    border-radius: var(--r-m);
+    background: #fff;
+    font-size: 26px;
+    touch-action: manipulation;
+
+    small {
+      font-size: 10px;
+      color: var(--c-ink-soft);
+    }
+  }
+}
+
+// ── 🎵 rhythm: three lanes of falling notes ──
+.lanes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  height: 200px;
+  padding: 0 6px;
+  border-radius: var(--r-m);
+  background: linear-gradient(#2f2c4a, #4a4470);
+}
+
+.lane {
+  position: relative;
+  overflow: hidden;
+  border-inline: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.note {
+  position: absolute;
+  left: 50%;
+  width: 34px;
+  height: 18px;
+  translate: -50% -50%;
+  border: 2px solid #fff;
+  border-radius: var(--r-pill);
+}
+
+.hitLine {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 82%;
+  height: 4px;
+  translate: 0 -50%;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.55);
+
+  &.on {
+    height: 10px;
+    background: #fff;
+    box-shadow: 0 0 14px #fff;
+  }
+}
+
+.pad3 {
+  flex: 1;
+  height: 52px;
+  border: 0;
+  border-radius: var(--r-m);
+  color: #fff;
+  font-family: var(--font-pixel);
+  font-size: var(--fs-l);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  touch-action: manipulation;
+
+  &:active:not(:disabled) {
+    scale: 0.95;
+  }
+}
+
+// ── 📖 find the book: a shelf of spines ──
+.book {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 52px;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  border-radius: 5px 5px 3px 3px;
+  color: #fff;
+  font-size: 15px;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+  box-shadow: inset -4px 0 0 rgba(0, 0, 0, 0.08);
+}
+
+.bigBook {
+  width: 40px;
+  height: 66px;
+  font-size: 20px;
+}
+
+.shelf {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 4px 2px;
+  padding: 8px;
+  border-radius: var(--r-s);
+  background: repeating-linear-gradient(#a8734d 0 64px, #8a5a38 64px 72px);
+
+  @media (max-width: $phone) {
+    grid-template-columns: repeat(8, 1fr);
+  }
+
+  button {
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    background: none;
+    touch-action: manipulation;
+
+    &:active:not(:disabled) {
+      translate: 0 -3px;
+    }
+  }
+}
+
+// ── 🗳️ vote: colour swatches, everyone's look ──
+.swatch {
+  width: 26px;
+  padding: 0 !important;
+  border-radius: 50% !important;
+
+  &.on {
+    outline: 3px solid var(--c-primary);
+    outline-offset: 1px;
+  }
+}
+
+.lookCards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: var(--sp-2);
+}
+
+.lookCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--sp-2);
+  border: 2px solid var(--c-line);
+  border-radius: var(--r-m);
+  background: linear-gradient(#fff, #fff1f6);
+  font-size: var(--fs-xs);
+
+  img,
+  .thumbWait {
+    width: 80px;
+    height: 110px;
+    object-fit: contain;
+  }
+
+  button {
+    height: 28px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: var(--r-pill);
+    background: var(--c-primary);
+    color: var(--c-on-primary);
+    font-weight: 700;
+
+    &:disabled {
+      opacity: 0.5;
+    }
+  }
+
+  &.on {
+    border-color: var(--c-primary);
+  }
+}
+
+// ── 🧩 stained glass: 3 × 3 panes that turn ──
+.glass {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
+  width: min(100%, 260px);
+  margin: 0 auto;
+  padding: 3px;
+  border-radius: 50% 50% var(--r-s) var(--r-s) / 30% 30% var(--r-s) var(--r-s);
+  background: #3b3150;
+
+  button {
+    aspect-ratio: 1;
+    padding: 0;
+    border: 0;
+    background: none;
+    transition: rotate 0.2s ease-out;
+    touch-action: manipulation;
+
+    svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+  }
+
+  &.glowing {
+    box-shadow: 0 0 30px #ffe9a8;
+  }
+}

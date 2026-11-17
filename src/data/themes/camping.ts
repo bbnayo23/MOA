@@ -5,7 +5,7 @@ export const camping: ThemeConfig = {
   name: '캠핑장',
   emoji: '🏕️',
   tagline: '별 아래 모닥불 앞에서',
-  activities: ['모닥불 피우기', '바비큐', '불멍', '텐트에서 쉬기', '호숫가 낚시 대결'],
+  activities: ['모닥불 피우기', '바비큐', '불멍', '텐트에서 쉬기', '호숫가 낚시 대결', '별자리 잇기'],
   color: '#86cfa0',
   background: {
     size: 8,
@@ -22,11 +22,11 @@ export const camping: ThemeConfig = {
     water: { from: { tx: 6.0, ty: 3.4 }, to: { tx: 6.8, ty: 3.4 }, width: 1.45 },
   },
   spawnPosition: { tx: 5.6, ty: 5.6 },
-  availableActions: ['fireGaze', 'roast', 'bbq', 'rest', 'fishing', 'sit', 'wave', 'jump', 'dance'],
+  availableActions: ['fireGaze', 'roast', 'bbq', 'rest', 'fishing', 'starGame', 'sit', 'wave', 'jump', 'dance'],
   interactionObjects: [
     {
       id: 'campfire', kind: 'campfire', label: '모닥불', icon: '🔥', at: { tx: 4.2, ty: 4.2 },
-      actions: ['fireGaze', 'roast'],
+      actions: ['fireGaze', 'roast', 'starGame'],
       spots: [{ tx: 3.35, ty: 5.0 }, { tx: 5.0, ty: 3.35 }, { tx: 3.6, ty: 3.6 }],
     },
     {

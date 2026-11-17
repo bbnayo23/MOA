@@ -24,7 +24,7 @@ export const mall: ThemeConfig = {
   name: '쇼핑몰',
   emoji: '🛍️',
   tagline: '오늘의 코디 쇼핑',
-  activities: ['옷 구경', '피팅룸', '의상 변경', '코디 공유', '스타일링 챌린지'],
+  activities: ['옷 구경', '피팅룸', '의상 변경', '코디 공유', '쉼터 소파', '스타일링 챌린지', '코디 투표'],
   color: '#ff9fc0',
   background: {
     size: 8,
@@ -37,7 +37,7 @@ export const mall: ThemeConfig = {
     motes: 0xffe0ec,
   },
   spawnPosition: { tx: 6.6, ty: 6.6 },
-  availableActions: ['browse', 'fitting', 'pose', 'stylingGame', 'sit', 'wave', 'jump', 'dance'],
+  availableActions: ['browse', 'fitting', 'pose', 'stylingGame', 'voteGame', 'sit', 'wave', 'jump', 'dance'],
   interactionObjects: [
     rack('rack-1', { tx: 0.6, ty: 2.0 }),
     rack('rack-2', { tx: 0.6, ty: 4.2 }),
@@ -51,7 +51,7 @@ export const mall: ThemeConfig = {
     },
     {
       id: 'fitting', kind: 'fittingRoom', label: '피팅룸', icon: '👗', at: { tx: 3.4, ty: 0.6 },
-      actions: ['fitting'],
+      actions: ['fitting', 'voteGame'],
       spots: [{ tx: 3.95, ty: 1.15 }],
     },
     {

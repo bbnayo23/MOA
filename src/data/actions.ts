@@ -24,7 +24,8 @@ export type ActionId =
   | 'swim' | 'tube' | 'splash'
   | 'serve' | 'swing' | 'rally' | 'minigame' | 'tennisMatch' | 'swimRace'
   | 'browse' | 'fitting' | 'pose'
-  | 'fishing' | 'barista' | 'squatGame' | 'memoryGame' | 'stylingGame' | 'breathe';
+  | 'fishing' | 'barista' | 'squatGame' | 'memoryGame' | 'stylingGame' | 'breathe'
+  | 'starGame' | 'recallGame' | 'rhythmGame' | 'bookGame' | 'voteGame' | 'glassGame';
 
 export const ACTIONS: Record<ActionId, ActionDef> = {
   sit: { label: '앉기', icon: '🪑', anim: 'sit' },
@@ -68,4 +69,10 @@ export const ACTIONS: Record<ActionId, ActionDef> = {
   memoryGame: { label: '기억력 카드', icon: '🃏', anim: 'read', game: 'memory' },
   stylingGame: { label: '스타일링 챌린지', icon: '⏱️', anim: 'pose', game: 'styling' },
   breathe: { label: '함께 호흡하기', icon: '🕊️', anim: 'sit', game: 'breath' },
+  starGame: { label: '별자리 잇기', icon: '🌌', anim: 'sit', game: 'stars' },
+  recallGame: { label: '주문 기억하기', icon: '🧾', anim: 'idle', game: 'recall' },
+  rhythmGame: { label: '리듬 운동', icon: '🎵', anim: 'dance', game: 'rhythm' },
+  bookGame: { label: '책 찾기', icon: '📖', anim: 'browse', game: 'bookhunt' },
+  voteGame: { label: '코디 투표', icon: '🗳️', anim: 'pose', game: 'vote' },
+  glassGame: { label: '스테인드글라스', icon: '🧩', anim: 'sit', game: 'glass' },
 };

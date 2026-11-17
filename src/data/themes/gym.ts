@@ -10,7 +10,7 @@ const treadmill = (id: string, at: Tile): InteractionObject => ({
 
 const mat = (id: string, at: Tile): InteractionObject => ({
   id, kind: 'mat', label: '요가 매트', icon: '🧘', at,
-  actions: ['stretch', 'squat', 'squatGame'],
+  actions: ['stretch', 'squat', 'squatGame', 'rhythmGame'],
   spots: [{ tx: at.tx + 0.05, ty: at.ty + 0.05 }],
 });
 
@@ -19,7 +19,7 @@ export const gym: ThemeConfig = {
   name: '헬스장',
   emoji: '🏋️',
   tagline: '같이 하면 덜 힘들어',
-  activities: ['덤벨 들기', '러닝머신', '스트레칭', '스쿼트', '스쿼트 타이밍 챌린지'],
+  activities: ['덤벨 들기', '러닝머신', '스트레칭', '스쿼트', '스쿼트 타이밍 챌린지', '리듬 운동'],
   color: '#a99fd0',
   background: {
     size: 8,
@@ -35,7 +35,7 @@ export const gym: ThemeConfig = {
     ],
   },
   spawnPosition: { tx: 6.0, ty: 6.0 },
-  availableActions: ['dumbbell', 'treadmill', 'stretch', 'squat', 'squatGame', 'wave', 'jump'],
+  availableActions: ['dumbbell', 'treadmill', 'stretch', 'squat', 'squatGame', 'rhythmGame', 'wave', 'jump'],
   interactionObjects: [
     treadmill('treadmill-1', { tx: 0.6, ty: 2.0 }),
     treadmill('treadmill-2', { tx: 0.6, ty: 3.9 }),

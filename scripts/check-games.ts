@@ -4,6 +4,7 @@ import { ballAt, cpuReturns, EARLY, HALF_L, judge, LATE, newScore, point, REACH,
 import { cpuStrokes, LENGTH, newSwimmer, ranking, seeded, stroke, swimFor, V_MAX, BEAT, type Swimmer } from '../src/games/swim.ts';
 import {
   bites, cpuScore, deal, DRINKS, FISH, fits, gauge, grade, guide, isDrink, jerk, NEXT_LOOK, NEXT_ORDER, orders, rep, REP_LOCK, REQUESTS, requests, ROUND, wait, type TimedId,
+  AFTER, cpuPick, cpuVote, fitOf, nextLen, NEXT_SHELF, notes, panes, pressLane, recallOrder, shelf, SHOW, sky, SKY, straight, tally, TAP_GAP, tapStar, voteTheme,
 } from '../src/games/timed.ts';
 
 // ── tennis ──
@@ -107,12 +108,56 @@ assert.ok(fits(want, want) && !fits({ ...want, hat: want.hat === 'cap' ? 'beanie
 assert.ok(ROUND.styling.secs / NEXT_LOOK <= ROUND.styling.cap);
 // breathing: in for 4 s, out for 4 s
 assert.ok(guide(1).inhale && !guide(5).inhale && guide(4).size > 0.99 && guide(0).size < 0.01);
+// constellations: the next star scores, another holds you up, a finished one moves on; never faster than the cap allows
+const c0 = sky(5, 0);
+let run = { k: 0, next: 0, pts: 0, hold: 0, last: -9 };
+let r1 = tapStar(run, 1, 1, c0.stars.length);
+assert.equal(r1.ok, false);
+assert.equal(tapStar(r1.run, 0, 1.2, c0.stars.length).ok, null, 'held up after a wrong star');
+for (let i = 0, t = 2; i < c0.stars.length; i++, t += 0.3) run = tapStar(run, i, t, c0.stars.length).run;
+assert.ok(run.k === 1 && run.next === 0 && run.pts === c0.stars.length);
+assert.equal(tapStar({ k: 0, next: 0, pts: 0, hold: 0, last: 5 }, 0, 5.1, 5).ok, null, 'too fast');
+assert.ok(ROUND.stars.secs / TAP_GAP <= ROUND.stars.cap);
+assert.ok(SKY.every((c) => c.stars.length >= 5 && c.stars.every(([x, y]) => x >= 0 && x <= 1 && y >= 0 && y <= 1)));
+// remembering orders: lengths 3–9, never the same dish twice running, same for everyone
+const o = recallOrder(3, 2, 6);
+assert.ok(o.length === 6 && o.every((d, i) => i === 0 || d !== o[i - 1]));
+assert.deepEqual(recallOrder(3, 2, 6), o);
+assert.equal(nextLen(9, true), 9);
+assert.equal(nextLen(3, false), 3);
+assert.ok(ROUND.recall.secs / SHOW <= ROUND.recall.cap, 'a dish shown is a point at most');
+assert.ok(AFTER > 0);
+// rhythm: on the beat 2, close 1, nothing near: a stray press
+const song = notes(8);
+const n0 = song[0];
+assert.deepEqual(pressLane(song, new Set(), n0.lane, n0.at), { i: 0, pts: 2 });
+assert.deepEqual(pressLane(song, new Set(), n0.lane, n0.at + 0.2), { i: 0, pts: 1 });
+assert.equal(pressLane(song, new Set([0]), n0.lane, n0.at), null);
+assert.ok(song.length * 2 <= ROUND.rhythm.cap);
+// find the book: 24 different books, the one to find among them
+const sh = shelf(4, 3);
+assert.ok(sh.books.length === 24 && new Set(sh.books).size === 24 && sh.books.includes(sh.want));
+assert.ok(ROUND.bookhunt.secs / NEXT_SHELF <= ROUND.bookhunt.cap);
+// vote: fit counts the theme's parts; a computer votes the best fit but never itself; votes for yourself don't count
+const th = voteTheme(6);
+assert.equal(fitOf(th, th), 3);
+const opts = { hat: ['none', 'cap'], top: ['tee', 'dress'], accessory: ['none', 'star'], color: ['#fff'] };
+const cp = cpuPick(6, 0, th, opts);
+assert.ok(fitOf(cp, th) >= 0 && fitOf(cp, th) <= 3);
+const looks: [string, typeof cp][] = [['me', { ...th, topColor: '#fff' }], ['cpu1', cp], ['cpu2', { hat: 'none', top: 'tee', accessory: 'none', topColor: '#fff' }]];
+assert.equal(cpuVote('cpu1', looks, th), 'me');
+assert.notEqual(cpuVote('me', looks, th), 'me');
+assert.deepEqual(tally({ a: 'b', b: 'b', c: 'b', d: null }), { b: 2 });
+// stained glass: never dealt straight, straight when every pane is
+assert.ok(!straight(panes(1, 0)) && straight([0, 4, 0, 0, 8, 0, 0, 0, 0]));
+for (let k = 0; k < 50; k++) assert.ok(!straight(panes(k * 7, k)));
+
 // computer players: the same for everyone, within the cap, and a fair fight
 for (const g of Object.keys(ROUND) as TimedId[]) {
   const n = cpuScore(g, 11, 0);
   assert.equal(n, cpuScore(g, 11, 0));
   assert.ok(n >= 0 && n <= ROUND[g].cap && Number.isInteger(n), `${g}: cpu ${n}`);
-  if (g !== 'breath') assert.ok(n > 0, `${g}: the computer plays`);
+  if (!['breath', 'glass', 'vote'].includes(g)) assert.ok(n > 0, `${g}: the computer plays`);
 }
 
 console.log(`game rules ok (swim: on the beat ${good.time}s, lagging ${sloppy.time ?? 'DNF'}, mashing ${mash.time ?? 'DNF'})`);
