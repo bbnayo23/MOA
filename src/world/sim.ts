@@ -228,7 +228,7 @@ export class Sim {
    */
   private faceFor(at: Tile, o: InteractionObject) {
     const { foot, face = 0 } = KINDS[o.kind];
-    return foot ? headingOf(o.at.tx - at.tx, o.at.ty - at.ty) : objectYaw(o.at, !!this.theme.background.walls) + face;
+    return foot ? headingOf(o.at.tx - at.tx, o.at.ty - at.ty) : (o.yaw ?? objectYaw(o.at, !!this.theme.background.walls)) + face;
   }
 
   stop(a: Agent) {

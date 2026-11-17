@@ -20,7 +20,7 @@ import { Chair, MODELS } from './models';
 import { PIXEL_GL, PixelPost } from './pixel';
 import { Sim, type Agent } from './sim';
 import { Stage } from './Stage';
-import { T, headingOf, objectYaw, type Tile } from './space';
+import { FACE_CAMERA, T, headingOf, objectYaw, type Tile } from './space';
 import { castShadows, glow } from './toon';
 
 /**
@@ -92,8 +92,11 @@ export function World({ theme, className, paused = false, raised = false }: { th
 
   const pick = (o: InteractionObject) => (o.enter ? sim.goThrough(me, o) : fromGame.emit('objectClick', o.id));
   const above = (o: InteractionObject) => (): [number, number, number] => [o.at.tx * T, MODELS[o.kind].h + 0.3, o.at.ty * T];
-  // door signs hang on the front wall above the door, where they stay in view
-  const onFront = (o: InteractionObject) => (): [number, number, number] => [(o.at.tx + 0.42) * T, 2.15, (o.at.ty + 0.42) * T];
+  // door signs hang on the front wall above the door, where they stay in view (a shop's: on its sign band)
+  const onFront = (o: InteractionObject) => (): [number, number, number] => {
+    const yaw = o.yaw ?? FACE_CAMERA, out = o.kind === 'shop' ? 0.85 : 0.6;
+    return [(o.at.tx + Math.sin(yaw) * out) * T, o.kind === 'shop' ? 3.0 : 2.15, (o.at.ty + Math.cos(yaw) * out) * T];
+  };
   const head = (a: Agent) => (): [number, number, number] => [a.pos.tx * T, TAG_Y + sinkOf(a), a.pos.ty * T];
 
   return (
@@ -102,10 +105,10 @@ export function World({ theme, className, paused = false, raised = false }: { th
         <Driver sim={sim} me={me} />
         <Stage bg={theme.background} onTap={(t) => walkTo(sim, me, t)} />
         {theme.decorations.map((d, i) => (
-          <Thing key={`d${i}`} kind={d.kind} at={d.at} indoor={indoor} night={theme.background.night} color={d.color} />
+          <Thing key={`d${i}`} kind={d.kind} at={d.at} yaw={d.yaw} indoor={indoor} night={theme.background.night} color={d.color} />
         ))}
         {theme.interactionObjects.map((o) => (
-          <Thing key={o.id} kind={o.kind} at={o.at} indoor={indoor} night={theme.background.night} color={o.color} onPick={() => pick(o)} onHover={(on) => setHover(on ? o : null)} />
+          <Thing key={o.id} kind={o.kind} at={o.at} yaw={o.yaw} indoor={indoor} night={theme.background.night} color={o.color} onPick={() => pick(o)} onHover={(on) => setHover(on ? o : null)} />
         ))}
         {theme.interactionObjects
           .filter((o) => MODELS[o.kind].seats)
@@ -250,6 +253,7 @@ function useBubbles() {
 interface ThingProps {
   kind: ArtKind;
   at: Tile;
+  yaw?: number;
   indoor: boolean;
   night?: boolean;
   color?: string;
@@ -258,8 +262,9 @@ interface ThingProps {
 }
 
 /** One placed object: its model turned to face the camera (or away from its wall), and a light if it glows. */
-function Thing({ kind, at, indoor, night, color, onPick, onHover }: ThingProps) {
-  const { Model, h, yaw } = MODELS[kind];
+function Thing({ kind, at, yaw: turned, indoor, night, color, onPick, onHover }: ThingProps) {
+  const { Model, h } = MODELS[kind];
+  const yaw = turned ?? MODELS[kind].yaw;
   const light = KINDS[kind].light;
   const [hover, setHover] = useState(false);
   const group = useRef<THREE.Group>(null);

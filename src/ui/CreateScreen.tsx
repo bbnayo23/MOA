@@ -64,7 +64,7 @@ export function CreateScreen() {
             />
           </label>
           <button className={c.primary} disabled={!ready} onClick={done}>
-            {returning ? '월드로 돌아가기' : '모아 광장으로 입장'} →
+            {returning ? '월드로 돌아가기' : '모아 마을로 입장'} →
           </button>
           {supabase &&
             !returning &&

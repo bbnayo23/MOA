@@ -177,8 +177,8 @@ function TopBar({ theme, drawer, toggleDrawer, open }: TopBarProps) {
           ⚙️
         </button>
         {theme.themeId !== HUB && (
-          <button className={c.btn} aria-label="광장으로" onClick={() => enterTheme(HUB)}>
-            ⛲<span className={s.label}> 광장으로</span>
+          <button className={c.btn} aria-label="마을로" onClick={() => enterTheme(HUB)}>
+            🏘️<span className={s.label}> 마을로</span>
           </button>
         )}
         <button className={c.btn} aria-label="꾸미기" onClick={() => go('create')}>

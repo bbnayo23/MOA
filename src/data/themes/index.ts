@@ -69,9 +69,9 @@ function widen(t: ThemeConfig): ThemeConfig {
   const bg = t.background;
   return {
     ...t,
-    background: { ...bg, size: SIZE, rugs: bg.rugs?.map(strip), water: bg.water && strip(bg.water), wild: bg.walls ? 0 : WILD },
+    background: { ...bg, size: SIZE, rugs: bg.rugs?.map(strip), water: bg.water && strip(bg.water), wild: bg.walls ? 0 : (bg.wild ?? WILD) },
     spawnPosition: m(t.spawnPosition),
-    decorations: [...t.decorations.map((d) => ({ ...d, at: m(d.at) })), ...(bg.walls ? [] : scatter(t.themeId))],
+    decorations: [...t.decorations.map((d) => ({ ...d, at: m(d.at) })), ...(bg.walls || bg.wild === 0 ? [] : scatter(t.themeId))],
     interactionObjects: t.interactionObjects.map((o) => {
       const at = m(o.at);
       const close = o.spots.every((p) => Math.hypot(p.tx - o.at.tx, p.ty - o.at.ty) <= 0.9);

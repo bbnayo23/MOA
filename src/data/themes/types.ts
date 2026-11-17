@@ -25,15 +25,18 @@ export interface Background {
   night?: boolean;
   /** Grass of the open land around the map (outdoor themes have one; indoor ones have walls). */
   grass?: string;
-  /** Outdoors you can walk out onto that land: this many tiles past the map, a round area (set in themes/index). */
+  /** Outdoors you can walk out onto that land: this many tiles past the map, a round area (set in themes/index; 0: just the map, like a town). */
   wild?: number;
   /** Flower colours sprinkled on the grass. */
   flowers?: string[];
   // indoor
   /** Back walls (along tx = 0 and ty = 0) with arched windows. */
   walls?: { left: string; right: string; trim: string; glass: string[] };
-  /** Floor runners between two map points (paths, court lines, pool water…); `stone`: cobbles in that colour. */
-  rugs?: { from: Tile; to: Tile; width: number; color: string; border: string; stone?: boolean }[];
+  /**
+   * Floor runners between two map points (paths, court lines, pool water…), plain or with a `pattern`:
+   * cobbles, asphalt with a dashed centre line, paving slabs, crossing stripes (across from → to), tactile paving.
+   */
+  rugs?: { from: Tile; to: Tile; width: number; color: string; border: string; pattern?: 'stone' | 'road' | 'pavers' | 'crosswalk' | 'tactile' }[];
   /** A pool: a rippling water surface over this stretch (same shape as a rug). */
   water?: { from: Tile; to: Tile; width: number };
   /** Floating light particles (fireflies, dust). */
@@ -62,6 +65,8 @@ export interface InteractionObject {
   spots: Tile[];
   /** Tint passed to the art (e.g. a building's colour). */
   color?: string;
+  /** Which way it faces (world yaw), instead of the camera / away from its wall. */
+  yaw?: number;
   /** A door: clicking walks to spots[0] and enters this theme. */
   enter?: ThemeId;
   /** Shown greyed out with a 🔒 (theme not built yet). */
@@ -75,6 +80,6 @@ export interface ThemeConfig extends ThemeMeta {
   availableActions: ActionId[];
   interactionObjects: InteractionObject[];
   /** Scenery (`color`: a tint for the art — a sofa's fabric, a dress, a painting's sun). */
-  decorations: { kind: ArtKind; at: Tile; color?: string }[];
+  decorations: { kind: ArtKind; at: Tile; color?: string; yaw?: number }[];
   recommendedOutfits: { name: string; look: Partial<CharacterLook> }[];
 }

@@ -11,7 +11,10 @@ export type ArtKind =
   | 'clothesRack' | 'fittingRoom' | 'mirror'
   | 'sofa' | 'armchair' | 'floorLamp' | 'pastryCase' | 'frame'
   | 'bike' | 'weightBench' | 'gymBalls' | 'cooler'
-  | 'globe' | 'bookCart' | 'dressForm' | 'displayTable' | 'pillar' | 'bouquet';
+  | 'globe' | 'bookCart' | 'dressForm' | 'displayTable' | 'pillar' | 'bouquet'
+  // the village (plaza)
+  | 'shop' | 'house' | 'station' | 'railway' | 'crossing' | 'pole' | 'vending' | 'mailbox' | 'busStop'
+  | 'planterTree' | 'flowerbed' | 'hedge' | 'bicycle' | 'kiosk' | 'fence';
 
 /**
  * Physical facts about a kind, used by the simulation (not the renderer):
@@ -71,4 +74,21 @@ export const KINDS: Record<ArtKind, { foot?: number; light?: string; face?: numb
   displayTable: { foot: 0.45 },
   pillar: { foot: 0.3 },
   bouquet: { foot: 0.2 },
+  // a shop stands on the map's back edge: its footprint reaches from the wall to its front
+  shop: { foot: 0.95 },
+  // past the map's edge (scenery): no footprint
+  house: {},
+  station: {},
+  railway: {},
+  crossing: {},
+  pole: { foot: 0.12 },
+  vending: { foot: 0.3 },
+  mailbox: { foot: 0.15 },
+  busStop: { foot: 0.1 },
+  planterTree: { foot: 0.45 },
+  flowerbed: { foot: 0.42 },
+  hedge: { foot: 0.45 },
+  bicycle: { foot: 0.3 },
+  kiosk: { foot: 0.45 },
+  fence: {},
 };

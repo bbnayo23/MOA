@@ -4,6 +4,7 @@ import { useMemo, useRef, type FC } from 'react';
 import * as THREE from 'three';
 import type { ArtKind } from './kinds';
 import { canvasTexture, glow, leafy, toon } from './toon';
+import { Bicycle, BusStop, Crossing, Fence, Flowerbed, Hedge, House, Kiosk, Mailbox, PlanterTree, Pole, Railway, Shop, Station, Vending } from './town';
 
 /**
  * 3D model per object kind. Local space: standing on y = 0, front facing +z
@@ -946,4 +947,19 @@ export const MODELS: Record<ArtKind, ModelDef> = {
   displayTable: { h: 1.1, Model: DisplayTable },
   pillar: { h: 3.3, Model: Pillar },
   bouquet: { h: 1.3, Model: Bouquet },
+  shop: { h: 4.6, Model: Shop },
+  house: { h: 4.9, Model: House },
+  station: { h: 3.2, Model: Station, yaw: 0 },
+  railway: { h: 2, Model: Railway, yaw: 0 },
+  crossing: { h: 2.6, Model: Crossing, yaw: 0 },
+  pole: { h: 5.2, Model: Pole, yaw: 0 },
+  vending: { h: 1.9, Model: Vending },
+  mailbox: { h: 1.2, Model: Mailbox },
+  busStop: { h: 2.5, Model: BusStop },
+  planterTree: { h: 3.0, Model: PlanterTree },
+  flowerbed: { h: 0.6, Model: Flowerbed },
+  hedge: { h: 0.8, Model: Hedge },
+  bicycle: { h: 1.0, Model: Bicycle },
+  kiosk: { h: 2.5, Model: Kiosk },
+  fence: { h: 1.0, Model: Fence },
 };

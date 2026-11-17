@@ -172,6 +172,64 @@ function cobbles(W: number, color: string) {
   return ctx.getImageData(0, 0, W, W).data;
 }
 
+/** Asphalt: dark, speckled, a crack here and there. */
+function asphalt(W: number, color: string) {
+  const c = document.createElement('canvas');
+  c.width = c.height = W;
+  const ctx = c.getContext('2d')!;
+  const rnd = seeded(17);
+  ctx.fillStyle = color;
+  ctx.fillRect(0, 0, W, W);
+  for (let i = 0; i < W * W * 0.06; i++) {
+    ctx.fillStyle = rnd() < 0.5 ? shade(color, -0.12) : shade(color, 0.12);
+    ctx.fillRect(Math.floor(rnd() * W), Math.floor(rnd() * W), 1, 1);
+  }
+  ctx.fillStyle = shade(color, -0.22);
+  for (let i = 0; i < W / 40; i++) {
+    let x = Math.floor(rnd() * W), y = Math.floor(rnd() * W);
+    for (let k = 0; k < 14; k++) ctx.fillRect((x += rnd() < 0.5 ? 1 : 0), (y += 1), 1, 1);
+  }
+  return ctx.getImageData(0, 0, W, W).data;
+}
+
+/** Paving slabs a quarter of a tile across: grout, a lit edge, the odd one a shade off. */
+function pavers(W: number, color: string) {
+  const c = document.createElement('canvas');
+  c.width = c.height = W;
+  const ctx = c.getContext('2d')!;
+  const rnd = seeded(23), Q = PX / 4;
+  ctx.fillStyle = shade(color, -0.25);
+  ctx.fillRect(0, 0, W, W);
+  for (let y = 0; y < W; y += Q)
+    for (let x = 0; x < W; x += Q) {
+      const base = shade(color, rnd() < 0.2 ? -0.06 : 0);
+      ctx.fillStyle = base;
+      ctx.fillRect(x + 1, y + 1, Q - 1, Q - 1);
+      ctx.fillStyle = shade(color, 0.3);
+      ctx.fillRect(x + 1, y + 1, Q - 2, 1);
+      ctx.fillStyle = shade(color, -0.08);
+      ctx.fillRect(x + 2, y + Q - 1, Q - 2, 1);
+    }
+  return ctx.getImageData(0, 0, W, W).data;
+}
+
+/** Tactile paving: yellow, studded with raised dots. */
+function tactile(W: number, color: string) {
+  const c = document.createElement('canvas');
+  c.width = c.height = W;
+  const ctx = c.getContext('2d')!;
+  ctx.fillStyle = color;
+  ctx.fillRect(0, 0, W, W);
+  for (let y = 1; y < W; y += 4)
+    for (let x = 1; x < W; x += 4) {
+      ctx.fillStyle = shade(color, 0.35);
+      ctx.fillRect(x, y, 2, 1);
+      ctx.fillStyle = shade(color, -0.2);
+      ctx.fillRect(x, y + 1, 2, 1);
+    }
+  return ctx.getImageData(0, 0, W, W).data;
+}
+
 /** The floor as pixel art: grass with tufts, glazed tiles, wooden planks — then rugs / paths / lines on top. */
 function floorTexture(bg: Background) {
   const n = bg.size, W = n * PX;
@@ -251,24 +309,39 @@ function floorTexture(bg: Background) {
         ctx.fillRect(x, y + 1, 2, 1);
       }
     }
-    // rugs: every pixel within width/2 of the from→to segment, with a border band
+    // rugs: every pixel within width/2 of the from→to segment, with a border band (and its pattern)
     const img = ctx.getImageData(0, 0, W, W);
-    const stones = new Map<string, Uint8ClampedArray>();
+    const surfaces = new Map<string, Uint8ClampedArray>();
+    const surface = (pattern: string, color: string) => {
+      const key = pattern + color;
+      if (!surfaces.has(key)) surfaces.set(key, (pattern === 'stone' ? cobbles : pattern === 'road' ? asphalt : pattern === 'tactile' ? tactile : pavers)(W, color));
+      return surfaces.get(key)!;
+    };
+    const LINE = rgb('#f4ead0');
     for (const rug of bg.rugs ?? []) {
       const fill = rgb(rug.color), edge = rgb(rug.border);
-      if (rug.stone && !stones.has(rug.color)) stones.set(rug.color, cobbles(W, rug.color));
-      const cob = rug.stone && stones.get(rug.color);
+      const tex = rug.pattern && rug.pattern !== 'crosswalk' ? surface(rug.pattern, rug.color) : null;
       // (from = to: a round patch)
-      const ax = rug.from.tx, ay = rug.from.ty, dx = rug.to.tx - ax, dy = rug.to.ty - ay, len2 = dx * dx + dy * dy || 1;
+      const ax = rug.from.tx, ay = rug.from.ty, dx = rug.to.tx - ax, dy = rug.to.ty - ay, len2 = dx * dx + dy * dy || 1, len = Math.sqrt(len2);
       const half = rug.width / 2, band = Math.min(0.1, half * 0.4);
       for (let py = 0; py < W; py++)
         for (let px = 0; px < W; px++) {
           const tx = (px + 0.5) / PX, ty = (py + 0.5) / PX;
-          const k = Math.max(0, Math.min(1, ((tx - ax) * dx + (ty - ay) * dy) / len2));
+          const raw = ((tx - ax) * dx + (ty - ay) * dy) / len2, k = Math.max(0, Math.min(1, raw));
           const d = Math.hypot(tx - ax - dx * k, ty - ay - dy * k);
           if (d > half) continue;
           const i = (py * W + px) * 4;
-          img.data.set(d > half - band ? edge : cob ? cob.subarray(i, i + 3) : fill, i);
+          // a zebra crossing: stripes as you walk across, the road showing between
+          if (rug.pattern === 'crosswalk') {
+            if (raw >= 0 && raw <= 1 && (k * len * 2.6) % 1 < 0.5) img.data.set(fill, i);
+            continue;
+          }
+          // a road's dashed centre line
+          if (rug.pattern === 'road' && d < 0.035 && (k * len * 1.1) % 1 < 0.55) {
+            img.data.set(LINE, i);
+            continue;
+          }
+          img.data.set(d > half - band ? edge : tex ? tex.subarray(i, i + 3) : fill, i);
         }
     }
     ctx.putImageData(img, 0, 0);
