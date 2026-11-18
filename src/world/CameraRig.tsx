@@ -80,7 +80,8 @@ export function CameraRig({ sim, me, raised = false, onDpr }: { sim: Sim; me: Ag
 
   useFrame(({ size }, dtRaw) => {
     const dt = Math.min(dtRaw, 0.1);
-    const goal = new THREE.Vector3(me.pos.tx * T, 0, me.pos.ty * T);
+    const at = me.groove?.home ?? me.pos; // dancing about: the view stays put, you move in it
+    const goal = new THREE.Vector3(at.tx * T, 0, at.ty * T);
     c.focus ??= goal.clone();
     c.focus.lerp(goal, 1 - Math.exp(-dt * 4));
     // walking off (or "기본 화면") brings the view back to me

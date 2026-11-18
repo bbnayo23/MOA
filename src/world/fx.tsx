@@ -107,6 +107,10 @@ const BY_ANIM: Partial<
   Record<string, { icon: Icon; every: number; at: "feet" | "head" | "body" }>
 > = {
   dance: { icon: "note", every: 0.35, at: "head" },
+  danceSlide: { icon: "note", every: 0.3, at: "head" },
+  danceSpin: { icon: "star", every: 0.15, at: "body" },
+  danceHop: { icon: "note", every: 0.4, at: "head" },
+  danceDisco: { icon: "star", every: 0.45, at: "head" },
   wave: { icon: "heart", every: 0.55, at: "head" },
   swim: { icon: "drop", every: 0.18, at: "body" },
   splash: { icon: "drop", every: 0.1, at: "body" },
@@ -212,8 +216,8 @@ export function Fx({
       const id = a.player.id;
       const anim = a.anim;
       const prev = was.get(id);
-      // starting a jump: a puff of dust on take-off
-      if (anim === "jump" && prev !== "jump")
+      // starting a jump (or the hopping dance): a puff of dust on take-off
+      if ((anim === "jump" || anim === "danceHop") && prev !== anim)
         for (let i = 0; i < 5; i++)
           add(a, "puff", "feet", {
             vx: rnd(0.9),

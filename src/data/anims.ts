@@ -30,7 +30,8 @@ export interface Anim {
 
 // Grouped by the theme that introduced them; new themes add theirs here.
 export type AnimKey =
-  | 'idle' | 'walk' | 'sit' | 'wave' | 'dance' | 'jump'
+  | 'idle' | 'walk' | 'sit' | 'wave' | 'jump'
+  | 'dance' | 'danceSlide' | 'danceSpin' | 'danceHop' | 'danceDisco'
   | 'campfire' | 'cook'
   | 'pray' | 'candle' | 'write'
   | 'read' | 'study'
@@ -76,6 +77,49 @@ export const ANIMS: Record<AnimKey, Anim> = {
       { legs: 'stepA' },
       { arms: 'up', bob: -1, eyes: 'happy', flip: true },
       { legs: 'stepB', flip: true },
+    ],
+  },
+  // the other dance moves (the sim picks one at random every couple of seconds and moves you with it)
+  // shuffle: sliding sideways, swinging the arms
+  danceSlide: {
+    fps: 6,
+    frames: [
+      { legs: 'stepA', arms: 'waveB', lean: -1, eyes: 'happy' },
+      { arms: 'front', bob: 1 },
+      { legs: 'stepB', arms: 'waveB', lean: 1, eyes: 'happy', flip: true },
+      { arms: 'front', bob: 1, flip: true },
+    ],
+  },
+  // twirl: arms high, on the toes (the sim turns them round)
+  danceSpin: {
+    fps: 8,
+    frames: [
+      { arms: 'up', eyes: 'happy', hop: 0.08 },
+      { arms: 'waveA', eyes: 'happy', mouth: 'open', prop: 'sparkle' },
+      { arms: 'up', eyes: 'happy', hop: 0.08, flip: true },
+      { arms: 'waveA', eyes: 'happy', flip: true },
+    ],
+  },
+  // bunny hops
+  danceHop: {
+    fps: 6,
+    frames: [
+      { bob: 2 },
+      { hop: 0.3, arms: 'up', eyes: 'happy', mouth: 'open' },
+      { hop: 0.4, arms: 'up', eyes: 'happy' },
+      { hop: 0.15, legs: 'stepA' },
+      { bob: 2 },
+      {},
+    ],
+  },
+  // disco: point up to one side, cross down, point up to the other
+  danceDisco: {
+    fps: 4,
+    frames: [
+      { arms: 'waveA', lean: 1, eyes: 'happy', legs: 'stepB' },
+      { arms: 'pray', bob: 1 },
+      { arms: 'waveA', lean: 1, eyes: 'happy', legs: 'stepB', flip: true },
+      { arms: 'pray', bob: 1, flip: true },
     ],
   },
   campfire: { fps: 2, frames: [ROAST, ROAST, { ...ROAST, bob: 1 }, ROAST, { ...ROAST, eyes: 'closed' }] },

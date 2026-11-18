@@ -3,7 +3,7 @@ import { ACTIONS, type ActionId } from '../data/actions';
 import type { AnimKey } from '../data/anims';
 import type { Player } from '../data/character';
 import { footprintsOf, type InteractionObject, type ThemeConfig } from '../data/themes';
-import { findPath, isFree, type Footprint } from './path';
+import { findPath, isClear, isFree, type Footprint } from './path';
 import type { Motion } from '../net/link';
 import { KINDS } from './kinds';
 import { FACE_CAMERA, SPEED, headingOf, objectYaw, screenToTile, type Tile } from './space';
@@ -25,7 +25,18 @@ export interface Agent {
   route: Tile[];
   arrive?: () => void;
   timer?: Timer;
+  /** Dancing: where it started (it stays near), the move it's on, until when, and where that move takes it. */
+  groove?: { home: Tile; move: number; until: number; to: Tile | null };
 }
+
+/** Dance moves: the steps, how fast they carry you (tiles/s), twirling (rad/s), facing where you go. */
+const MOVES: { anim: AnimKey; speed: number; spin?: number; travel?: boolean }[] = [
+  { anim: 'dance', speed: 0.5 },
+  { anim: 'danceSlide', speed: 1.1 },
+  { anim: 'danceSpin', speed: 0.35, spin: 8 },
+  { anim: 'danceHop', speed: 0.9, travel: true },
+  { anim: 'danceDisco', speed: 0 },
+];
 
 /** How long you walk toward a door before going through it (the curtain falls meanwhile, see World). */
 export const ENTER_MS = 650;
@@ -87,6 +98,7 @@ export class Sim {
       agent.anim = m.anim;
       agent.heading = m.heading;
     };
+    if (m.action === 'dance') arrive(a); // dancing as they go, not walking
     if (Math.hypot(m.pos.tx - a.pos.tx, m.pos.ty - a.pos.ty) < 0.02) {
       a.route = [];
       arrive(a);
@@ -124,7 +136,10 @@ export class Sim {
       this.move(me, screenToTile(input.dx, input.dy), dt);
     } else if (!me.action && !me.route.length) me.anim = 'idle';
 
-    for (const a of this.agents.values()) this.walk(a, dt);
+    for (const a of this.agents.values()) {
+      if (a.action === 'dance' && !a.remote) this.groove(a, dt);
+      this.walk(a, dt);
+    }
     this.updateNear(me);
   }
 
@@ -161,6 +176,7 @@ export class Sim {
 
   private walk(a: Agent, dt: number) {
     if (!a.route.length) return;
+    const dancing = a.action === 'dance'; // (someone else's, catching up with where they've danced to)
     const to = a.route[0];
     const dx = to.tx - a.pos.tx, dy = to.ty - a.pos.ty;
     const dist = Math.hypot(dx, dy);
@@ -171,14 +187,47 @@ export class Sim {
       if (!a.route.length) {
         const then = a.arrive;
         a.arrive = undefined;
-        a.anim = 'idle';
+        if (!dancing) a.anim = 'idle';
         then?.();
       }
     } else {
       a.pos.tx += (dx / dist) * step;
       a.pos.ty += (dy / dist) * step;
+      if (dancing) return;
       a.heading = headingOf(dx, dy);
       a.anim = 'walk';
+    }
+  }
+
+  /** Dancing: a different move every couple of seconds, each one off somewhere near where it began. */
+  private groove(a: Agent, dt: number) {
+    const g = (a.groove ??= { home: { ...a.pos }, move: -1, until: 0, to: null });
+    if (this.time >= g.until) {
+      let m = Math.floor(Math.random() * (MOVES.length - (g.move < 0 ? 0 : 1)));
+      if (g.move >= 0 && m >= g.move) m++; // never the same one twice running
+      g.move = m;
+      g.until = this.time + 1.6 + Math.random() * 1.2;
+      g.to = null;
+      for (let i = 0; i < 6 && !g.to; i++) {
+        const turn = Math.random() * Math.PI * 2, r = 0.4 + Math.random() * 0.9;
+        const t = { tx: g.home.tx + Math.cos(turn) * r, ty: g.home.ty + Math.sin(turn) * r };
+        if (isClear(a.pos, t, this.size, this.blocks, this.wild)) g.to = t;
+      }
+      a.anim = MOVES[m].anim;
+      if (!MOVES[m].spin) a.heading = FACE_CAMERA; // to the audience
+    }
+    const move = MOVES[g.move];
+    if (move.spin) a.heading = (a.heading + move.spin * dt) % (Math.PI * 2);
+    if (!g.to || !move.speed) return;
+    const dx = g.to.tx - a.pos.tx, dy = g.to.ty - a.pos.ty;
+    const dist = Math.hypot(dx, dy), step = move.speed * dt;
+    if (move.travel) a.heading = headingOf(dx, dy);
+    if (dist <= step) {
+      a.pos = { ...g.to };
+      g.to = null;
+    } else {
+      a.pos.tx += (dx / dist) * step;
+      a.pos.ty += (dy / dist) * step;
     }
   }
 
@@ -237,6 +286,7 @@ export class Sim {
   stop(a: Agent) {
     const had = a.action;
     if (a.timer) a.timer.done = true;
+    a.groove = undefined;
     a.action = null;
     a.spot = null;
     a.route = [];

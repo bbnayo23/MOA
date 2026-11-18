@@ -274,7 +274,8 @@ function Sign({ o, inside, anchor, onPick }: { o: InteractionObject; inside: { n
 /** Swimmers sit low in the water, sitters a touch lower: keep tags on their heads. */
 const sinkOf = (a: Agent) => {
   const legs = ANIMS[a.anim].frames[0].legs;
-  return legs === 'swim' ? -0.62 : legs === 'sit' ? SIT_UP : a.anim === 'jump' ? 0.55 : 0; // a jump: the tag goes up with them
+  // a jump (or hopping about): the tag goes up with them
+  return legs === 'swim' ? -0.62 : legs === 'sit' ? SIT_UP : a.anim === 'jump' ? 0.55 : a.anim === 'danceHop' ? 0.4 : 0;
 };
 
 function walkTo(sim: Sim, me: Agent, t: Tile) {
