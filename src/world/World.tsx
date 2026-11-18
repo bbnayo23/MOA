@@ -2,6 +2,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Component, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import * as THREE from 'three';
 import { fromGame, toGame } from '../bridge';
+import { sfx } from '../audio';
 import { ACTIONS } from '../data/actions';
 import { ANIMS } from '../data/anims';
 import type { CharacterLook } from '../data/character';
@@ -453,6 +454,7 @@ const KEYS: Record<string, [number, number]> = {
 function Driver({ sim, me }: { sim: Sim; me: Agent }) {
   const held = useRef(new Set<string>());
   const sent = useRef({ at: -Infinity, key: '' });
+  const stepAt = useRef(0);
   useEffect(() => {
     const typing = () => document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement;
     const down = (e: KeyboardEvent) => {
@@ -475,6 +477,10 @@ function Driver({ sim, me }: { sim: Sim; me: Agent }) {
     let dx = 0, dy = 0;
     held.current.forEach((k) => ((dx += KEYS[k][0]), (dy += KEYS[k][1])));
     sim.step(Math.min(dt, 0.1), me, { dx, dy });
+    if (me.anim === 'walk' && sim.time >= stepAt.current) {
+      stepAt.current = sim.time + 0.26; // in step with the walk cycle
+      sfx('step');
+    }
     // tell the room (≤ 10×/s, and only when something changed — or every 3 s as a keep-alive)
     const motion: Motion = { pos: { tx: +me.pos.tx.toFixed(2), ty: +me.pos.ty.toFixed(2) }, heading: +me.heading.toFixed(2), anim: me.anim, action: me.action };
     const key = JSON.stringify(motion);

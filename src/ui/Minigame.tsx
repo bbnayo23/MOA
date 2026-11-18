@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { sfx } from '../audio';
 import { toGame } from '../bridge';
 import { GAMES, type GameId } from '../data/games';
 import { useShallow } from 'zustand/react/shallow';
@@ -177,6 +178,9 @@ export function GameStage() {
     const id = setInterval(() => setCount(Math.max(0, Math.ceil((m.startAt - performance.now()) / 1000))), 100);
     return () => clearInterval(id);
   }, [m.phase, m.startAt]);
+  useEffect(() => {
+    if (m.phase === 'countdown') sfx(count ? 'count' : 'go');
+  }, [count, m.phase]);
   return (
     <section className={GAMES[m.game].scene ? s.stage : `${s.stage} ${s.overlay}`} aria-label={GAMES[m.game].name}>
       <View key={m.seed} match={m} meId={myId} />
@@ -198,6 +202,7 @@ function Results({ m, me }: { m: Match; me: string }) {
   const best = order[0]?.[1];
   const won = best != null && scores[me] === best;
   const firsts = order.filter(([, v]) => v === best).length;
+  useEffect(() => sfx(def.score !== 'none' && m.role === 'player' && won ? 'win' : 'end'), []); // once, as they come up
   const title = def.score === 'none' ? `${def.icon} 함께해서 좋았어요` : m.role === 'player' && won ? (firsts > 1 && !def.teams ? '🤝 공동 1위!' : '🏆 승리!') : '🏁 경기 종료';
   return (
     <div className={`${c.card} ${s.results}`} role="dialog" aria-label="결과">

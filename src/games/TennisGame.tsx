@@ -1,6 +1,7 @@
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
+import { sfx } from '../audio';
 import s from '../styles/Minigame.module.scss';
 import { PIXEL_FONT } from '../styles/fonts';
 import { AvatarBody, useAvatarPose, useJoints } from '../world/Avatar';
@@ -57,6 +58,11 @@ type TennisEv = { k: 'x'; seat: number; x: number } | { k: 'f'; f: Flight; by: n
 
 const now = () => performance.now() / 1000;
 const WHY: Record<string, string> = { far: '공이 너무 멀었어요', early: '너무 빨랐어요', late: '늦었어요' };
+/** A point: a ding (ours) or a droop (theirs), and the stands either way. */
+const pointSound = (ours: boolean) => {
+  sfx(ours ? 'good' : 'bad');
+  sfx('cheer');
+};
 
 export function TennisGame({ match, meId }: { match: Match; meId: string }) {
   const n = match.seats.length;
@@ -93,6 +99,7 @@ export function TennisGame({ match, meId }: { match: Match; meId: string }) {
     live.until = now() + 1.4;
     if (tell) ev({ k: 'pt', score: live.score, why } satisfies TennisEv);
     say(winner === side ? `득점! ${why}` : `실점 · ${why}`);
+    pointSound(winner === side);
     const w = winnerOf(live.score);
     if (w !== null) end();
   };
@@ -106,6 +113,7 @@ export function TennisGame({ match, meId }: { match: Match; meId: string }) {
     live.flight = f;
     live.t0 = now();
     live.swungAt[by] = now();
+    sfx('hit');
     if (tell) ev({ k: 'f', f, by } satisfies TennisEv);
   };
 
@@ -123,6 +131,7 @@ export function TennisGame({ match, meId }: { match: Match; meId: string }) {
           live.flight = null;
           live.until = now() + 1.4;
           say(side === null ? e.why : e.score.points[side] > before.points[side] ? `득점! ${e.why}` : `실점 · ${e.why}`);
+          pointSound(side === null || e.score.points[side] > before.points[side]);
           if (winnerOf(e.score) !== null) end();
         }
       }),

@@ -270,6 +270,18 @@ export function SettingsPanel({ close }: { close: () => void }) {
         </label>
       </fieldset>
 
+      <fieldset>
+        <legend>소리</legend>
+        <label className={s.check}>
+          <input type="checkbox" checked={t.sound} onChange={(e) => t.setSound({ sound: e.target.checked })} />
+          효과음
+        </label>
+        <label className={s.check}>
+          <input type="checkbox" checked={t.music} onChange={(e) => t.setSound({ music: e.target.checked })} />
+          배경음악
+        </label>
+      </fieldset>
+
       {t.server && (
         <fieldset>
           <legend>귓속말</legend>

@@ -64,6 +64,9 @@ interface MoaState {
   /** The language I read in: others' lines are translated into it. */
   lang: Lang;
   autoTranslate: boolean;
+  /** Effects and music on (this device's choice). */
+  sound: boolean;
+  music: boolean;
   /** My own space's name ('' : "<nickname>의 공간"). */
   spaceName: string;
   /** Connected to the server (it reconnects by itself). */
@@ -87,6 +90,7 @@ interface MoaState {
   translated: (mid: string, text: string) => void;
   setLang: (lang: Lang) => void;
   setAutoTranslate: (on: boolean) => void;
+  setSound: (patch: Partial<Pick<MoaState, 'sound' | 'music'>>) => void;
   setSpaceName: (name: string) => void;
   setOnline: (online: boolean) => void;
   setTaken: (taken: boolean) => void;
@@ -157,6 +161,8 @@ export const useMoa = create<MoaState>()(
       last: null,
       lang: browserLang(),
       autoTranslate: true,
+      sound: true,
+      music: true,
       spaceName: '',
       online: true,
       taken: false,
@@ -183,6 +189,7 @@ export const useMoa = create<MoaState>()(
       },
       setLang: (lang) => set({ lang }),
       setAutoTranslate: (autoTranslate) => set({ autoTranslate }),
+      setSound: (patch) => set(patch),
       setSpaceName: (spaceName) => set({ spaceName }),
       setOnline: (online) => set({ online }),
       setTaken: (taken) => set({ taken }),
@@ -222,6 +229,8 @@ export const useMoa = create<MoaState>()(
         last: s.last,
         lang: s.lang,
         autoTranslate: s.autoTranslate,
+        sound: s.sound,
+        music: s.music,
       }),
       // v0 looks predate face shape / nose: fill them in. v2's `lang` was the language my bubbles went out in: start over
       migrate: (saved) => {

@@ -265,7 +265,9 @@ export function useInvitePanel() {
 
 /** ⚙️ 설정: language & translation, whispers, my space, blocked people, account. */
 export function useSettings() {
-  const { lang, autoTranslate, nickname } = useMoa(useShallow((st) => ({ lang: st.lang, autoTranslate: st.autoTranslate, nickname: st.me.nickname })));
+  const { lang, autoTranslate, nickname, sound, music } = useMoa(
+    useShallow((st) => ({ lang: st.lang, autoTranslate: st.autoTranslate, nickname: st.me.nickname, sound: st.sound, music: st.music })),
+  );
   const { dmPolicy, space, blocks, people } = useSocial(useShallow((s) => ({ dmPolicy: s.dmPolicy, space: s.space, blocks: s.blocks, people: s.people })));
   const [draft, setDraft] = useState<{ name: string; theme: ThemeId; visibility: Visibility } | null>(null);
   const [account, setAccount] = useState<string | null | undefined>(undefined);
@@ -288,6 +290,9 @@ export function useSettings() {
       st.setAutoTranslate(on);
       void saveSettings({ auto_translate: on });
     },
+    sound,
+    music,
+    setSound: st.setSound,
     dmPolicy,
     setDmPolicy: (p: DmPolicy) => void saveSettings({ dm_policy: p }),
     space: mine,

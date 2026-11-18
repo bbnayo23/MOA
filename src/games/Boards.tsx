@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { sfx } from '../audio';
 import { ACCESSORIES, CLOTH_COLORS, HAT_STYLES, LABELS, TOP_STYLES, type CharacterLook } from '../data/character';
 import { useMoa } from '../store';
 import s from '../styles/Boards.module.scss';
@@ -46,7 +47,11 @@ function useTick(ms: number) {
 function useSay() {
   const [say, setSay] = useState({ text: '', at: 0 });
   const text = performance.now() - say.at < 1300 ? say.text : '';
-  return [text, (t: string) => setSay({ text: t, at: performance.now() })] as const;
+  const tell = (t: string) => {
+    sfx(/[+✨🎉]/u.test(t) ? 'good' : 'bad'); // points (or a thing finished) · a miss
+    setSay({ text: t, at: performance.now() });
+  };
+  return [text, tell] as const;
 }
 
 const css = (vars: Record<string, number>) => vars as CSSProperties;

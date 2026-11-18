@@ -1,6 +1,7 @@
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import * as THREE from 'three';
+import { sfx } from '../audio';
 import s from '../styles/Minigame.module.scss';
 import { AvatarBody, useAvatarPose, useJoints } from '../world/Avatar';
 import { Fan } from './Fan';
@@ -72,6 +73,7 @@ export function SwimGame({ match, meId }: { match: Match; meId: string }) {
     const q = strokeQuality(l.sw, arm, raceTime());
     l.sw = stroke(l.sw, arm, raceTime());
     l.splashAt = now();
+    sfx('splash');
     setHud((h) => ({ ...h, q }));
   };
   useTaps(mine >= 0, tap);
@@ -81,6 +83,7 @@ export function SwimGame({ match, meId }: { match: Match; meId: string }) {
     const l = lanes[mine];
     advance(l, raceTime(), ds);
     l.sw = dive(l.sw, raceTime());
+    sfx('dive');
   };
   useKeys(mine >= 0 && ds.length > 0, { Space: diveMe });
 
@@ -129,7 +132,10 @@ export function SwimGame({ match, meId }: { match: Match; meId: string }) {
   const bumped = useRef({ n: 0, at: -9 });
   useEffect(() => {
     const id = setInterval(() => {
-      if (mine >= 0 && lanes[mine].sw.bumps > bumped.current.n) bumped.current = { n: lanes[mine].sw.bumps, at: now() };
+      if (mine >= 0 && lanes[mine].sw.bumps > bumped.current.n) {
+        bumped.current = { n: lanes[mine].sw.bumps, at: now() };
+        sfx('quack');
+      }
       const order = match.seats
         .map((p, i) => ({ name: i === mine ? '나' : p.nickname, d: lanes[i].sw.d, time: lanes[i].sw.time }))
         .sort((a, b) => (a.time ?? 1e9) - (b.time ?? 1e9) || b.d - a.d);
