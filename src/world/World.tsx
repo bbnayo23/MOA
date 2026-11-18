@@ -118,7 +118,8 @@ export function World({ theme, className, paused = false, raised = false }: { th
         // reading back every shader's compile log stalls the first frame; only worth it while developing
         onCreated={({ gl }) => void (gl.debug.checkShaderErrors = import.meta.env.DEV)}
       >
-        <Driver sim={sim} me={me} />
+        {/* keyed: a new space's clock starts at 0, so what was last sent (and when) starts over too */}
+        <Driver key={theme.themeId} sim={sim} me={me} />
         <Ready theme={theme} onReady={setReady} />
         <Stage bg={theme.background} onTap={(t) => walkTo(sim, me, t)} />
         {theme.decorations.map((d, i) => (

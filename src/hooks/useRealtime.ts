@@ -35,10 +35,16 @@ export function useRealtime() {
         let newcomer = false;
         for (const [id, p] of next) {
           const was = peers.get(id);
-          if (here(p) && !here(was)) newcomer = true;
-          else if (here(p) && was && (was.look !== p.look || was.nickname !== p.nickname)) show(p);
+          if (here(p) && !here(was)) {
+            newcomer = true;
+            show(p); // where they are may have come before who they are
+          } else if (here(p) && was && (was.look !== p.look || was.nickname !== p.nickname)) show(p);
         }
-        for (const [id, was] of peers) if (here(was) && !here(next.get(id))) toGame.emit('peerLeave', id);
+        for (const [id, was] of peers)
+          if (here(was) && !here(next.get(id))) {
+            motions.delete(id);
+            toGame.emit('peerLeave', id);
+          }
         peers = next;
         s.setPeers([...next.values()]);
         present([...next.values()].filter(here).map((p) => p.id));
@@ -69,16 +75,20 @@ export function useRealtime() {
           if ((msg.themeId === s.themeId || msg.g.k === 'ask' || msg.g.k === 'nope') && !blocked(msg.id)) receive(msg.id, msg.g);
           return;
         }
+        if (msg.themeId !== s.themeId || blocked(msg.id)) return;
         const p = peers.get(msg.id);
-        if (!p || msg.themeId !== s.themeId || blocked(p.id)) return;
-        if (msg.type === 'chat') return s.say(p, msg.text, msg.mid);
-        if (msg.type === 'tr') {
-          if (msg.lang === s.lang && s.autoTranslate) s.translated(msg.mid, msg.text);
+        if (msg.type === 'state') {
+          const { type: _t, id, themeId: _th, roomId: _r, ...motion } = msg;
+          const first = !motions.has(id);
+          motions.set(id, motion);
+          // someone new here, and listening (they just sent): let them see me now, not at my next keep-alive
+          if (first && mine) link.send(mine);
+          if (here(p)) show(p!); // (if presence hasn't caught up yet, it shows them when it does)
           return;
         }
-        const { type: _t, id: _i, themeId: _th, roomId: _r, ...motion } = msg;
-        motions.set(p.id, motion);
-        show(p);
+        if (!p) return;
+        if (msg.type === 'chat') return s.say(p, msg.text, msg.mid);
+        if (msg.type === 'tr' && msg.lang === s.lang && s.autoTranslate) s.translated(msg.mid, msg.text);
       },
       // anything I sent before the channel was up didn't go anywhere: show myself now
       joined: () => mine && link.send(mine),
@@ -143,6 +153,7 @@ export function useRealtime() {
       const moved = s.themeId !== prev.themeId || roomOf(s).id !== roomOf(prev).id;
       if (moved) {
         mine = null;
+        motions.clear(); // whoever's in the new place shows up as they speak
         leaveSpace(); // a game table here stays here
       }
       if (roomOf(s).id !== roomOf(prev).id) link.enter(roomOf(s).id);
