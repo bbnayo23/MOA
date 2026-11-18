@@ -280,6 +280,50 @@ $phone: 720px;
   color: #fff;
   text-shadow: 0 4px 0 var(--c-primary-deep);
   pointer-events: none;
+
+  // each number pops in big and settles
+  span {
+    animation: tick 0.5s steps(5) both;
+  }
+}
+
+@keyframes tick {
+  from {
+    scale: 1.8;
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+
+.confetti {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+
+  i {
+    position: absolute;
+    top: -12px;
+    left: var(--x);
+    width: 8px;
+    height: 8px;
+    background: var(--c);
+    box-shadow: 0 0 0 2px rgb(59 49 80 / 0.25);
+    animation: confetti var(--fall) var(--delay) steps(16) both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    display: none;
+  }
+}
+
+@keyframes confetti {
+  to {
+    translate: var(--sway) 110vh;
+    rotate: 540deg;
+  }
 }
 
 .results {

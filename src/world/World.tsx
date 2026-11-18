@@ -3,6 +3,7 @@ import { Component, useEffect, useLayoutEffect, useMemo, useRef, useState, type 
 import * as THREE from 'three';
 import { fromGame, toGame } from '../bridge';
 import { sfx } from '../audio';
+import { Fx } from './fx';
 import { ACTIONS } from '../data/actions';
 import { ANIMS } from '../data/anims';
 import type { CharacterLook } from '../data/character';
@@ -135,6 +136,7 @@ export function World({ theme, className, paused = false, raised = false }: { th
         {agents.map((a) => (
           <Character key={a.player.id} agent={a} look={a.isMe ? meLook : a.player.look} mood={() => moods(a.player.id)} tint={theme.background.night ? NIGHT_TINT : undefined} />
         ))}
+        <Fx sim={sim} top={(a) => TAG_Y + sinkOf(a)} mood={moods} dust={!indoor} />
         <TapMarker sim={sim} />
         <CameraRig sim={sim} me={me} raised={raised} onDpr={setDpr} />
         <LabelSync labels={labels} />

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { sfx } from '../audio';
 import { toGame } from '../bridge';
 import { GAMES, type GameId } from '../data/games';
@@ -187,7 +187,11 @@ export function GameStage() {
       <button className={s.quit} onClick={leave} aria-label="게임 나가기">
         나가기
       </button>
-      {m.phase === 'countdown' && <p className={s.count}>{count || '시작!'}</p>}
+      {m.phase === 'countdown' && (
+        <p className={s.count}>
+          <span key={count}>{count || '시작!'}</span>
+        </p>
+      )}
       {m.phase === 'result' && <Results m={m} me={myId} />}
     </section>
   );
@@ -205,40 +209,58 @@ function Results({ m, me }: { m: Match; me: string }) {
   useEffect(() => sfx(def.score !== 'none' && m.role === 'player' && won ? 'win' : 'end'), []); // once, as they come up
   const title = def.score === 'none' ? `${def.icon} 함께해서 좋았어요` : m.role === 'player' && won ? (firsts > 1 && !def.teams ? '🤝 공동 1위!' : '🏆 승리!') : '🏁 경기 종료';
   return (
-    <div className={`${c.card} ${s.results}`} role="dialog" aria-label="결과">
-      <h2>{title}</h2>
-      {def.score === 'none' ? (
-        <>
-          {def.together && !!scores[me] && <p className={s.verdict}>{def.together.replace('{n}', String(scores[me]))}</p>}
-          <p className={p.tagline}>{m.seats.map((x) => name(x.id)).join(' · ')}</p>
-        </>
-      ) : (
-        <ol>
-          {order.map(([id, v], i) => (
-            <li key={id} className={id === me ? s.me : undefined}>
-              <b>{i + 1}</b> {name(id)}
-              <span>{v === null ? (m.left.includes(id) ? '나감' : '기권') : def.score === 'time' ? `${v.toFixed(2)}초` : `${v}점`}</span>
-            </li>
+    <>
+      {def.score !== 'none' && m.role === 'player' && won && (
+        <div className={s.confetti} aria-hidden>
+          {CONFETTI.map((st, i) => (
+            <i key={i} style={st} />
           ))}
-        </ol>
+        </div>
       )}
-      <p className={s.verdict}>
-        {m.verdict === 'done' && '✓ 서버가 확인하고 기록했어요'}
-        {m.verdict === 'pending' && '서버 확인 중… (모두의 결과를 기다려요)'}
-        {m.verdict === 'disputed' && '⚠ 결과가 서로 달라 기록하지 않았어요'}
-        {m.verdict === 'local' && '로컬 모드 — 서버 기록 없음'}
-      </p>
-      <div className={s.row}>
-        {m.host === me && (
-          <button className={c.primary} onClick={rematch}>
-            다시 하기
-          </button>
+      <div className={`${c.card} ${s.results}`} role="dialog" aria-label="결과">
+        <h2>{title}</h2>
+        {def.score === 'none' ? (
+          <>
+            {def.together && !!scores[me] && <p className={s.verdict}>{def.together.replace('{n}', String(scores[me]))}</p>}
+            <p className={p.tagline}>{m.seats.map((x) => name(x.id)).join(' · ')}</p>
+          </>
+        ) : (
+          <ol>
+            {order.map(([id, v], i) => (
+              <li key={id} className={id === me ? s.me : undefined}>
+                <b>{i + 1}</b> {name(id)}
+                <span>{v === null ? (m.left.includes(id) ? '나감' : '기권') : def.score === 'time' ? `${v.toFixed(2)}초` : `${v}점`}</span>
+              </li>
+            ))}
+          </ol>
         )}
-        {m.host !== me && m.role === 'player' && <span className={p.tagline}>호스트가 다시 하기를 누르면 이어서 해요</span>}
-        <button className={c.btn} onClick={leave}>
-          나가기
-        </button>
+        <p className={s.verdict}>
+          {m.verdict === 'done' && '✓ 서버가 확인하고 기록했어요'}
+          {m.verdict === 'pending' && '서버 확인 중… (모두의 결과를 기다려요)'}
+          {m.verdict === 'disputed' && '⚠ 결과가 서로 달라 기록하지 않았어요'}
+          {m.verdict === 'local' && '로컬 모드 — 서버 기록 없음'}
+        </p>
+        <div className={s.row}>
+          {m.host === me && (
+            <button className={c.primary} onClick={rematch}>
+              다시 하기
+            </button>
+          )}
+          {m.host !== me && m.role === 'player' && <span className={p.tagline}>호스트가 다시 하기를 누르면 이어서 해요</span>}
+          <button className={c.btn} onClick={leave}>
+            나가기
+          </button>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
+
+/** Paper falling over a win: where across, how late, how fast, which colour. */
+const CONFETTI = Array.from({ length: 32 }, (_, i) => ({
+  '--x': `${(i * 37) % 100}%`,
+  '--delay': `${(i % 8) * 0.09}s`,
+  '--fall': `${1.4 + ((i * 13) % 9) * 0.1}s`,
+  '--sway': `${((i * 29) % 7) * 6 - 18}px`,
+  '--c': ['#ff8fab', '#ffd166', '#8fd3ff', '#b5e8c9', '#cbb8ff'][i % 5],
+})) as CSSProperties[];
